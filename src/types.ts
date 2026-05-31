@@ -1,0 +1,91 @@
+export interface Room {
+  id: string;
+  roomNumber: string;
+  roomType: 'Single' | 'Double' | '4-Sharing';
+  floor: number;
+  currentOccupants: number;
+  maxOccupants: number;
+  genderPreference: 'Male' | 'Female' | 'Mixed';
+  priceKes: number; // Price in KES per semester
+  rentMonthlyKes?: number; // Optional price in KES per month
+  isAvailable: boolean;
+  amenities: string[];
+}
+
+export interface Hostel {
+  id: string;
+  name: string;
+  area: 'Nyanchwa' | 'Mwembe' | 'Milimani' | 'Jogoo' | 'Safariland' | 'Nyaura' | 'On-Campus' | 'Canaan';
+  distanceMeters: number; // Distance from Kisii University campus gate
+  description: string;
+  securityRating: number; // 1-5 stars
+  hasBorehole: boolean; // Vital in Kisii water context!
+  hasWifi: boolean;
+  hasHotShower: boolean;
+  imageKeyword: string; // Used to fetch an aesthetic UI color/image concept
+  imageUrl?: string; // Optional URL or local path to a real image illustration
+  landlordPhone?: string; // Optional landlord contact phone number
+  rules?: string[]; // Standard house rules
+  depositRefundable?: 'Refundable' | 'Non-refundable' | '50% Refundable' | string; // Deposit refund policy
+  gateClosingTime?: string; // Gate curfew / closing time
+  rentMonthlyKes?: number; // Optional starting monthly rent for the entire hostel
+  rooms: Room[];
+}
+
+export interface Booking {
+  id: string;
+  hostelId: string;
+  hostelName: string;
+  roomId: string;
+  roomNumber: string;
+  studentName: string;
+  studentReg: string; // e.g. K13/1234/25
+  studentEmail: string;
+  studentPhone: string;
+  gender: 'Male' | 'Female';
+  semester: string; // e.g., "Jan-Apr 2026", "May-Aug 2026", "Sep-Dec 2026"
+  status: 'Pending Approval' | 'Deposit Paid' | 'Fully Confirmed' | 'Checked Out' | 'Virtual Tour Scheduled' | 'Virtual Tour Completed';
+  bookedAt: string;
+  isVirtualTour?: boolean;
+  tourTime?: string;
+  tourPlatform?: string;
+  tourLink?: string;
+}
+
+export interface MaintenanceRequest {
+  id: string;
+  bookingId?: string; // Links to student's live booking if exists
+  hostelId: string;
+  hostelName: string;
+  roomNumber: string;
+  studentName: string;
+  contactNumber: string;
+  category: 'Plumbing' | 'Electrical' | 'Carpentry' | 'Wi-Fi/Network' | 'Water Supply' | 'Pest Control' | 'Other';
+  description: string;
+  priority: 'Low' | 'Medium' | 'High';
+  status: 'Reported' | 'Assigned' | 'In Progress' | 'Completed';
+  createdAt: string;
+  updatedAt: string;
+  allocatedAgent?: string; // e.g. "Fundi Joseph", "Electrician Mike"
+  notes?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'model';
+  text: string;
+  timestamp: string;
+}
+
+export interface HostelReview {
+  id: string;
+  hostelId: string;
+  studentName: string;
+  rating: number; // 1 to 5 stars
+  roomType: string; // e.g., "Single Room", "Double Room"
+  stayPeriod: string; // e.g., "Jan - April 2026", "Academic Year 2025/2026"
+  comment: string;
+  createdAt: string;
+  likes: number;
+}
+

@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profile",
+      "description": "User account information and roles",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The unique Firebase Auth identifier of the user"
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Full name or alias of the user"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Student", "Property Owner", "Guest"],
+          "description": "Selectable user type category"
+        },
+        "phone": {
+          "type": "string",
+          "description": "User phone contact"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Document creation timestamp"
+        }
+      },
+      "required": ["uid", "email", "displayName", "category", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "users",
+      "description": "Central user account database with category types"
+    }
+  }
+}

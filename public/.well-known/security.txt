@@ -1,0 +1,14 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+
+Contact: mailto:esaubornface73@gmail.com
+Contact: https://wa.me/254710748699
+Expires: 2027-05-31T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://nyumbanikisii.co.ke/.well-known/security.txt
+Policy: https://nyumbanikisii.co.ke/security-policy
+Acknowledgments: https://nyumbanikisii.co.ke/thanks
+
+# security.txt — security-baseline skill applied
+# NyumbaniKisii Student Hostel Portal
+# If you discover a security vulnerability, please report it responsibly
+# to the contact above. We appreciate coordinated disclosure.

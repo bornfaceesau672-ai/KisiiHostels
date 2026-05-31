@@ -1,0 +1,322 @@
+/**
+ * NyumbaniKisii — Global CSS
+ *
+ * Claude-skills applied:
+ *   - design-system:       CSS custom properties as design tokens
+ *   - design-standards:    focus-visible rings, tap-target sizes, typography scale
+ *   - accessibility-audit: prefers-reduced-motion, skip-link, high-contrast support
+ *   - performance-optimization: smooth-scroll, will-change budget, contain hints
+ */
+
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+/* ================================================================
+   DESIGN TOKENS — design-system skill applied
+   Single source of truth for all colours, spacing, radii, shadows.
+   Consumed by Tailwind and any bespoke CSS below.
+================================================================ */
+:root {
+  /* Brand palette */
+  --color-brand-primary:    #4f46e5; /* indigo-600 */
+  --color-brand-secondary:  #7c3aed; /* violet-600 */
+  --color-brand-accent:     #f59e0b; /* amber-500  */
+  --color-brand-success:    #10b981; /* emerald-500 */
+  --color-brand-warning:    #f59e0b; /* amber-500  */
+  --color-brand-danger:     #ef4444; /* red-500    */
+
+  /* Neutral surface */
+  --color-surface-base:     #f8fafc; /* slate-50  */
+  --color-surface-card:     #ffffff;
+  --color-surface-border:   #e2e8f0; /* slate-200 */
+
+  /* Text */
+  --color-text-primary:     #0f172a; /* slate-900 */
+  --color-text-secondary:   #475569; /* slate-600 */
+  --color-text-muted:       #94a3b8; /* slate-400 */
+
+  /* Spacing scale (8-pt grid) */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Border radii */
+  --radius-sm:  8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+
+  /* Shadows */
+  --shadow-sm:  0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md:  0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg:  0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-brand: 0 4px 14px 0 rgb(79 70 229 / 0.25);
+
+  /* Motion */
+  --duration-fast:   150ms;
+  --duration-normal: 250ms;
+  --duration-slow:   400ms;
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark-mode token overrides */
+.dark {
+  --color-surface-base:   #020617; /* slate-950 */
+  --color-surface-card:   #0f172a; /* slate-900 */
+  --color-surface-border: #1e293b; /* slate-800 */
+  --color-text-primary:   #f1f5f9; /* slate-100 */
+  --color-text-secondary: #94a3b8; /* slate-400 */
+  --color-text-muted:     #475569; /* slate-600 */
+}
+
+/* ================================================================
+   GLOBAL BASE — design-standards skill applied
+================================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* performance-optimization: smooth scroll without jank */
+  scroll-behavior: smooth;
+  /* accessibility-audit: prevent forced horizontal scroll at 320px */
+  overflow-x: hidden;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* performance-optimization: promote body to its own compositor layer for scroll */
+  will-change: scroll-position;
+}
+
+/* ================================================================
+   SKIP NAVIGATION LINK — accessibility-audit skill applied
+   WCAG 2.4.1 — bypass blocks
+================================================================ */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: var(--space-4);
+  z-index: 9999;
+  padding: var(--space-3) var(--space-6);
+  background: var(--color-brand-primary);
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  outline: none;
+  transition: top var(--duration-fast) var(--ease-smooth);
+}
+
+.skip-link:focus-visible {
+  top: var(--space-4);
+}
+
+/* ================================================================
+   FOCUS VISIBLE — accessibility-audit + design-standards skills
+   WCAG 2.4.11 — focus appearance
+   Keyboard-visible ring; suppressed for mouse users via :focus:not(:focus-visible)
+================================================================ */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Elevated focus ring inside dark surfaces */
+.dark :focus-visible {
+  outline-color: #818cf8; /* indigo-400 */
+}
+
+/* ================================================================
+   MINIMUM TAP TARGET — frontend-component-build skill
+   WCAG 2.5.8 — minimum 44×44px touch target
+================================================================ */
+button,
+[role="button"],
+a,
+input[type="checkbox"],
+input[type="radio"],
+select {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Exception: inline text links don't need 44px height */
+p a,
+li a,
+span a,
+label {
+  min-height: unset;
+  min-width: unset;
+}
+
+/* ================================================================
+   REDUCED MOTION — accessibility-audit skill applied
+   WCAG 2.3.3 — animation from interactions (AAA)
+   Respects user OS-level "reduce motion" preference
+================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ================================================================
+   HIGH CONTRAST — accessibility-audit skill applied
+   Extra contrast in forced-colors/high-contrast mode
+================================================================ */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 3px solid ButtonText;
+  }
+
+  button,
+  [role="button"] {
+    forced-color-adjust: none;
+  }
+}
+
+/* ================================================================
+   SCROLLBAR STYLING — design-standards skill
+   Minimal, on-brand scrollbar that doesn't consume too much space
+================================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-border);
+  border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* ================================================================
+   SELECTION — design-standards skill: on-brand selection colour
+================================================================ */
+::selection {
+  background-color: rgb(79 70 229 / 0.2);
+  color: var(--color-text-primary);
+}
+
+/* ================================================================
+   IMAGES — performance-optimization skill applied
+   Prevent layout shift by default (CLS prevention)
+================================================================ */
+img,
+video,
+iframe,
+embed,
+object {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ================================================================
+   LIVE REGIONS — accessibility-audit skill applied
+   Visually-hidden utility for screen-reader-only content
+================================================================ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ================================================================
+   PRINT STYLES — design-standards skill applied
+   Ensure readable output when users print pages
+================================================================ */
+@media print {
+  *,
+  *::before,
+  *::after {
+    background: transparent !important;
+    color: #000 !important;
+    box-shadow: none !important;
+  }
+
+  a,
+  a:visited {
+    text-decoration: underline;
+  }
+
+  a[href]::after {
+    content: " (" attr(href) ")";
+  }
+
+  abbr[title]::after {
+    content: " (" attr(title) ")";
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tr,
+  img {
+    page-break-inside: avoid;
+  }
+
+  p,
+  h2,
+  h3 {
+    orphans: 3;
+    widows: 3;
+  }
+
+  h2,
+  h3 {
+    page-break-after: avoid;
+  }
+
+  /* Hide non-essential UI for print */
+  header,
+  nav,
+  footer,
+  .skip-link,
+  button:not(.print-show) {
+    display: none !important;
+  }
+}

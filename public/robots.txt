@@ -1,0 +1,12 @@
+# NyumbaniKisii — Student Hostel Portal
+# robots.txt — seo-technical skill applied
+
+User-agent: *
+Allow: /
+
+# Disallow internal/admin paths
+Disallow: /admin/
+Disallow: /api/
+
+# Sitemap reference (seo-technical: crawlability layer)
+Sitemap: https://nyumbanikisii.co.ke/sitemap.xml

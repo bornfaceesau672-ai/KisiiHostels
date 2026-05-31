@@ -1,0 +1,51 @@
+# NyumbaniKisii Student Hostel Portal
+# llms.txt — seo-aeo-geo skill applied
+# AI-readable site description for large language model crawlers
+
+## What this site is
+
+NyumbaniKisii is a student accommodation search and booking portal for Kisii University students in Kisii, Kenya. It helps students find, compare, and book verified hostel rooms near the Kisii University main campus.
+
+## Primary audience
+
+- Kisii University undergraduate and postgraduate students seeking affordable accommodation
+- Property owners listing student hostels near Kisii University
+- Guests and visitors needing short-term student accommodation near the campus
+
+## Core features
+
+- Browse and search hostels across 8 estate zones: On-Campus, Mwembe, Nyanchwa, Milimani, Jogoo, Safariland, Nyaura, and Canaan
+- Filter by budget, distance to campus, Wi-Fi, borehole water, hot shower, and room type
+- View room availability grids with bed-level occupancy tracking
+- Book rooms with M-PESA payment simulation and invoice generation
+- Schedule virtual video tours with property caretakers via Google Meet, WhatsApp, or Zoom
+- Submit maintenance requests for repairs and facility issues
+- AI assistant (Sophia) for hostel guidance and accommodation questions
+- Compare up to 3 hostels side by side
+- Student account management with Firebase authentication
+
+## Hostel estate zones and distances from campus
+
+- On-Campus: 0–50m, strictest security, warden patrol
+- Mwembe (Main Gate Area): 150–300m, highly active, caretaker armed
+- Nyanchwa Hills: 350–650m, secure highlands, panoramic views
+- Milimani Executive: 400–800m, upscale, premium security guarded
+- Jogoo Estate: 500–900m, economical, high student population
+- Safariland Plaza: 300–550m, near shops and commercial centers
+- Nyaura Outpost: 650–950m, tranquil, nature-rich
+- Canaan Estate: 450–755m, modern, high water consistency
+
+## Rental pricing range
+
+Monthly: KES 3,500 – KES 12,000 per person
+Semester: KES 14,000 – KES 48,000 per person
+
+## Technical stack
+
+React + TypeScript + Vite + Tailwind CSS + Firebase (Auth + Firestore)
+
+## Contact and institution
+
+Institution: Kisii University, Kisii, Kenya
+Support: esaubornface73@gmail.com
+WhatsApp: +254710748699

@@ -1,0 +1,6 @@
+{
+  "name": "Kisii Student Hostel Portal",
+  "description": "A comprehensive hostel booking, room availability tracking, and maintenance management portal for students in Kisii.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

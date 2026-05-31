@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- ============================================================
+         TITLE & META — seo-onpage skill applied
+         Primary query near the front, brand at end, 55 chars
+    ============================================================ -->
+    <title>NyumbaniKisii — Kisii University Student Hostel & Accommodation Portal</title>
+    <meta name="description" content="Find and book verified student hostels near Kisii University. Compare rooms in Nyanchwa, Mwembe, Jogoo & more. Features Wi-Fi, borehole water, hot showers & instant booking." />
+    <meta name="keywords" content="NyumbaniKisii, Kisii University hostels, student accommodation Kisii, Mwembe hostels, Nyanchwa hostels, Jogoo hostels, affordable student rentals, comrade campus hostels, hostel booking Kisii" />
+    <meta name="author" content="NyumbaniKisii Student Accommodations" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Canonical URL — seo-technical skill: one URL per piece of content -->
+    <link rel="canonical" href="https://nyumbanikisii.co.ke/" />
+
+    <!-- Sitemap reference — seo-technical skill: crawlability -->
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+
+    <!-- ============================================================
+         SECURITY HEADERS — security-baseline skill applied
+         (X-Content-Type-Options via meta as a supplement to server headers)
+    ============================================================ -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
+
+    <!-- ============================================================
+         PWA & THEME — design-standards skill applied
+    ============================================================ -->
+    <meta name="theme-color" content="#4f46e5" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1e1b4b" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="NyumbaniKisii" />
+    <meta name="application-name" content="NyumbaniKisii" />
+
+    <!-- ============================================================
+         OPEN GRAPH — seo-onpage skill: social sharing optimisation
+    ============================================================ -->
+    <meta property="og:title" content="NyumbaniKisii — Kisii University Student Hostel Portal" />
+    <meta property="og:description" content="Find and book verified, affordable student hostels near Kisii University. Instant booking, virtual tours, AI guidance & maintenance hub." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://nyumbanikisii.co.ke/" />
+    <meta property="og:site_name" content="NyumbaniKisii" />
+    <meta property="og:image" content="https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&q=80&w=1200" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Modern student hostel accommodation near Kisii University" />
+    <meta property="og:locale" content="en_KE" />
+
+    <!-- ============================================================
+         TWITTER / X CARD — seo-onpage skill
+    ============================================================ -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="NyumbaniKisii — Student Hostel Portal, Kisii" />
+    <meta name="twitter:description" content="Search & book verified student accommodation near Kisii University. Compare rooms, schedule virtual tours, submit maintenance." />
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&q=80&w=1200" />
+    <meta name="twitter:image:alt" content="NyumbaniKisii student hostel portal" />
+
+    <!-- ============================================================
+         PRECONNECTS — performance-optimization skill applied
+         Establish early connections to reduce latency
+    ============================================================ -->
+    <link rel="preconnect" href="https://firebaseapp.com" crossorigin />
+    <link rel="preconnect" href="https://firebase.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- ============================================================
+         JSON-LD STRUCTURED DATA — seo-technical skill applied
+         Schema.org: WebSite + WebApplication + LocalBusiness
+    ============================================================ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://nyumbanikisii.co.ke/#website",
+          "url": "https://nyumbanikisii.co.ke/",
+          "name": "NyumbaniKisii",
+          "description": "Student hostel search and booking portal for Kisii University students",
+          "inLanguage": "en-KE",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://nyumbanikisii.co.ke/?search={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://nyumbanikisii.co.ke/#webapp",
+          "url": "https://nyumbanikisii.co.ke/",
+          "name": "NyumbaniKisii — Student Hostel Portal",
+          "description": "Find, compare, and book verified student hostels near Kisii University. Features virtual tours, AI assistant Sophia, maintenance tracking, and M-PESA payments.",
+          "applicationCategory": "RealEstateApplication",
+          "operatingSystem": "Web Browser",
+          "browserRequirements": "Requires JavaScript",
+          "inLanguage": "en-KE",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "KES",
+            "description": "Free to use student accommodation search portal"
+          },
+          "featureList": [
+            "Hostel search and filtering",
+            "Room availability tracking",
+            "Online booking with M-PESA payment",
+            "Virtual video tour scheduling",
+            "AI accommodation assistant",
+            "Maintenance request submission",
+            "Hostel comparison tool"
+          ]
+        },
+        {
+          "@type": "LocalBusiness",
+          "@id": "https://nyumbanikisii.co.ke/#localbusiness",
+          "name": "NyumbaniKisii Student Accommodations",
+          "description": "Verified student hostel listings near Kisii University covering Nyanchwa, Mwembe, Jogoo, Milimani, On-Campus, Safariland, Nyaura, and Canaan estates.",
+          "url": "https://nyumbanikisii.co.ke/",
+          "email": "esaubornface73@gmail.com",
+          "telephone": "+254710748699",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Kisii",
+            "addressRegion": "Kisii County",
+            "addressCountry": "KE"
+          },
+          "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": -0.6817,
+            "longitude": 34.7667
+          },
+          "areaServed": {
+            "@type": "City",
+            "name": "Kisii",
+            "containedInPlace": {
+              "@type": "State",
+              "name": "Kisii County, Kenya"
+            }
+          },
+          "priceRange": "KES 3,500 – KES 12,000/month",
+          "openingHours": "Mo-Su 00:00-24:00",
+          "currenciesAccepted": "KES",
+          "paymentAccepted": "M-PESA, Cash"
+        }
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <!-- Skip navigation link — accessibility-audit skill applied (WCAG 2.4.1) -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
