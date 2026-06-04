@@ -459,7 +459,7 @@ export default function App() {
 
   // UI Navigation / Viewing States
   const [activeTab, setActiveTab] = useState<'explore' | 'bookings' | 'maintenance' | 'sophia' | 'admin'>('explore');
-  const [currentPage, setCurrentPage] = useState<'home' | 'details'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'details'>('details');
   const [showHeader, setShowHeader] = useState<boolean>(true);
   const [showBottomBar, setShowBottomBar] = useState<boolean>(true);
   const [showProfileDropdown, setShowProfileDropdown] = useState<boolean>(false);
@@ -3901,28 +3901,30 @@ export default function App() {
             </button>
 
             {/* 4. Admin Tab */}
-            <button
-              id="bottom-tab-admin"
-              onClick={() => {
-                setActiveTab('admin');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              aria-current={activeTab === 'admin' ? 'page' : undefined}
-              aria-label="Admin dashboard"
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl text-[10px] font-bold transition-all duration-250 cursor-pointer ${
-                activeTab === 'admin'
-                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 border border-indigo-100/30 dark:border-indigo-900/30 shadow-sm scale-110 -translate-y-1'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300'
-              }`}
-            >
-              <div className="relative" aria-hidden="true">
-                <BarChart2 className="w-5 h-5 stroke-[2.25]" />
-                {(pendingBookingCount > 0 || openMaintenanceCount > 0) && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-950 animate-pulse" />
-                )}
-              </div>
-              <span className="font-sans text-[10px] tracking-tight">Admin</span>
-            </button>
+            {isAdminUser && (
+              <button
+                id="bottom-tab-admin"
+                onClick={() => {
+                  setActiveTab('admin');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                aria-current={activeTab === 'admin' ? 'page' : undefined}
+                aria-label="Admin dashboard"
+                className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl text-[10px] font-bold transition-all duration-250 cursor-pointer ${
+                  activeTab === 'admin'
+                    ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 border border-indigo-100/30 dark:border-indigo-900/30 shadow-sm scale-110 -translate-y-1'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300'
+                }`}
+              >
+                <div className="relative" aria-hidden="true">
+                  <BarChart2 className="w-5 h-5 stroke-[2.25]" />
+                  {(pendingBookingCount > 0 || openMaintenanceCount > 0) && (
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-950 animate-pulse" />
+                  )}
+                </div>
+                <span className="font-sans text-[10px] tracking-tight">Admin</span>
+              </button>
+            )}
 
             {/* 5. AI Sophia Tab */}
             <button
