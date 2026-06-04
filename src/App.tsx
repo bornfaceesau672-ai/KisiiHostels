@@ -21,7 +21,7 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { 
   Building, 
   MapPin, 
@@ -428,6 +428,48 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('kisii_hostels', JSON.stringify(hostels));
   }, [hostels]);
+
+  // Caching & Firestore Revalidation / Seeding
+  useEffect(() => {
+    const fetchHostelsFromFirestore = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'hostels'));
+        if (!querySnapshot.empty) {
+          const loadedHostels: Hostel[] = [];
+          querySnapshot.forEach((doc) => {
+            loadedHostels.push(doc.data() as Hostel);
+          });
+          
+          // Sort hostels by estate/area to maintain layout alignment consistency
+          const estateOrderLocal = [
+            'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Safariland', 'Nyaura', 'Canaan'
+          ];
+          const sorted = loadedHostels.sort((a, b) => {
+            const indexA = estateOrderLocal.indexOf(a.area);
+            const indexB = estateOrderLocal.indexOf(b.area);
+            const orderA = indexA === -1 ? 999 : indexA;
+            const orderB = indexB === -1 ? 999 : indexB;
+            if (orderA !== orderB) return orderA - orderB;
+            return a.name.localeCompare(b.name);
+          });
+
+          setHostels(sorted);
+          localStorage.setItem('kisii_hostels', JSON.stringify(sorted));
+          console.log(`Successfully fetched and synced ${sorted.length} hostels from Firestore.`);
+        } else {
+          // If Firestore is empty, seed it with INITIAL_HOSTELS
+          console.log('Firestore is empty. Auto-seeding default INITIAL_HOSTELS to database.');
+          for (const hostel of INITIAL_HOSTELS) {
+            await setDoc(doc(db, 'hostels', hostel.id), hostel);
+          }
+        }
+      } catch (err) {
+        console.warn('Firestore hostels fetch failed, using local cached copy:', err);
+      }
+    };
+
+    fetchHostelsFromFirestore();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('kisii_bookings', JSON.stringify(bookings));
@@ -1070,6 +1112,10 @@ export default function App() {
       
       if (reauthActionType === 'save') {
         if (!adminDraftHostel) return;
+        
+        // Write to Firestore first to check permissions/network
+        await setDoc(doc(db, 'hostels', adminDraftHostel.id), adminDraftHostel);
+
         const exists = hostels.some(h => h.id === adminDraftHostel.id);
         let updatedHostels: Hostel[];
         if (exists) {
@@ -1085,6 +1131,9 @@ export default function App() {
         }
         setAdminSelectedHostelId(adminDraftHostel.id);
       } else if (reauthActionType === 'delete') {
+        // Delete from Firestore first
+        await deleteDoc(doc(db, 'hostels', adminSelectedHostelId));
+
         const remainingHostels = hostels.filter(h => h.id !== adminSelectedHostelId);
         setHostels(remainingHostels);
         showFeedback('Hostel deleted successfully from the catalog.', 'success');
