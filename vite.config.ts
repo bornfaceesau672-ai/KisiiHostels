@@ -35,6 +35,13 @@ export default defineConfig(() => {
         'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
         'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
       },
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+          secure: false,
+        },
+      },
     },
 
     // ================================================================

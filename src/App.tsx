@@ -17,7 +17,9 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signOut, 
-  onAuthStateChanged
+  onAuthStateChanged,
+  EmailAuthProvider,
+  reauthenticateWithCredential
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { 
@@ -55,6 +57,7 @@ import {
   BarChart2,
   X,
   Lock,
+  Key,
   Shield
 } from 'lucide-react';
 
@@ -163,6 +166,8 @@ const estateOrder = [
   'Nyaura',
   'Canaan'
 ];
+
+const ADMIN_EMAIL = 'esaubornface73@gmail.com';
 
 // Premium Skeleton loading card for elegant, smooth state transitions
 const SkeletonCard = () => (
@@ -453,7 +458,7 @@ export default function App() {
   }, [theme]);
 
   // UI Navigation / Viewing States
-  const [activeTab, setActiveTab] = useState<'explore' | 'bookings' | 'maintenance' | 'sophia'>('explore');
+  const [activeTab, setActiveTab] = useState<'explore' | 'bookings' | 'maintenance' | 'sophia' | 'admin'>('explore');
   const [currentPage, setCurrentPage] = useState<'home' | 'details'>('home');
   const [showHeader, setShowHeader] = useState<boolean>(true);
   const [showBottomBar, setShowBottomBar] = useState<boolean>(true);
@@ -492,6 +497,15 @@ export default function App() {
 
   const [compareHostels, setCompareHostels] = useState<Hostel[]>([]);
   const [showCompareModal, setShowCompareModal] = useState<boolean>(false);
+  const [adminSelectedHostelId, setAdminSelectedHostelId] = useState<string>('');
+  const [adminDraftHostel, setAdminDraftHostel] = useState<Hostel | null>(null);
+  const [isUploadingHostelImage, setIsUploadingHostelImage] = useState(false);
+
+  // Admin Re-authentication States
+  const [isReauthModalOpen, setIsReauthModalOpen] = useState<boolean>(false);
+  const [reauthPassword, setReauthPassword] = useState<string>('');
+  const [reauthActionType, setReauthActionType] = useState<'save' | 'delete' | null>(null);
+  const [isReauthenticating, setIsReauthenticating] = useState<boolean>(false);
 
   const handleToggleCompare = (hostel: Hostel, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -552,6 +566,23 @@ export default function App() {
   useEffect(() => {
     setActiveImageIndex(0);
   }, [selectedHostel?.id]);
+
+  const isAdminUser = (userProfile?.email || currentUser?.email || '').toLowerCase() === ADMIN_EMAIL;
+
+  useEffect(() => {
+    if (!adminSelectedHostelId && hostels.length > 0) {
+      setAdminSelectedHostelId(hostels[0].id);
+      setAdminDraftHostel(hostels[0]);
+    }
+  }, [adminSelectedHostelId, hostels]);
+
+  useEffect(() => {
+    if (!adminSelectedHostelId) return;
+    const nextHostel = hostels.find((hostel) => hostel.id === adminSelectedHostelId);
+    if (nextHostel) {
+      setAdminDraftHostel(JSON.parse(JSON.stringify(nextHostel)));
+    }
+  }, [adminSelectedHostelId]);
 
   // Reviews submit form state
   const [reviewName, setReviewName] = useState('Bonface Esau');
@@ -968,6 +999,187 @@ export default function App() {
     }));
   };
 
+  const handleAdminBookingStatusChange = (bookingId: string, status: Booking['status']) => {
+    setBookings(bookings.map((b) => b.id === bookingId ? { ...b, status } : b));
+    showFeedback(`Admin updated booking status to ${status}.`, 'info');
+  };
+
+  const handleSaveAdminHostel = () => {
+    if (!adminDraftHostel || !isAdminUser) return;
+    setReauthActionType('save');
+    setIsReauthModalOpen(true);
+  };
+
+  const handleAdminAddNewHostel = () => {
+    if (!isAdminUser) return;
+    const newHostelId = `hostel-${Date.now()}`;
+    const newHostel: Hostel = {
+      id: newHostelId,
+      name: 'New Student Hostel',
+      area: 'Mwembe',
+      distanceMeters: 250,
+      imageUrl: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80',
+      imageKeyword: 'modern',
+      securityRating: 5,
+      hasWifi: true,
+      hasBorehole: true,
+      hasHotShower: true,
+      description: 'A beautiful newly listed student hostel lodging option situated close to Kisii University gate.',
+      landlordPhone: '0712345678',
+      rentMonthlyKes: 4500,
+      rooms: [
+        {
+          id: `${newHostelId.replace('hostel-', '')}-${Date.now()}`,
+          roomNumber: '101',
+          roomType: 'Single',
+          floor: 1,
+          currentOccupants: 0,
+          maxOccupants: 1,
+          genderPreference: 'Mixed',
+          priceKes: 18000,
+          rentMonthlyKes: 4500,
+          isAvailable: true,
+          amenities: ['Study Desk']
+        }
+      ]
+    };
+    setAdminSelectedHostelId(newHostelId);
+    setAdminDraftHostel(newHostel);
+    showFeedback('Initialized a new hostel. Fill details and save to confirm.', 'info');
+  };
+
+  const handleAdminDeleteHostel = () => {
+    if (!adminSelectedHostelId || !isAdminUser) return;
+    if (hostels.length <= 1) {
+      showFeedback('At least one hostel listing must remain in the catalog.', 'warning');
+      return;
+    }
+    setReauthActionType('delete');
+    setIsReauthModalOpen(true);
+  };
+
+  const handleConfirmReauth = async () => {
+    if (!auth.currentUser || !auth.currentUser.email) {
+      showFeedback('No active administrator session verified. Please sign in.', 'warning');
+      return;
+    }
+    setIsReauthenticating(true);
+    try {
+      const credential = EmailAuthProvider.credential(auth.currentUser.email, reauthPassword);
+      await reauthenticateWithCredential(auth.currentUser, credential);
+      
+      if (reauthActionType === 'save') {
+        if (!adminDraftHostel) return;
+        const exists = hostels.some(h => h.id === adminDraftHostel.id);
+        let updatedHostels: Hostel[];
+        if (exists) {
+          updatedHostels = hostels.map((hostel) => hostel.id === adminDraftHostel.id ? adminDraftHostel : hostel);
+          showFeedback(`${adminDraftHostel.name} details saved successfully.`, 'success');
+        } else {
+          updatedHostels = [...hostels, adminDraftHostel];
+          showFeedback(`${adminDraftHostel.name} created successfully.`, 'success');
+        }
+        setHostels(updatedHostels);
+        if (selectedHostel?.id === adminDraftHostel.id) {
+          setSelectedHostel(adminDraftHostel);
+        }
+        setAdminSelectedHostelId(adminDraftHostel.id);
+      } else if (reauthActionType === 'delete') {
+        const remainingHostels = hostels.filter(h => h.id !== adminSelectedHostelId);
+        setHostels(remainingHostels);
+        showFeedback('Hostel deleted successfully from the catalog.', 'success');
+        if (remainingHostels.length > 0) {
+          setAdminSelectedHostelId(remainingHostels[0].id);
+        } else {
+          setAdminSelectedHostelId('');
+          setAdminDraftHostel(null);
+        }
+      }
+      setIsReauthModalOpen(false);
+      setReauthPassword('');
+      setReauthActionType(null);
+    } catch (error: any) {
+      console.error('Re-auth action failed:', error);
+      showFeedback(error?.message || 'Authentication failed. Please verify password.', 'warning');
+    } finally {
+      setIsReauthenticating(false);
+    }
+  };
+
+  const handleAdminHostelFieldChange = <K extends keyof Hostel>(field: K, value: Hostel[K]) => {
+    setAdminDraftHostel((prev) => prev ? { ...prev, [field]: value } : prev);
+  };
+
+  const handleAdminRoomFieldChange = <K extends keyof Room>(roomId: string, field: K, value: Room[K]) => {
+    setAdminDraftHostel((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        rooms: prev.rooms.map((room) => room.id === roomId ? { ...room, [field]: value } : room)
+      };
+    });
+  };
+
+  const handleAdminAddRoom = () => {
+    setAdminDraftHostel((prev) => {
+      if (!prev) return prev;
+      const nextNumber = prev.rooms.length + 1;
+      const newRoom: Room = {
+        id: `${prev.id.replace('hostel-', '')}-${Date.now()}`,
+        roomNumber: `NEW-${nextNumber}`,
+        roomType: 'Single',
+        floor: 1,
+        currentOccupants: 0,
+        maxOccupants: 1,
+        genderPreference: 'Mixed',
+        priceKes: 12000,
+        rentMonthlyKes: 3000,
+        isAvailable: true,
+        amenities: ['Study Desk']
+      };
+      return { ...prev, rooms: [...prev.rooms, newRoom] };
+    });
+  };
+
+  const handleAdminRemoveRoom = (roomId: string) => {
+    setAdminDraftHostel((prev) => prev ? { ...prev, rooms: prev.rooms.filter((room) => room.id !== roomId) } : prev);
+  };
+
+  const uploadHostelImageToPostImage = async (file: File) => {
+    if (!adminDraftHostel || !isAdminUser) return;
+    setIsUploadingHostelImage(true);
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+        reader.onerror = () => reject(new Error('Could not read selected image file.'));
+        reader.readAsDataURL(file);
+      });
+
+      const response = await fetch('/api/postimage-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: base64,
+          name: file.name.replace(/\.[^.]+$/, '') || adminDraftHostel.name,
+          type: file.name.split('.').pop() || 'jpg'
+        })
+      });
+      const data = await response.json();
+      const hostedUrl = data?.url;
+      if (!response.ok || !hostedUrl) {
+        throw new Error(data?.error || data?.message || 'PostImage did not return a hosted image URL.');
+      }
+      handleAdminHostelFieldChange('imageUrl', hostedUrl);
+      showFeedback('Hostel image uploaded to PostImage. Save the hostel to keep it.', 'success');
+    } catch (error: any) {
+      console.error('PostImage upload failed:', error);
+      showFeedback(error?.message || 'Image upload failed. Paste an image URL instead.', 'warning');
+    } finally {
+      setIsUploadingHostelImage(false);
+    }
+  };
+
   // Submit Maintenance Task
   const handleMaintenanceSubmit = (maintData: Omit<MaintenanceRequest, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => {
     if (!currentUser) {
@@ -1056,6 +1268,30 @@ export default function App() {
   }, 0);
 
   const activeUserBookings = bookings.filter((b) => b.status !== 'Checked Out');
+  const totalBedsCount = hostels.reduce((acc, hostel) => {
+    return acc + hostel.rooms.reduce((rAcc, r) => rAcc + r.maxOccupants, 0);
+  }, 0);
+  const occupiedBedsCount = hostels.reduce((acc, hostel) => {
+    return acc + hostel.rooms.reduce((rAcc, r) => rAcc + r.currentOccupants, 0);
+  }, 0);
+  const occupancyRate = totalBedsCount > 0 ? Math.round((occupiedBedsCount / totalBedsCount) * 100) : 0;
+  const openMaintenanceCount = maintenance.filter((m) => m.status !== 'Completed').length;
+  const pendingBookingCount = bookings.filter((b) => b.status === 'Pending Approval').length;
+  const confirmedBookingCount = bookings.filter((b) => b.status === 'Fully Confirmed').length;
+  const adminHostelRows = hostels.map((hostel) => {
+    const totalBeds = hostel.rooms.reduce((acc, room) => acc + room.maxOccupants, 0);
+    const occupiedBeds = hostel.rooms.reduce((acc, room) => acc + room.currentOccupants, 0);
+    const availableBeds = totalBeds - occupiedBeds;
+    const minRent = hostel.rooms.length > 0 ? Math.min(...hostel.rooms.map((room) => room.priceKes)) : 0;
+    return {
+      hostel,
+      totalBeds,
+      occupiedBeds,
+      availableBeds,
+      minRent,
+      occupancy: totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0
+    };
+  }).sort((a, b) => b.occupancy - a.occupancy);
 
   if (!currentUser) {
     return (
@@ -1331,8 +1567,8 @@ export default function App() {
             </p>
           </div>
 
-          {/* 2x2 Interactive Preferences Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+          {/* Interactive Preferences Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-6xl mx-auto">
             
             {/* Preference Item 1: Explore Hostels */}
             <div 
@@ -1457,6 +1693,36 @@ export default function App() {
               </div>
               <div className="pt-2 text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 group-hover:underline flex items-center gap-1">
                 Start Chat Session →
+              </div>
+            </div>
+
+            {/* Preference Item 5: Admin Dashboard */}
+            <div 
+              id="pref-admin"
+              onClick={() => {
+                setActiveTab('admin');
+                setCurrentPage('details');
+              }}
+              className="bg-white dark:bg-slate-900 p-7 rounded-[32px] border border-slate-100 dark:border-slate-800/60 shadow-[6px_6px_14px_#cbd5e1,-6px_-6px_14px_#ffffff] dark:shadow-[6px_6px_14px_#020617,-6px_-6px_14px_#1e293b] hover:shadow-[10px_10px_20px_#cbd5e1,-10px_-10px_20px_#ffffff] dark:hover:shadow-[10px_10px_20px_#020617,-10px_-10px_20px_#111827] active:scale-[0.985] transition-all cursor-pointer group space-y-4 md:col-span-2 xl:col-span-1"
+            >
+              <div className="flex items-center justify-between">
+                <div className="w-11 h-11 bg-indigo-50 dark:bg-indigo-950/55 rounded-2xl flex items-center justify-center border border-indigo-100/60 dark:border-indigo-900/60 group-hover:bg-indigo-600 dark:group-hover:bg-indigo-600 transition-colors duration-200">
+                  <BarChart2 className="w-5.5 h-5.5 text-indigo-600 dark:text-indigo-400 group-hover:text-white dark:group-hover:text-white transition-colors duration-200" />
+                </div>
+                <span className="text-[10px] bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-bold px-2.5 py-0.5 rounded-full font-mono">
+                  {occupancyRate}% Occupied
+                </span>
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-150">
+                  Admin Dashboard
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
+                  Monitor bookings, room occupancy, pending invoices, and maintenance queues across all listed Kisii student hostels.
+                </p>
+              </div>
+              <div className="pt-2 text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 group-hover:underline flex items-center gap-1">
+                Open Admin Control Center â†’
               </div>
             </div>
 
@@ -2949,7 +3215,330 @@ export default function App() {
             )
           )}
 
-          {/* TAB 4: Smart support chatbot console with Sophia */}
+          {/* TAB 4: Admin Control Center */}
+          {activeTab === 'admin' && (
+            !isAdminUser ? (
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 md:p-12 text-center border border-slate-200 dark:border-slate-800 shadow-md max-w-xl mx-auto space-y-6 animate-in fade-in duration-300 my-8">
+                <div className="w-16 h-16 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-300 rounded-full flex items-center justify-center mx-auto ring-8 ring-rose-50/50 dark:ring-rose-950/20">
+                  <Shield className="w-8 h-8 stroke-[2.25]" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">Admin Access Restricted</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+                    Only <span className="font-bold text-slate-900 dark:text-slate-100">{ADMIN_EMAIL}</span> can open the admin dashboard and edit hostel data.
+                  </p>
+                </div>
+              </div>
+            ) : (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+                <div>
+                  <h2 className="text-2xl font-bold font-sans text-slate-900 dark:text-slate-100 tracking-tight">Admin Dashboard</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Operations view for hostel capacity, booking approvals, payments, and maintenance dispatch.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setActiveTab('explore');
+                    setExploreView('catalog');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-950 text-xs font-black transition active:scale-95 cursor-pointer"
+                >
+                  <Building className="w-4 h-4" />
+                  Review Listings
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                {[
+                  { label: 'Listed Hostels', value: totalHostelsCount.toLocaleString(), detail: `${hostels.reduce((acc, h) => acc + h.rooms.length, 0)} rooms tracked`, icon: Building, tone: 'indigo' },
+                  { label: 'Available Beds', value: totalBedsAvailableCount.toLocaleString(), detail: `${occupancyRate}% occupancy`, icon: TrendingUp, tone: 'emerald' },
+                  { label: 'Pending Bookings', value: pendingBookingCount.toLocaleString(), detail: `${confirmedBookingCount} fully confirmed`, icon: Receipt, tone: 'amber' },
+                  { label: 'Open Repairs', value: openMaintenanceCount.toLocaleString(), detail: `${maintenance.length} total tickets`, icon: AlertCircle, tone: 'rose' }
+                ].map((metric) => {
+                  const Icon = metric.icon;
+                  const toneClass = metric.tone === 'emerald'
+                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300'
+                    : metric.tone === 'amber'
+                      ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300'
+                      : metric.tone === 'rose'
+                        ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300'
+                        : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300';
+                  return (
+                    <div key={metric.label} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">{metric.label}</span>
+                        <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${toneClass}`}>
+                          <Icon className="w-4 h-4" />
+                        </span>
+                      </div>
+                      <div className="mt-4">
+                        <p className="text-2xl font-black text-slate-900 dark:text-slate-100 leading-none">{metric.value}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{metric.detail}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {adminDraftHostel && (
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-5">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">Edit Hostel Details</h3>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Select any hostel, update its public details, rooms, pricing, contacts, rules, and hosted image.</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={adminSelectedHostelId}
+                        onChange={(e) => setAdminSelectedHostelId(e.target.value)}
+                        className="min-h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-bold text-slate-700 dark:text-slate-200 px-3"
+                        aria-label="Select hostel to edit"
+                      >
+                        {hostels.map((hostel) => (
+                          <option key={hostel.id} value={hostel.id}>{hostel.name}</option>
+                        ))}
+                        {adminDraftHostel && !hostels.some(h => h.id === adminDraftHostel.id) && (
+                          <option value={adminDraftHostel.id}>{adminDraftHostel.name} (Draft/New)</option>
+                        )}
+                      </select>
+                      <button
+                        onClick={handleAdminAddNewHostel}
+                        className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-bold transition active:scale-95 cursor-pointer"
+                      >
+                        Add New
+                      </button>
+                      <button
+                        onClick={handleSaveAdminHostel}
+                        className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition active:scale-95 cursor-pointer"
+                      >
+                        Save Hostel
+                      </button>
+                      <button
+                        onClick={handleAdminDeleteHostel}
+                        className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-rose-50 border border-rose-100 hover:bg-rose-100 dark:bg-rose-950/20 dark:border-rose-900/40 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold transition active:scale-95 cursor-pointer"
+                      >
+                        Delete Hostel
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                    <div className="space-y-3">
+                      <div className="aspect-[4/3] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950">
+                        <img
+                          src={getHostelImages(adminDraftHostel.id, adminDraftHostel.imageUrl)[0]}
+                          alt={adminDraftHostel.name}
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                      <label className="block">
+                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Upload to PostImage</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={isUploadingHostelImage}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) uploadHostelImageToPostImage(file);
+                            e.currentTarget.value = '';
+                          }}
+                          className="mt-1 w-full text-xs text-slate-600 dark:text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-3 file:py-2 file:text-xs file:font-bold file:text-white disabled:opacity-60"
+                        />
+                      </label>
+                      {isUploadingHostelImage && (
+                        <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold">Uploading image...</p>
+                      )}
+                    </div>
+
+                    <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <label className="space-y-1">
+                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Hostel Name</span>
+                        <input value={adminDraftHostel.name} onChange={(e) => handleAdminHostelFieldChange('name', e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
+                      </label>
+                      <label className="space-y-1">
+                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Area</span>
+                        <select value={adminDraftHostel.area} onChange={(e) => handleAdminHostelFieldChange('area', e.target.value as Hostel['area'])} className="w-full min-h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100">
+                          {estateOrder.map((area) => <option key={area} value={area}>{area}</option>)}
+                        </select>
+                      </label>
+                      <label className="space-y-1">
+                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Distance to Gate</span>
+                        <input type="number" value={adminDraftHostel.distanceMeters} onChange={(e) => handleAdminHostelFieldChange('distanceMeters', Number(e.target.value))} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
+                      </label>
+                      <label className="space-y-1">
+                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Security Rating</span>
+                        <input type="number" min={1} max={5} value={adminDraftHostel.securityRating} onChange={(e) => handleAdminHostelFieldChange('securityRating', Number(e.target.value))} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
+                      </label>
+                      <label className="space-y-1">
+                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Caretaker Phone</span>
+                        <input value={adminDraftHostel.landlordPhone || ''} onChange={(e) => handleAdminHostelFieldChange('landlordPhone', e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
+                      </label>
+                      <label className="space-y-1">
+                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Monthly Rent From</span>
+                        <input type="number" value={adminDraftHostel.rentMonthlyKes || ''} onChange={(e) => handleAdminHostelFieldChange('rentMonthlyKes', Number(e.target.value) || undefined)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
+                      </label>
+                      <label className="space-y-1 md:col-span-2">
+                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">PostImage / Hosted Image URL</span>
+                        <input value={adminDraftHostel.imageUrl || ''} onChange={(e) => handleAdminHostelFieldChange('imageUrl', e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
+                      </label>
+                      <label className="space-y-1 md:col-span-2">
+                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Description</span>
+                        <textarea value={adminDraftHostel.description} onChange={(e) => handleAdminHostelFieldChange('description', e.target.value)} rows={3} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-semibold text-slate-800 dark:text-slate-100" />
+                      </label>
+                      <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {[
+                          ['hasWifi', 'Wi-Fi'],
+                          ['hasBorehole', 'Borehole'],
+                          ['hasHotShower', 'Hot Shower']
+                        ].map(([field, label]) => (
+                          <label key={field} className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                            <input type="checkbox" checked={Boolean(adminDraftHostel[field as keyof Hostel])} onChange={(e) => handleAdminHostelFieldChange(field as keyof Hostel, e.target.checked as never)} />
+                            {label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-100 dark:border-slate-800 pt-5 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <h4 className="text-sm font-black text-slate-900 dark:text-slate-100">Rooms</h4>
+                      <button onClick={handleAdminAddRoom} className="px-3 py-2 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950 text-[10px] font-black cursor-pointer">Add Room</button>
+                    </div>
+                    <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                      {adminDraftHostel.rooms.map((room) => (
+                        <div key={room.id} className="grid grid-cols-2 lg:grid-cols-8 gap-2 rounded-xl border border-slate-100 dark:border-slate-800 p-3">
+                          <input aria-label="Room number" value={room.roomNumber} onChange={(e) => handleAdminRoomFieldChange(room.id, 'roomNumber', e.target.value)} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
+                          <select aria-label="Room type" value={room.roomType} onChange={(e) => handleAdminRoomFieldChange(room.id, 'roomType', e.target.value as Room['roomType'])} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100">
+                            <option>Single</option><option>Double</option><option>4-Sharing</option>
+                          </select>
+                          <input aria-label="Floor" type="number" value={room.floor} onChange={(e) => handleAdminRoomFieldChange(room.id, 'floor', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
+                          <input aria-label="Occupants" type="number" value={room.currentOccupants} onChange={(e) => handleAdminRoomFieldChange(room.id, 'currentOccupants', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
+                          <input aria-label="Max occupants" type="number" value={room.maxOccupants} onChange={(e) => handleAdminRoomFieldChange(room.id, 'maxOccupants', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
+                          <input aria-label="Semester rent" type="number" value={room.priceKes} onChange={(e) => handleAdminRoomFieldChange(room.id, 'priceKes', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
+                          <input aria-label="Monthly rent" type="number" value={room.rentMonthlyKes || ''} onChange={(e) => handleAdminRoomFieldChange(room.id, 'rentMonthlyKes', Number(e.target.value) || undefined)} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
+                          <button onClick={() => handleAdminRemoveRoom(room.id)} className="rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-[10px] font-black hover:bg-rose-100 cursor-pointer">Remove</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+                <div className="xl:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">Hostel Occupancy</h3>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Capacity and lowest semester rent by property.</p>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2.5 py-1 rounded-lg">
+                      {occupiedBedsCount}/{totalBedsCount} beds filled
+                    </span>
+                  </div>
+                  <div className="space-y-3 max-h-[540px] overflow-y-auto pr-1">
+                    {adminHostelRows.map(({ hostel, availableBeds, totalBeds, minRent, occupancy }) => (
+                      <div key={hostel.id} className="border border-slate-100 dark:border-slate-800 rounded-xl p-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div>
+                            <h4 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">{hostel.name}</h4>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">{hostel.area} • {hostel.distanceMeters}m from campus • KES {minRent.toLocaleString()} from</p>
+                          </div>
+                          <span className="text-[11px] font-mono font-bold text-slate-700 dark:text-slate-300">{availableBeds} / {totalBeds} beds open</span>
+                        </div>
+                        <div className="mt-3 h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${occupancy > 80 ? 'bg-rose-500' : occupancy > 55 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                            style={{ width: `${occupancy}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+                    <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">Recent Bookings</h3>
+                    <div className="mt-4 space-y-3">
+                      {bookings.slice(0, 5).map((booking) => (
+                        <div key={booking.id} className="border border-slate-100 dark:border-slate-800 rounded-xl p-3 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-xs font-extrabold text-slate-800 dark:text-slate-100">{booking.studentName}</p>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400">{booking.hostelName} • Room {booking.roomNumber}</p>
+                            </div>
+                            <span className="text-[9px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">{new Date(booking.bookedAt).toLocaleDateString()}</span>
+                          </div>
+                          <select
+                            value={booking.status}
+                            onChange={(e) => handleAdminBookingStatusChange(booking.id, e.target.value as Booking['status'])}
+                            className="w-full min-h-10 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-bold text-slate-700 dark:text-slate-200 px-2"
+                            aria-label={`Update status for ${booking.studentName}`}
+                          >
+                            <option>Pending Approval</option>
+                            <option>Deposit Paid</option>
+                            <option>Fully Confirmed</option>
+                            <option>Checked Out</option>
+                            <option>Virtual Tour Scheduled</option>
+                            <option>Virtual Tour Completed</option>
+                          </select>
+                        </div>
+                      ))}
+                      {bookings.length === 0 && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-4 text-center">No bookings yet.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+                    <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">Repair Queue</h3>
+                    <div className="mt-4 space-y-3">
+                      {maintenance.filter((m) => m.status !== 'Completed').slice(0, 5).map((ticket) => (
+                        <div key={ticket.id} className="border border-slate-100 dark:border-slate-800 rounded-xl p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-xs font-extrabold text-slate-800 dark:text-slate-100">{ticket.category} • {ticket.priority}</p>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400">{ticket.hostelName} Room {ticket.roomNumber}</p>
+                            </div>
+                            <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300">{ticket.status}</span>
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {ticket.status === 'Reported' && (
+                              <button
+                                onClick={() => handleSimulateMaintenanceTransition(ticket.id, 'In Progress')}
+                                className="px-3 py-1.5 rounded-lg bg-amber-100 text-amber-800 text-[10px] font-black hover:bg-amber-200 transition cursor-pointer"
+                              >
+                                Assign
+                              </button>
+                            )}
+                            {ticket.status === 'In Progress' && (
+                              <button
+                                onClick={() => handleSimulateMaintenanceTransition(ticket.id, 'Completed')}
+                                className="px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-black hover:bg-emerald-200 transition cursor-pointer"
+                              >
+                                Complete
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {openMaintenanceCount === 0 && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-4 text-center">No open repair tickets.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            )
+          )}
+
+          {/* TAB 5: Smart support chatbot console with Sophia */}
           {activeTab === 'sophia' && (
             <div className="space-y-6 animate-in fade-in duration-300">
               
@@ -3009,6 +3598,69 @@ export default function App() {
           onClose={() => setIsEditProfileOpen(false)}
           onSave={handleEditProfileSave}
         />
+      )}
+
+      {/* Admin Re-authentication Password Modal */}
+      {isReauthModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 max-w-md w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 rounded-2xl flex items-center justify-center mx-auto border border-indigo-100 dark:border-indigo-900">
+                <Shield className="w-6 h-6 stroke-[2.25]" />
+              </div>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Admin Authentication Required</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                To finalize this administrative action, please verify your password. This ensures your updates remain secure and authorized.
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <label className="block space-y-1">
+                <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Verify Admin Password</span>
+                <input
+                  type="password"
+                  placeholder="Enter your account password"
+                  value={reauthPassword}
+                  onChange={(e) => setReauthPassword(e.target.value)}
+                  className="w-full min-h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3.5 py-2.5 text-sm font-bold text-slate-800 dark:text-slate-100"
+                  disabled={isReauthenticating}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleConfirmReauth();
+                  }}
+                  autoFocus
+                />
+              </label>
+            </div>
+
+            <div className="flex gap-2.5 pt-2">
+              <button
+                onClick={() => {
+                  setIsReauthModalOpen(false);
+                  setReauthPassword('');
+                  setReauthActionType(null);
+                }}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-755 text-xs font-bold transition active:scale-95 text-slate-700 dark:text-slate-300"
+                disabled={isReauthenticating}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmReauth}
+                className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition active:scale-95 flex items-center justify-center gap-1.5"
+                disabled={isReauthenticating || !reauthPassword}
+              >
+                {isReauthenticating ? (
+                  <span className="animate-pulse">Authenticating...</span>
+                ) : (
+                  <>
+                    <Key className="w-3.5 h-3.5" />
+                    <span>Confirm Action</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Aesthetic high quality footer */}
@@ -3182,7 +3834,7 @@ export default function App() {
           {/* accessibility-audit: nav landmark with aria-label distinguishes from header nav */}
           <nav
             aria-label="Main navigation"
-            className="pointer-events-auto flex items-center justify-between gap-1.5 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md p-2 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_12px_36px_rgba(30,41,59,0.12)] dark:shadow-[0_15px_45px_rgba(0,0,0,0.5)] max-w-md w-full">
+            className="pointer-events-auto flex items-center justify-between gap-1.5 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md p-2 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-[0_12px_36px_rgba(30,41,59,0.12)] dark:shadow-[0_15px_45px_rgba(0,0,0,0.5)] max-w-lg w-full">
             
             {/* 1. Explore Tab — accessibility-audit: aria-current marks active tab */}
             <button
@@ -3248,7 +3900,31 @@ export default function App() {
               <span className="font-sans text-[10px] tracking-tight">Repair Hub</span>
             </button>
 
-            {/* 4. AI Sophia Tab */}
+            {/* 4. Admin Tab */}
+            <button
+              id="bottom-tab-admin"
+              onClick={() => {
+                setActiveTab('admin');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              aria-current={activeTab === 'admin' ? 'page' : undefined}
+              aria-label="Admin dashboard"
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl text-[10px] font-bold transition-all duration-250 cursor-pointer ${
+                activeTab === 'admin'
+                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 border border-indigo-100/30 dark:border-indigo-900/30 shadow-sm scale-110 -translate-y-1'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300'
+              }`}
+            >
+              <div className="relative" aria-hidden="true">
+                <BarChart2 className="w-5 h-5 stroke-[2.25]" />
+                {(pendingBookingCount > 0 || openMaintenanceCount > 0) && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-950 animate-pulse" />
+                )}
+              </div>
+              <span className="font-sans text-[10px] tracking-tight">Admin</span>
+            </button>
+
+            {/* 5. AI Sophia Tab */}
             <button
               id="bottom-tab-sophia"
               onClick={() => {

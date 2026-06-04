@@ -7,6 +7,8 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
+const postImageUploadAttempts = new Map<string, { count: number; resetAt: number }>();
+
 async function startServer() {
   const app = express();
   const PORT = 3001; // Updated to avoid port conflict
@@ -19,16 +21,105 @@ async function startServer() {
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    res.setHeader('Content-Security-Policy-Report-Only', [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https://images.unsplash.com https://i.postimg.cc https://postimg.cc https://*.postimg.cc",
+      "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebase.googleapis.com https://api.postimage.org",
+      "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://meet.google.com https://zoom.us",
+      "font-src 'self' data:",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "frame-ancestors 'self'"
+    ].join('; '));
     if (process.env.NODE_ENV === 'production') {
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     }
     next();
   });
-  app.use(express.json());
+  app.use(express.json({ limit: '12mb' }));
 
   // API: Health status
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
+  });
+
+  app.post('/api/postimage-upload', async (req, res) => {
+    try {
+      const requester = req.ip || 'local';
+      const now = Date.now();
+      const windowMs = 10 * 60 * 1000;
+      const attempts = postImageUploadAttempts.get(requester);
+      if (attempts && attempts.resetAt > now && attempts.count >= 20) {
+        return res.status(429).json({ error: 'Too many image uploads. Please wait and try again.' });
+      }
+      postImageUploadAttempts.set(requester, {
+        count: attempts && attempts.resetAt > now ? attempts.count + 1 : 1,
+        resetAt: attempts && attempts.resetAt > now ? attempts.resetAt : now + windowMs
+      });
+
+      const apiKey = process.env.POSTIMAGE_API_KEY || 'f666bd030df59d51a074f72e6315dc33';
+      const { image, name, type } = req.body || {};
+      if (!image || typeof image !== 'string') {
+        return res.status(400).json({ error: 'Missing base64 image payload.' });
+      }
+
+      const normalizedType = String(type || 'jpg').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      if (!['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(normalizedType)) {
+        return res.status(400).json({ error: 'Unsupported image type.' });
+      }
+
+      const body = new URLSearchParams({
+        key: apiKey,
+        o: '2b819584285c102318568238c7d4a4c7',
+        m: '59c2ad4b46b0c1e12d5703302bff0120',
+        version: '1.0.1',
+        portable: '1',
+        name: String(name || 'hostel-image').slice(0, 80),
+        type: normalizedType,
+        image
+      });
+
+      const response = await fetch('https://api.postimage.org/1/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        body
+      });
+      const text = await response.text();
+      console.log('PostImage API raw response:', text);
+      let hostedUrl = '';
+      let errorMsg = '';
+
+      if (text.trim().startsWith('{')) {
+        try {
+          const data = JSON.parse(text);
+          hostedUrl = data?.url || data?.image?.url || data?.image?.display_url || data?.hotlink || data?.direct_url;
+          errorMsg = data?.error || data?.message;
+        } catch (e) {
+          console.warn('PostImage response JSON parsing failed:', e);
+        }
+      }
+
+      if (!hostedUrl) {
+        // Fallback: Parse XML tags using regex
+        const directUrlMatch = text.match(/<hotlink>(.*?)<\/hotlink>/i) || text.match(/<direct_url>(.*?)<\/direct_url>/i) || text.match(/<url>(.*?)<\/url>/i) || text.match(/<display_url>(.*?)<\/display_url>/i) || text.match(/<page>(.*?)<\/page>/i);
+        if (directUrlMatch) {
+          hostedUrl = directUrlMatch[1];
+        } else {
+          const errorMatch = text.match(/<message>(.*?)<\/message>/i) || text.match(/<error>(.*?)<\/error>/i);
+          errorMsg = errorMatch ? errorMatch[1] : 'PostImage upload failed or returned XML in an unexpected format.';
+        }
+      }
+
+      if (!response.ok || !hostedUrl) {
+        return res.status(502).json({ error: errorMsg || 'PostImage upload failed.' });
+      }
+      res.json({ url: hostedUrl });
+    } catch (error: any) {
+      console.error('PostImage upload error:', error);
+      res.status(500).json({ error: 'Image upload service failed.' });
+    }
   });
 
   // API: Smart AI Chat Assistant (with lazy load of Gemini API Key)

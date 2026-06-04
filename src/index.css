@@ -27,9 +27,9 @@
   --color-brand-danger:     #ef4444; /* red-500    */
 
   /* Neutral surface */
-  --color-surface-base:     #f8fafc; /* slate-50  */
-  --color-surface-card:     #ffffff;
-  --color-surface-border:   #e2e8f0; /* slate-200 */
+  --color-surface-base:     #e8edf2; /* soft neumorphic slate-gray-blue */
+  --color-surface-card:     #e8edf2; /* match base for neumorphic cards to blend */
+  --color-surface-border:   #d1d5db; /* slate-200 */
 
   /* Text */
   --color-text-primary:     #0f172a; /* slate-900 */
@@ -60,6 +60,12 @@
   --shadow-lg:  0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-brand: 0 4px 14px 0 rgb(79 70 229 / 0.25);
 
+  /* Neumorphic Shadow Tokens */
+  --shadow-neumorphic-dark: #b8c6d4;
+  --shadow-neumorphic-light: #ffffff;
+  --color-neumorphic-border: rgba(255, 255, 255, 0.6);
+  --color-neumorphic-border-inner: rgba(226, 232, 240, 0.8);
+
   /* Motion */
   --duration-fast:   150ms;
   --duration-normal: 250ms;
@@ -69,17 +75,23 @@
 
 /* Dark-mode token overrides */
 .dark {
-  --color-surface-base:   #020617; /* slate-950 */
-  --color-surface-card:   #0f172a; /* slate-900 */
+  --color-surface-base:   #0b0f19; /* deep slate dark */
+  --color-surface-card:   #0b0f19; /* match base for dark mode */
   --color-surface-border: #1e293b; /* slate-800 */
   --color-text-primary:   #f1f5f9; /* slate-100 */
   --color-text-secondary: #94a3b8; /* slate-400 */
   --color-text-muted:     #475569; /* slate-600 */
+
+  /* Dark Neumorphic Shadow Tokens */
+  --shadow-neumorphic-dark: #05070c;
+  --shadow-neumorphic-light: #141b2c;
+  --color-neumorphic-border: rgba(255, 255, 255, 0.02);
+  --color-neumorphic-border-inner: rgba(30, 41, 59, 0.4);
 }
 
 /* ================================================================
    GLOBAL BASE — design-standards skill applied
-================================================================ */
+   ================================================================ */
 *,
 *::before,
 *::after {
@@ -104,6 +116,91 @@ body {
   -moz-osx-font-smoothing: grayscale;
   /* performance-optimization: promote body to its own compositor layer for scroll */
   will-change: scroll-position;
+  background: var(--color-surface-base);
+  color: var(--color-text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Neumorphic finish classes */
+.neumorphic-card {
+  background: var(--color-surface-card);
+  border-radius: var(--radius-xl);
+  box-shadow: 10px 10px 20px var(--shadow-neumorphic-dark), -10px -10px 20px var(--shadow-neumorphic-light);
+  border: 1px solid var(--color-neumorphic-border);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.neumorphic-card:hover {
+  box-shadow: 5px 5px 10px var(--shadow-neumorphic-dark), -5px -5px 10px var(--shadow-neumorphic-light);
+}
+
+.neumorphic-card-inset {
+  background: var(--color-surface-card);
+  border-radius: var(--radius-xl);
+  box-shadow: inset 8px 8px 16px var(--shadow-neumorphic-dark), inset -8px -8px 16px var(--shadow-neumorphic-light);
+  border: 1px solid var(--color-neumorphic-border-inner);
+}
+
+.neumorphic-btn {
+  background: var(--color-surface-card);
+  border-radius: var(--radius-lg);
+  box-shadow: 6px 6px 12px var(--shadow-neumorphic-dark), -6px -6px 12px var(--shadow-neumorphic-light);
+  border: 1px solid var(--color-neumorphic-border);
+  transition: all 0.2s ease;
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.neumorphic-btn:hover {
+  box-shadow: 3px 3px 6px var(--shadow-neumorphic-dark), -3px -3px 6px var(--shadow-neumorphic-light);
+}
+.neumorphic-btn:active, .neumorphic-btn-active {
+  box-shadow: inset 4px 4px 8px var(--shadow-neumorphic-dark), inset -4px -4px 8px var(--shadow-neumorphic-light) !important;
+}
+
+.neumorphic-input {
+  background: var(--color-surface-base);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-neumorphic-border-inner);
+  box-shadow: inset 3px 3px 6px var(--shadow-neumorphic-dark), inset -3px -3px 6px var(--shadow-neumorphic-light);
+  transition: all 0.2s ease;
+  min-height: 44px;
+  padding: 0 1rem;
+}
+.neumorphic-input:focus {
+  outline: none;
+  box-shadow: inset 1px 1px 2px var(--shadow-neumorphic-dark), inset -1px -1px 2px var(--shadow-neumorphic-light), 0 0 0 2px var(--color-brand-primary);
+}
+
+/* Fallback override to apply beautiful Neumorphism to white backgrounds on tailwind elements */
+.bg-white,
+.dark .dark\:bg-slate-900,
+.dark .dark\:bg-slate-950 {
+  background: var(--color-surface-card) !important;
+  box-shadow: 10px 10px 20px var(--shadow-neumorphic-dark), -10px -10px 20px var(--shadow-neumorphic-light);
+  border: 1px solid var(--color-neumorphic-border) !important;
+}
+
+button,
+[role="button"],
+select,
+input,
+textarea {
+  box-shadow: 4px 4px 10px var(--shadow-neumorphic-dark), -4px -4px 10px var(--shadow-neumorphic-light);
+  border: 1px solid var(--color-neumorphic-border);
+  transition: all 0.2s var(--ease-smooth);
+}
+
+button:active,
+[role="button"]:active {
+  box-shadow: inset 3px 3px 6px var(--shadow-neumorphic-dark), inset -3px -3px 6px var(--shadow-neumorphic-light) !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  box-shadow: inset 2px 2px 4px var(--shadow-neumorphic-dark), inset -2px -2px 4px var(--shadow-neumorphic-light), 0 0 0 2px var(--color-brand-primary) !important;
 }
 
 /* ================================================================
