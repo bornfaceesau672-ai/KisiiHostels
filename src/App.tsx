@@ -233,32 +233,7 @@ export default function App() {
             uniqueParsed.push(h);
           }
         }
-        
-        // If the number of unique hostels loaded differs from the original expected list,
-        // force reload from INITIAL_HOSTELS to resolve any outdated states.
-        if (uniqueParsed.length !== INITIAL_HOSTELS.length) {
-          return [...INITIAL_HOSTELS].sort(sortHostelsByEstate);
-        }
-
-        // Apply dynamic updates (such as Kerubo Apartments rent KES 4,500 per month and Dally Student Flats rename) to parsed cache
-        const updatedParsed = uniqueParsed.map(h => {
-          if (h.id === 'hostel-kerubo-apartments') {
-            return {
-              ...h,
-              rentMonthlyKes: 4500,
-              rooms: h.rooms.map(r => r.id === 'ka-101' ? { ...r, rentMonthlyKes: 4500 } : r)
-            };
-          }
-          if (h.id === 'hostel-daily-flats') {
-            return {
-              ...h,
-              name: 'Dally Student Flats'
-            };
-          }
-          return h;
-        });
-
-        return updatedParsed.sort(sortHostelsByEstate);
+        return uniqueParsed.sort(sortHostelsByEstate);
       } catch (e) {
         return [...INITIAL_HOSTELS].sort(sortHostelsByEstate);
       }
