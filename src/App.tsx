@@ -17,9 +17,7 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signOut, 
-  onAuthStateChanged,
-  EmailAuthProvider,
-  reauthenticateWithCredential
+  onAuthStateChanged
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { 
@@ -268,63 +266,68 @@ export default function App() {
     updatedAt?: string;
     synced?: boolean;
   } | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
 
   // Listen for Firebase account session changes (with localStorage fallback)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        setCurrentUser(firebaseUser);
-        const localKey = `kisii_user_profile_${firebaseUser.uid}`;
-        try {
-          const userDocRef = doc(db, 'users', firebaseUser.uid);
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            const data = userDocSnap.data() as any;
-            const syncedData = { ...data, synced: true };
-            setUserProfile(syncedData);
-            localStorage.setItem(localKey, JSON.stringify(syncedData));
-          } else {
-            // Try local cache first
+      try {
+        if (firebaseUser) {
+          setCurrentUser(firebaseUser);
+          const localKey = `kisii_user_profile_${firebaseUser.uid}`;
+          try {
+            const userDocRef = doc(db, 'users', firebaseUser.uid);
+            const userDocSnap = await getDoc(userDocRef);
+            if (userDocSnap.exists()) {
+              const data = userDocSnap.data() as any;
+              const syncedData = { ...data, synced: true };
+              setUserProfile(syncedData);
+              localStorage.setItem(localKey, JSON.stringify(syncedData));
+            } else {
+              // Try local cache first
+              const cached = localStorage.getItem(localKey);
+              if (cached) {
+                setUserProfile(JSON.parse(cached));
+              } else {
+                setUserProfile(prev => {
+                  if (prev && prev.uid === firebaseUser.uid) return prev;
+                  const fallback = {
+                    uid: firebaseUser.uid,
+                    email: firebaseUser.email || '',
+                    displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Comrade Resident',
+                    category: 'Student' as const,
+                    createdAt: new Date().toISOString(),
+                    synced: false
+                  };
+                  localStorage.setItem(localKey, JSON.stringify(fallback));
+                  return fallback;
+                });
+              }
+            }
+          } catch (error) {
+            console.warn('Firestore profile read failed, using local cache:', error);
             const cached = localStorage.getItem(localKey);
             if (cached) {
               setUserProfile(JSON.parse(cached));
             } else {
-              setUserProfile(prev => {
-                if (prev && prev.uid === firebaseUser.uid) return prev;
-                const fallback = {
-                  uid: firebaseUser.uid,
-                  email: firebaseUser.email || '',
-                  displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Comrade Resident',
-                  category: 'Student' as const,
-                  createdAt: new Date().toISOString(),
-                  synced: false
-                };
-                localStorage.setItem(localKey, JSON.stringify(fallback));
-                return fallback;
-              });
+              const fallback = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email || '',
+                displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Comrade Resident',
+                category: 'Student' as const,
+                createdAt: new Date().toISOString(),
+                synced: false
+              };
+              localStorage.setItem(localKey, JSON.stringify(fallback));
+              setUserProfile(fallback);
             }
           }
-        } catch (error) {
-          console.warn('Firestore profile read failed, using local cache:', error);
-          const cached = localStorage.getItem(localKey);
-          if (cached) {
-            setUserProfile(JSON.parse(cached));
-          } else {
-            const fallback = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email || '',
-              displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Comrade Resident',
-              category: 'Student' as const,
-              createdAt: new Date().toISOString(),
-              synced: false
-            };
-            localStorage.setItem(localKey, JSON.stringify(fallback));
-            setUserProfile(fallback);
-          }
+        } else {
+          setCurrentUser(null);
+          setUserProfile(null);
         }
-      } else {
-        setCurrentUser(null);
-        setUserProfile(null);
+      } finally {
+        setIsAuthLoading(false);
       }
     });
     return () => unsubscribe();
@@ -518,11 +521,9 @@ export default function App() {
   const [adminDraftHostel, setAdminDraftHostel] = useState<Hostel | null>(null);
   const [isUploadingHostelImage, setIsUploadingHostelImage] = useState(false);
 
-  // Admin Re-authentication States
-  const [isReauthModalOpen, setIsReauthModalOpen] = useState<boolean>(false);
-  const [reauthPassword, setReauthPassword] = useState<string>('');
-  const [reauthActionType, setReauthActionType] = useState<'save' | 'delete' | null>(null);
-  const [isReauthenticating, setIsReauthenticating] = useState<boolean>(false);
+  // Admin Firestore Action States
+  const [isSavingHostel, setIsSavingHostel] = useState<boolean>(false);
+  const [isDeletingHostel, setIsDeletingHostel] = useState<boolean>(false);
 
   const handleToggleCompare = (hostel: Hostel, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -1021,10 +1022,44 @@ export default function App() {
     showFeedback(`Admin updated booking status to ${status}.`, 'info');
   };
 
-  const handleSaveAdminHostel = () => {
+  const handleSaveAdminHostel = async () => {
     if (!adminDraftHostel || !isAdminUser) return;
-    setReauthActionType('save');
-    setIsReauthModalOpen(true);
+    setIsSavingHostel(true);
+    try {
+      // Write to Firestore first to check permissions/network
+      await setDoc(doc(db, 'hostels', adminDraftHostel.id), adminDraftHostel);
+
+      const exists = hostels.some(h => h.id === adminDraftHostel.id);
+      let updatedHostels: Hostel[];
+      if (exists) {
+        updatedHostels = hostels.map((hostel) => hostel.id === adminDraftHostel.id ? adminDraftHostel : hostel);
+        showFeedback(`${adminDraftHostel.name} details saved successfully and synced to Firebase.`, 'success');
+      } else {
+        updatedHostels = [...hostels, adminDraftHostel];
+        showFeedback(`${adminDraftHostel.name} created successfully and synced to Firebase.`, 'success');
+      }
+      setHostels(updatedHostels);
+      if (selectedHostel?.id === adminDraftHostel.id) {
+        setSelectedHostel(adminDraftHostel);
+      }
+      setAdminSelectedHostelId(adminDraftHostel.id);
+    } catch (error: any) {
+      console.error('Firestore save failed:', error);
+      if (error?.code === 'permission-denied' || error?.message?.includes('permission') || error?.message?.includes('denied')) {
+        let claimsEmail = 'unknown';
+        try {
+          const tokenResult = await auth.currentUser?.getIdTokenResult(true);
+          claimsEmail = (tokenResult?.claims?.email as string) || 'not found in token';
+        } catch (e) {
+          console.error('Failed to get token claims:', e);
+        }
+        showFeedback(`Error: Permission denied by Firebase security rules. Logged in as: ${auth.currentUser?.email || 'Not logged in'} (Token email: "${claimsEmail}"). Only esaubornface73@gmail.com is authorized to write to hostels.`, 'warning');
+      } else {
+        showFeedback(error?.message || 'Failed to sync with Firebase. Please try again.', 'warning');
+      }
+    } finally {
+      setIsSavingHostel(false);
+    }
   };
 
   const handleAdminAddNewHostel = () => {
@@ -1065,68 +1100,46 @@ export default function App() {
     showFeedback('Initialized a new hostel. Fill details and save to confirm.', 'info');
   };
 
-  const handleAdminDeleteHostel = () => {
+  const handleAdminDeleteHostel = async () => {
     if (!adminSelectedHostelId || !isAdminUser) return;
     if (hostels.length <= 1) {
       showFeedback('At least one hostel listing must remain in the catalog.', 'warning');
       return;
     }
-    setReauthActionType('delete');
-    setIsReauthModalOpen(true);
-  };
-
-  const handleConfirmReauth = async () => {
-    if (!auth.currentUser || !auth.currentUser.email) {
-      showFeedback('No active administrator session verified. Please sign in.', 'warning');
+    if (!confirm('Are you sure you want to delete this hostel? This action will sync to Firebase.')) {
       return;
     }
-    setIsReauthenticating(true);
+
+    setIsDeletingHostel(true);
     try {
-      const credential = EmailAuthProvider.credential(auth.currentUser.email, reauthPassword);
-      await reauthenticateWithCredential(auth.currentUser, credential);
-      
-      if (reauthActionType === 'save') {
-        if (!adminDraftHostel) return;
-        
-        // Write to Firestore first to check permissions/network
-        await setDoc(doc(db, 'hostels', adminDraftHostel.id), adminDraftHostel);
+      // Delete from Firestore first
+      await deleteDoc(doc(db, 'hostels', adminSelectedHostelId));
 
-        const exists = hostels.some(h => h.id === adminDraftHostel.id);
-        let updatedHostels: Hostel[];
-        if (exists) {
-          updatedHostels = hostels.map((hostel) => hostel.id === adminDraftHostel.id ? adminDraftHostel : hostel);
-          showFeedback(`${adminDraftHostel.name} details saved successfully.`, 'success');
-        } else {
-          updatedHostels = [...hostels, adminDraftHostel];
-          showFeedback(`${adminDraftHostel.name} created successfully.`, 'success');
-        }
-        setHostels(updatedHostels);
-        if (selectedHostel?.id === adminDraftHostel.id) {
-          setSelectedHostel(adminDraftHostel);
-        }
-        setAdminSelectedHostelId(adminDraftHostel.id);
-      } else if (reauthActionType === 'delete') {
-        // Delete from Firestore first
-        await deleteDoc(doc(db, 'hostels', adminSelectedHostelId));
-
-        const remainingHostels = hostels.filter(h => h.id !== adminSelectedHostelId);
-        setHostels(remainingHostels);
-        showFeedback('Hostel deleted successfully from the catalog.', 'success');
-        if (remainingHostels.length > 0) {
-          setAdminSelectedHostelId(remainingHostels[0].id);
-        } else {
-          setAdminSelectedHostelId('');
-          setAdminDraftHostel(null);
-        }
+      const remainingHostels = hostels.filter(h => h.id !== adminSelectedHostelId);
+      setHostels(remainingHostels);
+      showFeedback('Hostel deleted successfully and synced to Firebase.', 'success');
+      if (remainingHostels.length > 0) {
+        setAdminSelectedHostelId(remainingHostels[0].id);
+      } else {
+        setAdminSelectedHostelId('');
+        setAdminDraftHostel(null);
       }
-      setIsReauthModalOpen(false);
-      setReauthPassword('');
-      setReauthActionType(null);
     } catch (error: any) {
-      console.error('Re-auth action failed:', error);
-      showFeedback(error?.message || 'Authentication failed. Please verify password.', 'warning');
+      console.error('Firestore delete failed:', error);
+      if (error?.code === 'permission-denied' || error?.message?.includes('permission') || error?.message?.includes('denied')) {
+        let claimsEmail = 'unknown';
+        try {
+          const tokenResult = await auth.currentUser?.getIdTokenResult(true);
+          claimsEmail = (tokenResult?.claims?.email as string) || 'not found in token';
+        } catch (e) {
+          console.error('Failed to get token claims:', e);
+        }
+        showFeedback(`Error: Permission denied by Firebase security rules. Logged in as: ${auth.currentUser?.email || 'Not logged in'} (Token email: "${claimsEmail}"). Only esaubornface73@gmail.com is authorized to delete hostels.`, 'warning');
+      } else {
+        showFeedback(error?.message || 'Failed to sync deletion with Firebase.', 'warning');
+      }
     } finally {
-      setIsReauthenticating(false);
+      setIsDeletingHostel(false);
     }
   };
 
@@ -1316,6 +1329,27 @@ export default function App() {
       occupancy: totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0
     };
   }).sort((a, b) => b.occupancy - a.occupancy);
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
+        <main id="main-content" tabIndex={-1} aria-label="Loading Portal Session" className="flex flex-col items-center gap-4 text-center">
+          <div className="relative w-14 h-14 bg-gradient-to-tr from-indigo-700 via-indigo-650 to-violet-500 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20 border border-indigo-400/20 animate-pulse">
+            <Home className="w-7 h-7 text-white stroke-[2.25] drop-shadow-sm" />
+          </div>
+          <div className="space-y-1 mt-2">
+            <h2 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 tracking-tight leading-none uppercase font-sans">
+              Nyumbani<span className="text-indigo-600 dark:text-indigo-400">Kisii</span>
+            </h2>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tracking-widest font-bold mt-1">
+              Synchronizing Session...
+            </p>
+          </div>
+          <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mt-2"></div>
+        </main>
+      </div>
+    );
+  }
 
   if (!currentUser) {
     return (
@@ -3330,21 +3364,24 @@ export default function App() {
                       </select>
                       <button
                         onClick={handleAdminAddNewHostel}
-                        className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-bold transition active:scale-95 cursor-pointer"
+                        disabled={isSavingHostel || isDeletingHostel}
+                        className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-bold transition active:scale-95 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
                       >
                         Add New
                       </button>
                       <button
                         onClick={handleSaveAdminHostel}
-                        className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition active:scale-95 cursor-pointer"
+                        disabled={isSavingHostel || isDeletingHostel}
+                        className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition active:scale-95 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
                       >
-                        Save Hostel
+                        {isSavingHostel ? 'Saving...' : 'Save Hostel'}
                       </button>
                       <button
                         onClick={handleAdminDeleteHostel}
-                        className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-rose-50 border border-rose-100 hover:bg-rose-100 dark:bg-rose-950/20 dark:border-rose-900/40 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold transition active:scale-95 cursor-pointer"
+                        disabled={isSavingHostel || isDeletingHostel}
+                        className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-rose-50 border border-rose-100 hover:bg-rose-100 dark:bg-rose-950/20 dark:border-rose-900/40 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold transition active:scale-95 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
                       >
-                        Delete Hostel
+                        {isDeletingHostel ? 'Deleting...' : 'Delete Hostel'}
                       </button>
                     </div>
                   </div>
@@ -3624,68 +3661,7 @@ export default function App() {
         />
       )}
 
-      {/* Admin Re-authentication Password Modal */}
-      {isReauthModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 max-w-md w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="text-center space-y-2">
-              <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 rounded-2xl flex items-center justify-center mx-auto border border-indigo-100 dark:border-indigo-900">
-                <Shield className="w-6 h-6 stroke-[2.25]" />
-              </div>
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Admin Authentication Required</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                To finalize this administrative action, please verify your password. This ensures your updates remain secure and authorized.
-              </p>
-            </div>
-            
-            <div className="space-y-3">
-              <label className="block space-y-1">
-                <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Verify Admin Password</span>
-                <input
-                  type="password"
-                  placeholder="Enter your account password"
-                  value={reauthPassword}
-                  onChange={(e) => setReauthPassword(e.target.value)}
-                  className="w-full min-h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3.5 py-2.5 text-sm font-bold text-slate-800 dark:text-slate-100"
-                  disabled={isReauthenticating}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleConfirmReauth();
-                  }}
-                  autoFocus
-                />
-              </label>
-            </div>
 
-            <div className="flex gap-2.5 pt-2">
-              <button
-                onClick={() => {
-                  setIsReauthModalOpen(false);
-                  setReauthPassword('');
-                  setReauthActionType(null);
-                }}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-755 text-xs font-bold transition active:scale-95 text-slate-700 dark:text-slate-300"
-                disabled={isReauthenticating}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmReauth}
-                className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition active:scale-95 flex items-center justify-center gap-1.5"
-                disabled={isReauthenticating || !reauthPassword}
-              >
-                {isReauthenticating ? (
-                  <span className="animate-pulse">Authenticating...</span>
-                ) : (
-                  <>
-                    <Key className="w-3.5 h-3.5" />
-                    <span>Confirm Action</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Aesthetic high quality footer */}
       <footer className="border-t border-slate-200 dark:border-slate-800 mt-20 pt-8 pb-32 text-center text-xs text-slate-400 dark:text-slate-500 space-y-1.5">
