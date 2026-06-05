@@ -932,7 +932,7 @@ export default function App() {
     // Custom links
     const mockLinks: Record<string, string> = {
       'Google Meet': 'https://meet.google.com/abc-defg-hij',
-      'WhatsApp Video Call': `https://wa.me/254710748699?text=Hi%2C%20I%20scheduled%20a%20Hostel%20Virtual%20Tour%20online%2520for%2520${encodeURIComponent(hostel.name)}.%20Let's%2520connect%2520via%2520video%2520call!`,
+      'WhatsApp Video Call': `https://wa.me/254795858929?text=Hi%2C%20I%20scheduled%20a%20Hostel%20Virtual%20Tour%20online%2520for%2520${encodeURIComponent(hostel.name)}.%20Let's%2520connect%2520via%2520video%2520call!`,
       'Zoom Meeting': `https://zoom.us/j/${Math.floor(1000000000 + Math.random() * 9000000000)}`
     };
 
@@ -1438,6 +1438,15 @@ export default function App() {
 
           {/* Theme toggle + Search + Student profile on the SAME row right after the title */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Support Contact Helpline */}
+            <a
+              href="tel:0795858929"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-850 text-[10px] sm:text-xs font-bold transition-all active:scale-95 shadow-sm cursor-pointer"
+              title="Call Student Portal Support: 0795858929"
+            >
+              <Phone className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              <span className="hidden md:inline">Helpline:</span> 0795858929
+            </a>
             {/* Search toggler button */}
             {currentPage === 'details' && (
               <button
@@ -2424,21 +2433,21 @@ export default function App() {
                                   Direct contact for live virtual room tour video streams, immediate key allocation, or physical room booking queries.
                                 </p>
                                 <div className="text-xs font-mono py-2 px-3 bg-white rounded-xl border border-slate-200 font-bold text-slate-800 space-y-1">
-                                  <div>Phone: +254 710 748699</div>
+                                  <div>Phone: +254 795 858929</div>
                                   <div className="text-[10px] text-emerald-600 font-normal">✓ WhatsApp Available</div>
                                 </div>
                               </div>
 
                               <div className="space-y-2 pt-2">
                                 <a 
-                                  href="tel:254710748699"
+                                  href="tel:0795858929"
                                   className="w-full flex items-center justify-center gap-2 text-xs font-bold py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-900 border border-slate-950 text-white transition-all text-center"
                                 >
                                   <Phone className="w-3.5 h-3.5" /> Call Key Allocator
                                 </a>
                                 
                                 <a 
-                                  href={`https://wa.me/254710748699?text=Hi%2C%20Comrade%20Caretaker.%20I%20am%20interested%20in%20allotting%20a%20spot%20at%20${encodeURIComponent(selectedHostel.name)}.%20Please%20verify%20room%20availability%20checks.`}
+                                  href={`https://wa.me/254795858929?text=Hi%2C%20Comrade%20Caretaker.%20I%20am%20interested%20in%20allotting%20a%20spot%20at%20${encodeURIComponent(selectedHostel.name)}.%20Please%20verify%20room%20availability%20checks.`}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="w-full flex items-center justify-center gap-2 text-xs font-bold py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-all text-center"
@@ -2561,7 +2570,7 @@ export default function App() {
 
                             {hostelReviews.length === 0 ? (
   <div className="bg-slate-50 border border-slate-200 border-dashed rounded-2xl p-8 text-center space-y-3">
-    <span className="text-3xl">�?</span>
+    <span className="text-3xl">?</span>
 
     <div className="space-y-1">
       <p className="text-sm font-bold text-slate-700">
@@ -2647,7 +2656,7 @@ export default function App() {
             onClick={() => handleLikeReview(rev.id)}
             className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-slate-500 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50/50 border border-slate-200 rounded-lg px-2.5 py-1 transition cursor-pointer"
           >
-            �? Helpful ({rev.likes})
+            ? Helpful ({rev.likes})
           </button>
 
           <span className="text-[9px] text-slate-400 font-mono">
@@ -2918,10 +2927,10 @@ export default function App() {
                                   <span>📅</span> Scheduled Date: <b className="text-slate-900 font-bold">{b.tourTime || 'Tomorrow at 2:00 PM (EAT)'}</b>
                                 </p>
                                 <p className="flex items-center gap-1.5">
-                                  <span>�?</span> Platform: <b className="text-slate-900 font-bold">{b.tourPlatform}</b>
+                                  <span>?</span> Platform: <b className="text-slate-900 font-bold">{b.tourPlatform}</b>
                                 </p>
                                 <p className="flex items-center gap-1.5 font-mono">
-                                  👤 Contact Caretaker: <b className="text-slate-900 font-bold">{associatedHostel?.landlordPhone || '+254710748699'}</b>
+                                  👤 Contact Caretaker: <b className="text-slate-900 font-bold">{associatedHostel?.landlordPhone || '+254795858929'}</b>
                                 </p>
                               </div>
                             </div>
@@ -2946,7 +2955,7 @@ export default function App() {
                                   </a>
                                   
                                   <a 
-                                    href={`https://wa.me/${(associatedHostel?.landlordPhone || '254710748699').replace(/[^0-9]/g, '')}?text=Hi%2C%20Landlord.%20I%20have%20scheduled%20a%20hostel%20virtual%20tour%20for%20${encodeURIComponent(b.hostelName)}%20tomorrow.%20Let's%20connect.`}
+                                    href={`https://wa.me/${(associatedHostel?.landlordPhone || '254795858929').replace(/[^0-9]/g, '')}?text=Hi%2C%20Landlord.%20I%20have%20scheduled%20a%20hostel%20virtual%20tour%20for%20${encodeURIComponent(b.hostelName)}%20tomorrow.%20Let's%20connect.`}
                                     target="_blank" 
                                     rel="noreferrer" 
                                     className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white font-bold text-xs rounded-lg hover:bg-emerald-700 transition active:scale-95 cursor-pointer"
@@ -3669,14 +3678,14 @@ export default function App() {
           Kisii University Student Hostel Hub &copy; {new Date().getFullYear()} — All Rights Reserved.
         </p>
         <p className="max-w-md mx-auto px-4 font-light text-slate-400 dark:text-slate-500 leading-relaxed">
-          Authorized partner portal registered under Kisii Student Accommodation standards. For physical support, visit the Central Warden Desk situated at Kisii campus Main Administration building block.
+          Authorized partner portal registered under Kisii Student Accommodation standards. For physical support, visit the Central Warden Desk situated at Kisii campus Main Administration building block. For direct inquiries, reach our helpline at <a href="tel:0795858929" className="text-indigo-650 dark:text-indigo-400 font-bold hover:underline">0795858929</a>.
         </p>
       </footer>
 
       {/* Floating WhatsApp button pointing to landlord / caretaker */}
       {exploreView === 'rooms' && selectedHostel && (
         <a
-          href={`https://wa.me/254710748699?text=Hi%2C%20Comrade%20Caretaker.%20I%20am%20viewing%20rooms%20online%2520at%2520${encodeURIComponent(selectedHostel.name)}%252520and%2520would%2520love%2520to%2520verify%2520booking%252520allotments%252520checks.`}
+          href={`https://wa.me/254795858929?text=Hi%2C%20Comrade%20Caretaker.%20I%20am%20viewing%20rooms%20online%2520at%2520${encodeURIComponent(selectedHostel.name)}%252520and%2520would%2520love%2520to%2520verify%2520booking%252520allotments%252520checks.`}
           target="_blank"
           rel="noreferrer"
           aria-label={`Contact caretaker for ${selectedHostel.name} on WhatsApp`}
