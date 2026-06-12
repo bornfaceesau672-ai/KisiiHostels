@@ -434,12 +434,12 @@ export default function App() {
 
   // Computed current logged-in profile, or customized guest values if not authenticated
   const loggedStudent = userProfile ? {
-    name: userProfile.displayName,
+    name: userProfile.displayName || userProfile.email?.split('@')[0] || 'Comrade Resident',
     regCode: (userProfile.uid || '').substring(0, 8).toUpperCase(),
-    email: userProfile.email,
+    email: userProfile.email || '',
     phone: userProfile.phone || '0712345678',
     gender: 'Male' as const,
-    category: userProfile.category,
+    category: userProfile.category || 'Student',
     createdAt: userProfile.createdAt
   } : {
     name: 'Bonface Esau',
