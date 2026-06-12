@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Hostel, Room, Booking, MaintenanceRequest, HostelReview } from './types';
-import { INITIAL_HOSTELS, INITIAL_BOOKINGS, INITIAL_MAINTENANCE } from './initialData';
+import { INITIAL_HOSTELS, INITIAL_BOOKINGS, INITIAL_MAINTENANCE, ClientUser, INITIAL_USERS } from './initialData';
 import { INITIAL_REVIEWS } from './initialReviews';
 import HostelCard from './components/HostelCard';
 import AvailabilityGrid from './components/AvailabilityGrid';
@@ -256,6 +256,19 @@ export default function App() {
     return saved ? JSON.parse(saved) : INITIAL_REVIEWS;
   });
 
+  const [registeredUsers, setRegisteredUsers] = useState<ClientUser[]>(() => {
+    const saved = localStorage.getItem('kisii_registered_users');
+    return saved ? JSON.parse(saved) : INITIAL_USERS;
+  });
+
+  const [recordedStats, setRecordedStats] = useState<any[]>(() => {
+    const saved = localStorage.getItem('kisii_recorded_stats');
+    return saved ? JSON.parse(saved) : [
+      { id: 'stats-1', timestamp: '2026-06-01T10:00:00Z', memo: 'Launch Day Baseline', total: 5, students: 3, owners: 1, guests: 1 },
+      { id: 'stats-2', timestamp: '2026-06-08T17:00:00Z', memo: 'End of Week 1 Drive', total: 7, students: 4, owners: 2, guests: 1 }
+    ];
+  });
+
   // Firebase Auth states
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [userProfile, setUserProfile] = useState<{
@@ -463,6 +476,14 @@ export default function App() {
     localStorage.setItem('kisii_reviews', JSON.stringify(reviews));
   }, [reviews]);
 
+  useEffect(() => {
+    localStorage.setItem('kisii_registered_users', JSON.stringify(registeredUsers));
+  }, [registeredUsers]);
+
+  useEffect(() => {
+    localStorage.setItem('kisii_recorded_stats', JSON.stringify(recordedStats));
+  }, [recordedStats]);
+
   // Theme Toggle State
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('kisii_theme');
@@ -481,6 +502,7 @@ export default function App() {
 
   // UI Navigation / Viewing States
   const [activeTab, setActiveTab] = useState<'explore' | 'bookings' | 'maintenance' | 'sophia' | 'admin'>('explore');
+  const [adminSubTab, setAdminSubTab] = useState<'listings' | 'clients'>('listings');
   const [currentPage, setCurrentPage] = useState<'home' | 'details'>('details');
   const [showHeader, setShowHeader] = useState<boolean>(true);
   const [showBottomBar, setShowBottomBar] = useState<boolean>(true);
@@ -526,6 +548,8 @@ export default function App() {
   // Admin Firestore Action States
   const [isSavingHostel, setIsSavingHostel] = useState<boolean>(false);
   const [isDeletingHostel, setIsDeletingHostel] = useState<boolean>(false);
+  const [userSearchQuery, setUserSearchQuery] = useState<string>('');
+  const [userRoleFilter, setUserRoleFilter] = useState<'All' | 'Student' | 'Property Owner' | 'Guest'>('All');
 
   const handleToggleCompare = (hostel: Hostel, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -589,6 +613,36 @@ export default function App() {
   }, [selectedHostel?.id]);
 
   const isAdminUser = (userProfile?.email || currentUser?.email || '').toLowerCase() === ADMIN_EMAIL;
+
+  useEffect(() => {
+    if (isAdminUser) {
+      const fetchUsersFromFirestore = async () => {
+        try {
+          const querySnapshot = await getDocs(collection(db, 'users'));
+          if (!querySnapshot.empty) {
+            const loadedUsers: ClientUser[] = [];
+            querySnapshot.forEach((doc) => {
+              const data = doc.data();
+              loadedUsers.push({
+                uid: data.uid || doc.id,
+                email: data.email || '',
+                displayName: data.displayName || 'Unknown Comrade',
+                category: data.category || 'Student',
+                phone: data.phone || '',
+                createdAt: data.createdAt || new Date().toISOString()
+              });
+            });
+            loadedUsers.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setRegisteredUsers(loadedUsers);
+            console.log(`Successfully fetched ${loadedUsers.length} users from Firestore.`);
+          }
+        } catch (err) {
+          console.warn('Firestore users fetch failed, using local fallback:', err);
+        }
+      };
+      fetchUsersFromFirestore();
+    }
+  }, [isAdminUser]);
 
   useEffect(() => {
     if (!adminSelectedHostelId && hostels.length > 0) {
@@ -806,6 +860,7 @@ export default function App() {
       const localKey = `kisii_user_profile_${createdUser.uid}`;
       localStorage.setItem(localKey, JSON.stringify(profilePayload));
       setUserProfile(profilePayload);
+      setRegisteredUsers(prev => [profilePayload, ...prev.filter(u => u.uid !== profilePayload.uid)]);
       setIsAuthModalOpen(false);
       showFeedback(`✓ Welcome, ${displayNameInput}! Your account is active.`, 'success');
 
@@ -1025,6 +1080,28 @@ export default function App() {
   const handleAdminBookingStatusChange = (bookingId: string, status: Booking['status']) => {
     setBookings(bookings.map((b) => b.id === bookingId ? { ...b, status } : b));
     showFeedback(`Admin updated booking status to ${status}.`, 'info');
+  };
+
+  const handleRecordStatsSnapshot = (memo: string) => {
+    const studentsCount = registeredUsers.filter(u => u.category === 'Student').length;
+    const ownersCount = registeredUsers.filter(u => u.category === 'Property Owner').length;
+    const guestsCount = registeredUsers.filter(u => u.category === 'Guest').length;
+    const newSnapshot = {
+      id: `stats-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      memo: memo.trim() || `Snapshot #${recordedStats.length + 1}`,
+      total: registeredUsers.length,
+      students: studentsCount,
+      owners: ownersCount,
+      guests: guestsCount
+    };
+    setRecordedStats(prev => [newSnapshot, ...prev]);
+    showFeedback('✓ Registration statistics snapshot recorded successfully!', 'success');
+  };
+
+  const handleDeleteStatsSnapshot = (id: string) => {
+    setRecordedStats(prev => prev.filter(s => s.id !== id));
+    showFeedback('Snapshot deleted.', 'info');
   };
 
   const handleSaveAdminHostel = async () => {
@@ -1439,6 +1516,26 @@ export default function App() {
       </div>
     );
   }
+
+  const filteredUsers = useMemo(() => {
+    return registeredUsers.filter((user) => {
+      const matchesSearch = 
+        user.displayName.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+        (user.phone || '').includes(userSearchQuery);
+      
+      const matchesRole = 
+        userRoleFilter === 'All' || 
+        user.category === userRoleFilter;
+
+      return matchesSearch && matchesRole;
+    });
+  }, [registeredUsers, userSearchQuery, userRoleFilter]);
+
+  const totalUsersCount = registeredUsers.length;
+  const studentsCount = registeredUsers.filter(u => u.category === 'Student').length;
+  const ownersCount = registeredUsers.filter(u => u.category === 'Property Owner').length;
+  const guestsCount = registeredUsers.filter(u => u.category === 'Guest').length;
 
   if (!currentUser) {
     return (
@@ -3456,26 +3553,50 @@ export default function App() {
                     Operations view for hostel capacity, booking approvals, payments, and maintenance dispatch.
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    setActiveTab('explore');
-                    setExploreView('catalog');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-950 text-xs font-black transition active:scale-95 cursor-pointer"
-                >
-                  <Building className="w-4 h-4" />
-                  Review Listings
-                </button>
+                
+                {/* Admin Sub-Tabs */}
+                <div className="flex flex-wrap items-center gap-2.5 self-start lg:self-auto">
+                  <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/50 dark:border-slate-800/50">
+                    <button
+                      onClick={() => setAdminSubTab('listings')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${adminSubTab === 'listings' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-350'}`}
+                    >
+                      Listings
+                    </button>
+                    <button
+                      onClick={() => setAdminSubTab('clients')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${adminSubTab === 'clients' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-350'}`}
+                    >
+                      Client Statistics
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setActiveTab('explore');
+                      setExploreView('catalog');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-950 text-xs font-black transition active:scale-95 cursor-pointer"
+                  >
+                    <Building className="w-4 h-4" />
+                    Review Listings
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                {[
+                {(adminSubTab === 'listings' ? [
                   { label: 'Listed Hostels', value: totalHostelsCount.toLocaleString(), detail: `${hostels.reduce((acc, h) => acc + h.rooms.length, 0)} rooms tracked`, icon: Building, tone: 'indigo' },
                   { label: 'Available Beds', value: totalBedsAvailableCount.toLocaleString(), detail: `${occupancyRate}% occupancy`, icon: TrendingUp, tone: 'emerald' },
                   { label: 'Pending Bookings', value: pendingBookingCount.toLocaleString(), detail: `${confirmedBookingCount} fully confirmed`, icon: Receipt, tone: 'amber' },
                   { label: 'Open Repairs', value: openMaintenanceCount.toLocaleString(), detail: `${maintenance.length} total tickets`, icon: AlertCircle, tone: 'rose' }
-                ].map((metric) => {
+                ] : [
+                  { label: 'Total Registered', value: totalUsersCount.toLocaleString(), detail: 'All active roles', icon: User, tone: 'indigo' },
+                  { label: 'Students', value: studentsCount.toLocaleString(), detail: `${Math.round(totalUsersCount > 0 ? (studentsCount/totalUsersCount)*100 : 0)}% of clients`, icon: GraduationCap, tone: 'emerald' },
+                  { label: 'Property Owners', value: ownersCount.toLocaleString(), detail: `${Math.round(totalUsersCount > 0 ? (ownersCount/totalUsersCount)*100 : 0)}% of clients`, icon: Building, tone: 'amber' },
+                  { label: 'Guests', value: guestsCount.toLocaleString(), detail: `${Math.round(totalUsersCount > 0 ? (guestsCount/totalUsersCount)*100 : 0)}% of clients`, icon: UserPlus, tone: 'rose' }
+                ]).map((metric) => {
                   const Icon = metric.icon;
                   const toneClass = metric.tone === 'emerald'
                     ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300'
@@ -3501,7 +3622,7 @@ export default function App() {
                 })}
               </div>
 
-              {adminDraftHostel && (
+              {adminSubTab === 'listings' && adminDraftHostel && (
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-5">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                     <div>
@@ -3810,7 +3931,8 @@ export default function App() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+              {adminSubTab === 'listings' ? (
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
                 <div className="xl:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
                   <div className="flex items-center justify-between gap-3 mb-4">
                     <div>
@@ -3915,6 +4037,225 @@ export default function App() {
                   </div>
                 </div>
               </div>
+            ) : (
+                <div className="space-y-6">
+                  {/* 1. Snapshot Recorder & History Logs */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Left: Take snapshot */}
+                    <div className="lg:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+                      <div>
+                        <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">Take Statistics Record</h3>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">Capture a snapshot of registration figures for reporting & tracking.</p>
+                      </div>
+                      
+                      <div className="bg-slate-50 dark:bg-slate-950 rounded-xl p-3.5 border border-slate-150 dark:border-slate-850 text-xs space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Total Users:</span>
+                          <span className="font-mono font-bold text-slate-800 dark:text-slate-250">{totalUsersCount}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Students:</span>
+                          <span className="font-mono font-bold text-slate-800 dark:text-slate-250">{studentsCount}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Owners:</span>
+                          <span className="font-mono font-bold text-slate-800 dark:text-slate-250">{ownersCount}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500 dark:text-slate-400">Guests:</span>
+                          <span className="font-mono font-bold text-slate-800 dark:text-slate-250">{guestsCount}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-mono font-bold uppercase text-slate-400 dark:text-slate-500">Record Note / Memo</span>
+                        <input
+                          id="stats-memo-input"
+                          type="text"
+                          placeholder="e.g. End of June registration drive"
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const input = document.getElementById('stats-memo-input') as HTMLInputElement;
+                              if (input) {
+                                handleRecordStatsSnapshot(input.value);
+                                input.value = '';
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          const input = document.getElementById('stats-memo-input') as HTMLInputElement;
+                          if (input) {
+                            handleRecordStatsSnapshot(input.value);
+                            input.value = '';
+                          }
+                        }}
+                        className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition active:scale-95 cursor-pointer"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        Record Snapshot
+                      </button>
+                    </div>
+
+                    {/* Right: Snapshots Log */}
+                    <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col">
+                      <div className="mb-4">
+                        <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">Recorded Statistics History</h3>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">Saved snapshots of active client statistics taken over time.</p>
+                      </div>
+
+                      <div className="flex-1 overflow-y-auto max-h-[300px] pr-1 space-y-2">
+                        {recordedStats.map((snap) => (
+                          <div key={snap.id} className="border border-slate-150 dark:border-slate-800/60 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/40 dark:bg-slate-950/20">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-extrabold text-xs text-slate-850 dark:text-slate-150">{snap.memo}</span>
+                                <span className="text-[9px] bg-indigo-50 text-indigo-750 dark:bg-indigo-950/40 dark:text-indigo-300 font-bold px-1.5 py-0.5 rounded">
+                                  {snap.total} total
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-slate-550 dark:text-slate-400 font-mono mt-1">
+                                {new Date(snap.timestamp).toLocaleDateString()} @ {new Date(snap.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                              <div className="grid grid-cols-3 gap-2.5 text-center text-[10px] font-semibold text-slate-600 dark:text-slate-400">
+                                <div>
+                                  <span className="block font-mono font-bold text-slate-855 dark:text-slate-200">{snap.students}</span>
+                                  <span className="text-[8px] text-slate-400 uppercase">Studs</span>
+                                </div>
+                                <div>
+                                  <span className="block font-mono font-bold text-slate-855 dark:text-slate-200">{snap.owners}</span>
+                                  <span className="text-[8px] text-slate-400 uppercase">Landl</span>
+                                </div>
+                                <div>
+                                  <span className="block font-mono font-bold text-slate-855 dark:text-slate-200">{snap.guests}</span>
+                                  <span className="text-[8px] text-slate-400 uppercase">Gues</span>
+                                </div>
+                              </div>
+
+                              <button
+                                onClick={() => handleDeleteStatsSnapshot(snap.id)}
+                                className="p-1.5 rounded-lg border border-slate-200 hover:border-rose-200 dark:border-slate-800 text-slate-450 hover:text-rose-600 dark:hover:text-rose-450 transition active:scale-95 cursor-pointer"
+                                title="Delete Snapshot"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+
+                        {recordedStats.length === 0 && (
+                          <div className="text-center py-8 text-xs text-slate-400 italic border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                            No snapshots recorded yet. Capture registry figures using the recorder.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. Join Logs / Directory */}
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">Client Registry Logs</h3>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">Real-time listing of registered client users on Kisii Student Portal.</p>
+                      </div>
+                      
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Search bar */}
+                        <div className="relative min-w-44">
+                          <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400" />
+                          <input
+                            type="text"
+                            placeholder="Search by name/email..."
+                            value={userSearchQuery}
+                            onChange={(e) => setUserSearchQuery(e.target.value)}
+                            className="w-full pl-8 pr-3 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 text-xs font-semibold"
+                          />
+                        </div>
+
+                        {/* Category filter */}
+                        <select
+                          value={userRoleFilter}
+                          onChange={(e) => setUserRoleFilter(e.target.value as any)}
+                          className="min-h-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-bold text-slate-700 dark:text-slate-205 px-2"
+                          aria-label="Filter registry logs by category role"
+                        >
+                          <option value="All">All Categories</option>
+                          <option value="Student">Students Only</option>
+                          <option value="Property Owner">Landlords Only</option>
+                          <option value="Guest">Guests Only</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-slate-800">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-150 dark:border-slate-800 font-mono font-bold text-slate-500 uppercase tracking-wider text-[10px]">
+                            <th className="p-3">Client User</th>
+                            <th className="p-3">Contact Details</th>
+                            <th className="p-3">Role / category</th>
+                            <th className="p-3">Joined timestamp</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredUsers.map((user) => {
+                            const initials = user.displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                            const joinedDate = new Date(user.createdAt);
+                            const roleColor = user.category === 'Student'
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                              : user.category === 'Property Owner'
+                                ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                                : 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300';
+                            
+                            return (
+                              <tr key={user.uid} className="border-b border-slate-150/40 dark:border-slate-800/40 hover:bg-slate-50/50 dark:hover:bg-slate-950/20 font-sans">
+                                <td className="p-3 flex items-center gap-2.5">
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-indigo-750 text-white font-bold text-[10px] flex items-center justify-center shadow-sm">
+                                    {initials}
+                                  </div>
+                                  <div>
+                                    <span className="block font-extrabold text-slate-850 dark:text-slate-100">{user.displayName}</span>
+                                    <span className="text-[10px] text-slate-400 font-mono">UID: {user.uid.substring(0, 12)}...</span>
+                                  </div>
+                                </td>
+                                <td className="p-3">
+                                  <span className="block font-bold text-slate-755 dark:text-slate-350">{user.email}</span>
+                                  <span className="text-[10px] text-slate-450 font-mono">{user.phone || 'No phone set'}</span>
+                                </td>
+                                <td className="p-3">
+                                  <span className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded-md ${roleColor}`}>
+                                    {user.category}
+                                  </span>
+                                </td>
+                                <td className="p-3 text-slate-500 font-mono text-[10px]">
+                                  {joinedDate.toLocaleDateString()} @ {joinedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                </td>
+                              </tr>
+                            );
+                          })}
+
+                          {filteredUsers.length === 0 && (
+                            <tr>
+                              <td colSpan={4} className="p-8 text-center text-slate-400 italic">
+                                No clients found matching the search criteria.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             )
           )}

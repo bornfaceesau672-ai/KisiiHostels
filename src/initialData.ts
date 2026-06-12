@@ -1013,3 +1013,24 @@ export const INITIAL_MAINTENANCE: MaintenanceRequest[] = [
     notes: 'Rewired the backbox completely and socket plate replaced with standard MK safety switch. Verified work.'
   }
 ];
+
+export interface ClientUser {
+  uid: string;
+  email: string;
+  displayName: string;
+  category: 'Student' | 'Property Owner' | 'Guest';
+  phone: string;
+  createdAt: string;
+}
+
+export const INITIAL_USERS: ClientUser[] = [
+  { uid: 'mock-user-1', email: 'albert.onyango@student.kisii.ac.ke', displayName: 'Albert Onyango', category: 'Student', phone: '0714223344', createdAt: '2026-06-10T10:14:00Z' },
+  { uid: 'mock-user-2', email: 'diana.kemunto@student.kisii.ac.ke', displayName: 'Diana Kemunto', category: 'Student', phone: '0722334455', createdAt: '2026-06-11T09:45:00Z' },
+  { uid: 'mock-user-3', email: 'joseph.omwamba@landlord.co.ke', displayName: 'Joseph Omwamba', category: 'Property Owner', phone: '0702667788', createdAt: '2026-06-08T14:30:00Z' },
+  { uid: 'mock-user-4', email: 'everline.moraa@student.kisii.ac.ke', displayName: 'Everline Moraa', category: 'Student', phone: '0711993388', createdAt: '2026-06-12T11:20:00Z' },
+  { uid: 'mock-user-5', email: 'stephen.nyabuto@gmail.com', displayName: 'Stephen Nyabuto', category: 'Guest', phone: '0724889900', createdAt: '2026-06-05T16:15:00Z' },
+  { uid: 'mock-user-6', email: 'caren.chepngetich@student.kisii.ac.ke', displayName: 'Caren Chepngetich', category: 'Student', phone: '0799887766', createdAt: '2026-06-12T08:05:00Z' },
+  { uid: 'mock-user-7', email: 'dennis.kiprono@landlord.co.ke', displayName: 'Dennis Kiprono', category: 'Property Owner', phone: '0712334455', createdAt: '2026-05-28T11:00:00Z' },
+  { uid: 'mock-user-8', email: 'faith.kerubo@student.kisii.ac.ke', displayName: 'Faith Kerubo', category: 'Student', phone: '0701122334', createdAt: '2026-06-12T12:15:00Z' }
+];
+
