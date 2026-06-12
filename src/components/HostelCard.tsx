@@ -2,7 +2,7 @@ import React from 'react';
 import { Hostel } from '../types';
 import { Shield, MapPin, Video, ArrowRight, BarChart2 } from 'lucide-react';
 import { getHostelImages } from '../utils/mediaHelper';
-import { getNumericRent, formatMonthlyRent } from '../utils/rentHelper';
+import { getNumericRent, formatMonthlyRent, formatSemesterRent } from '../utils/rentHelper';
 
 interface HostelCardProps {
   key?: string;
@@ -44,9 +44,18 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
 
   const monthlyRent = getMinMonthlyRent();
 
-  const semesterRent = hostel.rooms && hostel.rooms.length > 0
-    ? Math.min(...hostel.rooms.map(r => r.priceKes))
-    : 18000;
+  const getMinSemesterRent = () => {
+    if (hostel.rentSemesterKes !== undefined && hostel.rentSemesterKes !== null && hostel.rentSemesterKes !== '') {
+      return hostel.rentSemesterKes;
+    }
+    if (!hostel.rooms || hostel.rooms.length === 0) {
+      return 18000;
+    }
+    return Math.min(...hostel.rooms.map(r => r.priceKes));
+  };
+
+  const semesterRent = getMinSemesterRent();
+
 
   const cardImage = getHostelImages(hostel.id, hostel.imageUrl, hostel.imageUrls)[0];
 
@@ -124,8 +133,8 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
             </div>
             <div className="border-l border-emerald-100 dark:border-emerald-950/40 pl-2.5">
               <span className="text-[9px] text-slate-500 dark:text-slate-400 block font-medium">Semester Rate</span>
-              <span className="text-xs sm:text-sm font-extrabold text-slate-700 dark:text-slate-300 font-mono leading-none">
-                KES {semesterRent.toLocaleString()}/sem
+              <span className="text-xs sm:text-sm font-extrabold text-slate-700 dark:text-slate-300 font-mono leading-none break-all">
+                {formatSemesterRent(semesterRent)}
               </span>
             </div>
           </div>

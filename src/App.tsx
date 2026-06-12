@@ -10,7 +10,7 @@ import SophiaBot from './components/SophiaBot';
 import AuthModal from './components/AuthModal';
 import EditProfileModal from './components/EditProfileModal';
 import { getHostelImages, getHostelYoutubeEmbed } from './utils/mediaHelper';
-import { getNumericRent, formatMonthlyRent } from './utils/rentHelper';
+import { getNumericRent, formatMonthlyRent, formatSemesterRent } from './utils/rentHelper';
 
 // Firebase core logic imports
 import { auth, db, handleFirestoreError, OperationType } from './lib/firebase';
@@ -1092,6 +1092,7 @@ export default function App() {
       description: 'A beautiful newly listed student hostel lodging option situated close to Kisii University gate.',
       landlordPhone: '0712345678',
       rentMonthlyKes: 4500,
+      rentSemesterKes: 18000,
       rooms: [
         {
           id: `${newHostelId.replace('hostel-', '')}-${Date.now()}`,
@@ -1400,7 +1401,14 @@ export default function App() {
     const totalBeds = hostel.rooms.reduce((acc, room) => acc + room.maxOccupants, 0);
     const occupiedBeds = hostel.rooms.reduce((acc, room) => acc + room.currentOccupants, 0);
     const availableBeds = totalBeds - occupiedBeds;
-    const minRent = hostel.rooms.length > 0 ? Math.min(...hostel.rooms.map((room) => room.priceKes)) : 0;
+    const getMinSemesterRent = () => {
+      if (hostel.rentSemesterKes !== undefined && hostel.rentSemesterKes !== null && hostel.rentSemesterKes !== '') {
+        const parsed = typeof hostel.rentSemesterKes === 'number' ? hostel.rentSemesterKes : parseInt(String(hostel.rentSemesterKes).match(/\d+/)?.[0] || '0', 10);
+        return parsed || 0;
+      }
+      return hostel.rooms.length > 0 ? Math.min(...hostel.rooms.map((room) => room.priceKes)) : 0;
+    };
+    const minRent = getMinSemesterRent();
     return {
       hostel,
       totalBeds,
@@ -2345,9 +2353,17 @@ export default function App() {
 
                     const monthlyRent = getMinMonthlyRent();
 
-                    const semesterRent = selectedHostel.rooms && selectedHostel.rooms.length > 0
-                      ? Math.min(...selectedHostel.rooms.map(r => r.priceKes))
-                      : 18000;
+                    const getMinSemesterRent = () => {
+                      if (selectedHostel.rentSemesterKes !== undefined && selectedHostel.rentSemesterKes !== null && selectedHostel.rentSemesterKes !== '') {
+                        return selectedHostel.rentSemesterKes;
+                      }
+                      if (!selectedHostel.rooms || selectedHostel.rooms.length === 0) {
+                        return 18000;
+                      }
+                      return Math.min(...selectedHostel.rooms.map(r => r.priceKes));
+                    };
+
+                    const semesterRent = getMinSemesterRent();
 
                     const detailedRules = selectedHostel.rules && selectedHostel.rules.length > 0 ? selectedHostel.rules : [
                       "No loud speakers or subwoofer sound systems after 10:00 PM",
@@ -2482,7 +2498,7 @@ export default function App() {
                                   </div>
                                   <div className="bg-white border border-slate-100 p-3 rounded-xl">
                                     <span className="text-[10px] text-slate-500 block font-sans">Full Academic Semester</span>
-                                    <span className="text-lg font-extrabold text-slate-800 font-mono">KES {semesterRent.toLocaleString()} / Sem</span>
+                                    <span className="text-lg font-extrabold text-slate-800 font-mono break-all">{formatSemesterRent(semesterRent)}</span>
                                     <span className="text-[9px] text-slate-400 block mt-0.5 font-mono">Guarantees bed space for 4 months</span>
                                   </div>
                                 </div>
@@ -3726,6 +3742,10 @@ export default function App() {
                         <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Monthly Rent From</span>
                         <input type="text" value={adminDraftHostel.rentMonthlyKes || ''} onChange={(e) => handleAdminHostelFieldChange('rentMonthlyKes', e.target.value || undefined)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
                       </label>
+                      <label className="space-y-1">
+                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Semester Rent From</span>
+                        <input type="text" value={adminDraftHostel.rentSemesterKes || ''} onChange={(e) => handleAdminHostelFieldChange('rentSemesterKes', e.target.value || undefined)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
+                      </label>
                       <label className="space-y-1 md:col-span-2">
                         <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Description</span>
                         <textarea value={adminDraftHostel.description} onChange={(e) => handleAdminHostelFieldChange('description', e.target.value)} rows={3} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-semibold text-slate-800 dark:text-slate-100" />
@@ -3751,6 +3771,20 @@ export default function App() {
                       <button onClick={handleAdminAddRoom} className="px-3 py-2 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950 text-[10px] font-black cursor-pointer">Add Room</button>
                     </div>
                     <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                      {/* Header Row for Room Inputs (Visible on Desktop) */}
+                      {adminDraftHostel.rooms.length > 0 && (
+                        <div className="hidden lg:grid grid-cols-9 gap-2 px-3 text-[10px] font-mono font-bold uppercase text-slate-400 dark:text-slate-500">
+                          <div>Room No.</div>
+                          <div>Type</div>
+                          <div>Format</div>
+                          <div>Floor</div>
+                          <div>Occupants</div>
+                          <div>Max Occ.</div>
+                          <div>Semester Rent</div>
+                          <div>Monthly Rent</div>
+                          <div>Action</div>
+                        </div>
+                      )}
                       {adminDraftHostel.rooms.map((room) => (
                         <div key={room.id} className="grid grid-cols-2 lg:grid-cols-9 gap-2 rounded-xl border border-slate-100 dark:border-slate-800 p-3">
                           <input aria-label="Room number" value={room.roomNumber} onChange={(e) => handleAdminRoomFieldChange(room.id, 'roomNumber', e.target.value)} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
@@ -4049,8 +4083,17 @@ export default function App() {
                   <tr>
                     <td className="p-4 border-b border-slate-100 dark:border-slate-800/50 font-bold text-slate-500 uppercase tracking-wider text-xs">Rent Starting At</td>
                     {compareHostels.map(hostel => {
-                      const rent = hostel.rooms && hostel.rooms.length > 0 ? Math.min(...hostel.rooms.map(r => r.priceKes)) : 18000;
-                      return <td key={hostel.id} className="p-4 border-b border-slate-100 dark:border-slate-800/50 font-black text-emerald-600 text-lg">KES {rent.toLocaleString()}<span className="text-xs font-medium text-slate-400">/sem</span></td>;
+                      const getMinSemesterRent = () => {
+                        if (hostel.rentSemesterKes !== undefined && hostel.rentSemesterKes !== null && hostel.rentSemesterKes !== '') {
+                          return hostel.rentSemesterKes;
+                        }
+                        if (!hostel.rooms || hostel.rooms.length === 0) {
+                          return 18000;
+                        }
+                        return Math.min(...hostel.rooms.map(r => r.priceKes));
+                      };
+                      const rent = getMinSemesterRent();
+                      return <td key={hostel.id} className="p-4 border-b border-slate-100 dark:border-slate-800/50 font-black text-emerald-600 text-lg break-all">{formatSemesterRent(rent)}</td>;
                     })}
                   </tr>
                   <tr>

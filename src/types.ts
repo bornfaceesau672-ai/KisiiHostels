@@ -31,6 +31,7 @@ export interface Hostel {
   depositRefundable?: 'Refundable' | 'Non-refundable' | '50% Refundable' | string; // Deposit refund policy
   gateClosingTime?: string; // Gate curfew / closing time
   rentMonthlyKes?: string | number; // Optional starting monthly rent for the entire hostel
+  rentSemesterKes?: string | number; // Optional starting semester rent for the entire hostel
   rooms: Room[];
 }
 
