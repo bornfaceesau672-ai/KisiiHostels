@@ -257,13 +257,31 @@ export default function App() {
   });
 
   const [registeredUsers, setRegisteredUsers] = useState<ClientUser[]>(() => {
-    const saved = localStorage.getItem('kisii_registered_users');
-    return saved ? JSON.parse(saved) : INITIAL_USERS;
+    try {
+      const saved = localStorage.getItem('kisii_registered_users');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((u: any) => u && typeof u === 'object' && u.uid);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse registered users:', e);
+    }
+    return INITIAL_USERS;
   });
 
   const [recordedStats, setRecordedStats] = useState<any[]>(() => {
-    const saved = localStorage.getItem('kisii_recorded_stats');
-    return saved ? JSON.parse(saved) : [
+    try {
+      const saved = localStorage.getItem('kisii_recorded_stats');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to parse recorded stats:', e);
+    }
+    return [
       { id: 'stats-1', timestamp: '2026-06-01T10:00:00Z', memo: 'Launch Day Baseline', total: 5, students: 3, owners: 1, guests: 1 },
       { id: 'stats-2', timestamp: '2026-06-08T17:00:00Z', memo: 'End of Week 1 Drive', total: 7, students: 4, owners: 2, guests: 1 }
     ];
@@ -1518,11 +1536,17 @@ export default function App() {
   }
 
   const filteredUsers = useMemo(() => {
+    if (!Array.isArray(registeredUsers)) return [];
     return registeredUsers.filter((user) => {
+      if (!user) return false;
+      const displayName = user.displayName || '';
+      const email = user.email || '';
+      const phone = user.phone || '';
+      
       const matchesSearch = 
-        user.displayName.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-        (user.phone || '').includes(userSearchQuery);
+        displayName.toLowerCase().includes((userSearchQuery || '').toLowerCase()) ||
+        email.toLowerCase().includes((userSearchQuery || '').toLowerCase()) ||
+        phone.includes(userSearchQuery || '');
       
       const matchesRole = 
         userRoleFilter === 'All' || 
@@ -1532,10 +1556,10 @@ export default function App() {
     });
   }, [registeredUsers, userSearchQuery, userRoleFilter]);
 
-  const totalUsersCount = registeredUsers.length;
-  const studentsCount = registeredUsers.filter(u => u.category === 'Student').length;
-  const ownersCount = registeredUsers.filter(u => u.category === 'Property Owner').length;
-  const guestsCount = registeredUsers.filter(u => u.category === 'Guest').length;
+  const totalUsersCount = Array.isArray(registeredUsers) ? registeredUsers.length : 0;
+  const studentsCount = Array.isArray(registeredUsers) ? registeredUsers.filter(u => u && u.category === 'Student').length : 0;
+  const ownersCount = Array.isArray(registeredUsers) ? registeredUsers.filter(u => u && u.category === 'Property Owner').length : 0;
+  const guestsCount = Array.isArray(registeredUsers) ? registeredUsers.filter(u => u && u.category === 'Guest').length : 0;
 
   if (!currentUser) {
     return (
@@ -4208,8 +4232,9 @@ export default function App() {
                         </thead>
                         <tbody>
                           {filteredUsers.map((user) => {
-                            const initials = user.displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-                            const joinedDate = new Date(user.createdAt);
+                            const initials = (user.displayName || 'Unknown').split(' ').map(n => n ? n[0] : '').filter(Boolean).join('').substring(0, 2).toUpperCase() || 'UC';
+                            const joinedDate = user.createdAt ? new Date(user.createdAt) : new Date();
+                            const isValidDate = !isNaN(joinedDate.getTime());
                             const roleColor = user.category === 'Student'
                               ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
                               : user.category === 'Property Owner'
@@ -4223,8 +4248,8 @@ export default function App() {
                                     {initials}
                                   </div>
                                   <div>
-                                    <span className="block font-extrabold text-slate-850 dark:text-slate-100">{user.displayName}</span>
-                                    <span className="text-[10px] text-slate-400 font-mono">UID: {user.uid.substring(0, 12)}...</span>
+                                    <span className="block font-extrabold text-slate-850 dark:text-slate-100">{user.displayName || 'Unknown Comrade'}</span>
+                                    <span className="text-[10px] text-slate-400 font-mono">UID: {(user.uid || '').substring(0, 12)}...</span>
                                   </div>
                                 </td>
                                 <td className="p-3">
@@ -4237,7 +4262,7 @@ export default function App() {
                                   </span>
                                 </td>
                                 <td className="p-3 text-slate-500 font-mono text-[10px]">
-                                  {joinedDate.toLocaleDateString()} @ {joinedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                  {isValidDate ? `${joinedDate.toLocaleDateString()} @ ${joinedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : 'N/A'}
                                 </td>
                               </tr>
                             );
