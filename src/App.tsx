@@ -319,8 +319,16 @@ export default function App() {
             } else {
               // Try local cache first
               const cached = localStorage.getItem(localKey);
+              let parsedCached = null;
               if (cached) {
-                setUserProfile(JSON.parse(cached));
+                try {
+                  parsedCached = JSON.parse(cached);
+                } catch (e) {
+                  console.warn('Failed to parse cached profile:', e);
+                }
+              }
+              if (parsedCached && typeof parsedCached === 'object' && parsedCached.uid === firebaseUser.uid) {
+                setUserProfile(parsedCached);
               } else {
                 setUserProfile(prev => {
                   if (prev && prev.uid === firebaseUser.uid) return prev;
@@ -340,8 +348,16 @@ export default function App() {
           } catch (error) {
             console.warn('Firestore profile read failed, using local cache:', error);
             const cached = localStorage.getItem(localKey);
+            let parsedCached = null;
             if (cached) {
-              setUserProfile(JSON.parse(cached));
+              try {
+                parsedCached = JSON.parse(cached);
+              } catch (e) {
+                console.warn('Failed to parse cached profile in fallback:', e);
+              }
+            }
+            if (parsedCached && typeof parsedCached === 'object' && parsedCached.uid === firebaseUser.uid) {
+              setUserProfile(parsedCached);
             } else {
               const fallback = {
                 uid: firebaseUser.uid,
@@ -419,7 +435,7 @@ export default function App() {
   // Computed current logged-in profile, or customized guest values if not authenticated
   const loggedStudent = userProfile ? {
     name: userProfile.displayName,
-    regCode: userProfile.uid.substring(0, 8).toUpperCase(),
+    regCode: (userProfile.uid || '').substring(0, 8).toUpperCase(),
     email: userProfile.email,
     phone: userProfile.phone || '0712345678',
     gender: 'Male' as const,
