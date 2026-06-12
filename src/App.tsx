@@ -4134,46 +4134,51 @@ export default function App() {
                       </div>
 
                       <div className="flex-1 overflow-y-auto max-h-[300px] pr-1 space-y-2">
-                        {recordedStats.map((snap) => (
-                          <div key={snap.id} className="border border-slate-150 dark:border-slate-800/60 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/40 dark:bg-slate-950/20">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-extrabold text-xs text-slate-850 dark:text-slate-150">{snap.memo}</span>
-                                <span className="text-[9px] bg-indigo-50 text-indigo-750 dark:bg-indigo-950/40 dark:text-indigo-300 font-bold px-1.5 py-0.5 rounded">
-                                  {snap.total} total
-                                </span>
-                              </div>
-                              <div className="text-[10px] text-slate-550 dark:text-slate-400 font-mono mt-1">
-                                {new Date(snap.timestamp).toLocaleDateString()} @ {new Date(snap.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-4">
-                              <div className="grid grid-cols-3 gap-2.5 text-center text-[10px] font-semibold text-slate-600 dark:text-slate-400">
-                                <div>
-                                  <span className="block font-mono font-bold text-slate-855 dark:text-slate-200">{snap.students}</span>
-                                  <span className="text-[8px] text-slate-400 uppercase">Studs</span>
+                        {(recordedStats || []).map((snap) => {
+                          if (!snap) return null;
+                          const snapDate = snap.timestamp ? new Date(snap.timestamp) : new Date();
+                          const isSnapDateValid = !isNaN(snapDate.getTime());
+                          return (
+                            <div key={snap.id} className="border border-slate-150 dark:border-slate-800/60 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/40 dark:bg-slate-950/20">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-extrabold text-xs text-slate-850 dark:text-slate-150">{snap.memo}</span>
+                                  <span className="text-[9px] bg-indigo-50 text-indigo-750 dark:bg-indigo-950/40 dark:text-indigo-300 font-bold px-1.5 py-0.5 rounded">
+                                    {snap.total} total
+                                  </span>
                                 </div>
-                                <div>
-                                  <span className="block font-mono font-bold text-slate-855 dark:text-slate-200">{snap.owners}</span>
-                                  <span className="text-[8px] text-slate-400 uppercase">Landl</span>
-                                </div>
-                                <div>
-                                  <span className="block font-mono font-bold text-slate-855 dark:text-slate-200">{snap.guests}</span>
-                                  <span className="text-[8px] text-slate-400 uppercase">Gues</span>
+                                <div className="text-[10px] text-slate-550 dark:text-slate-400 font-mono mt-1">
+                                  {isSnapDateValid ? `${snapDate.toLocaleDateString()} @ ${snapDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'N/A'}
                                 </div>
                               </div>
 
-                              <button
-                                onClick={() => handleDeleteStatsSnapshot(snap.id)}
-                                className="p-1.5 rounded-lg border border-slate-200 hover:border-rose-200 dark:border-slate-800 text-slate-450 hover:text-rose-600 dark:hover:text-rose-450 transition active:scale-95 cursor-pointer"
-                                title="Delete Snapshot"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <div className="flex items-center gap-4">
+                                <div className="grid grid-cols-3 gap-2.5 text-center text-[10px] font-semibold text-slate-600 dark:text-slate-400">
+                                  <div>
+                                    <span className="block font-mono font-bold text-slate-855 dark:text-slate-200">{snap.students}</span>
+                                    <span className="text-[8px] text-slate-400 uppercase">Studs</span>
+                                  </div>
+                                  <div>
+                                    <span className="block font-mono font-bold text-slate-855 dark:text-slate-200">{snap.owners}</span>
+                                    <span className="text-[8px] text-slate-400 uppercase">Landl</span>
+                                  </div>
+                                  <div>
+                                    <span className="block font-mono font-bold text-slate-855 dark:text-slate-200">{snap.guests}</span>
+                                    <span className="text-[8px] text-slate-400 uppercase">Gues</span>
+                                  </div>
+                                </div>
+
+                                <button
+                                  onClick={() => handleDeleteStatsSnapshot(snap.id)}
+                                  className="p-1.5 rounded-lg border border-slate-200 hover:border-rose-200 dark:border-slate-800 text-slate-450 hover:text-rose-600 dark:hover:text-rose-450 transition active:scale-95 cursor-pointer"
+                                  title="Delete Snapshot"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
 
                         {recordedStats.length === 0 && (
                           <div className="text-center py-8 text-xs text-slate-400 italic border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
