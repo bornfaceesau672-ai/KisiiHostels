@@ -1,5 +1,7 @@
 import { Hostel, Room } from '../types';
 import { User, Users, Compass, Phone, BedDouble, CheckCircle2 } from 'lucide-react';
+import { formatMonthlyRent } from '../utils/rentHelper';
+import { getHostelImages } from '../utils/mediaHelper';
 
 interface AvailabilityGridProps {
   hostel: Hostel;
@@ -34,12 +36,15 @@ export default function AvailabilityGrid({ hostel, onSelectBookRoom, activeBooki
     }
   };
 
+  const hasCustomImages = (hostel.imageUrls && hostel.imageUrls.length > 0) || (hostel.imageUrl && hostel.imageUrl.trim() !== '');
+  const primaryImage = hasCustomImages ? getHostelImages(hostel.id, hostel.imageUrl, hostel.imageUrls)[0] : undefined;
+
   return (
     <div id={`availability-grid-${hostel.id}`} className="space-y-6">
-      {hostel.imageUrl && (
+      {primaryImage && (
         <div className="relative h-48 md:h-60 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
           <img 
-            src={hostel.imageUrl} 
+            src={primaryImage} 
             alt={hostel.name} 
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
@@ -58,7 +63,7 @@ export default function AvailabilityGrid({ hostel, onSelectBookRoom, activeBooki
       )}
 
       {/* Fallback description when there is no cover image */}
-      {!hostel.imageUrl && (
+      {!primaryImage && (
         <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
           <span className="text-[10px] font-mono tracking-wider uppercase bg-slate-200 text-slate-700 px-2.5 py-1 rounded-md font-bold text-[9px]">
             About {hostel.name}
@@ -163,9 +168,14 @@ export default function AvailabilityGrid({ hostel, onSelectBookRoom, activeBooki
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <span className="block truncate text-base font-black font-mono text-slate-900">Room {room.roomNumber}</span>
-                        <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
-                          {getRoomTypeIcon(room.roomType)}
-                          <span>{room.roomType} Study</span>
+                        <div className="mt-1 flex flex-col gap-1 items-start">
+                          <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-350 font-bold px-1.5 py-0.5 rounded">
+                            {room.roomFormat}
+                          </span>
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
+                            {getRoomTypeIcon(room.roomType)}
+                            <span>{room.roomType} Study</span>
+                          </div>
                         </div>
                       </div>
                       
@@ -198,8 +208,8 @@ export default function AvailabilityGrid({ hostel, onSelectBookRoom, activeBooki
 
                       <div className="sm:text-right">
                         <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-semibold ml-auto block">Monthly/Sem Rent</span>
-                        <span className="text-sm font-black font-mono text-emerald-600 leading-none block">
-                          KES {(room.rentMonthlyKes || Math.round(room.priceKes / 4)).toLocaleString()}/mo
+                        <span className="text-sm font-black font-mono text-emerald-600 leading-none block break-all">
+                          {formatMonthlyRent(room.rentMonthlyKes || Math.round(room.priceKes / 4))}
                         </span>
                         <span className="text-[10px] text-slate-500 font-mono font-medium mt-1 block">
                           KES {room.priceKes.toLocaleString()}/sem

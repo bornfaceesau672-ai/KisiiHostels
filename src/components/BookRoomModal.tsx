@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Hostel, Room, Booking } from '../types';
 import { X, Landmark, Receipt, Sparkles, Phone, CreditCard, Mail, UserCheck } from 'lucide-react';
+import { formatMonthlyRent } from '../utils/rentHelper';
 
 interface BookRoomModalProps {
   hostel: Hostel;
@@ -80,7 +81,7 @@ export default function BookRoomModal({ hostel, room, onClose, onSubmitBooking, 
           </span>
           <h3 className="text-xl font-bold font-sans mt-2">{hostel.name}</h3>
           <p className="text-indigo-100 text-xs mt-1">
-            Spot reservation for Room {room.roomNumber} ({room.roomType} Study)
+            Spot reservation for Room {room.roomNumber} ({room.roomFormat} — {room.roomType} Study)
           </p>
         </div>
 
@@ -99,7 +100,9 @@ export default function BookRoomModal({ hostel, room, onClose, onSubmitBooking, 
               </div>
               <div className="flex justify-between text-[11px] text-slate-500 -mt-1 b-0.5">
                 <span>Monthly Rent Equivalent:</span>
-                <span className="font-mono font-semibold text-emerald-600">KES {(room.rentMonthlyKes || Math.round(room.priceKes / 4)).toLocaleString()}/mo</span>
+                <span className="font-mono font-semibold text-emerald-600">
+                  {formatMonthlyRent(room.rentMonthlyKes || Math.round(room.priceKes / 4))}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="flex items-center gap-1">

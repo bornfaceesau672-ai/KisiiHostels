@@ -10,6 +10,7 @@ import SophiaBot from './components/SophiaBot';
 import AuthModal from './components/AuthModal';
 import EditProfileModal from './components/EditProfileModal';
 import { getHostelImages, getHostelYoutubeEmbed } from './utils/mediaHelper';
+import { getNumericRent, formatMonthlyRent } from './utils/rentHelper';
 
 // Firebase core logic imports
 import { auth, db, handleFirestoreError, OperationType } from './lib/firebase';
@@ -56,7 +57,8 @@ import {
   X,
   Lock,
   Key,
-  Shield
+  Shield,
+  Trash2
 } from 'lucide-react';
 
 
@@ -560,6 +562,7 @@ export default function App() {
   // Filter States for browse catalogue
   const [filterArea, setFilterArea] = useState<string>('All');
   const [filterType, setFilterType] = useState<string>('All');
+  const [filterFormat, setFilterFormat] = useState<string>('All');
   const [filterWifi, setFilterWifi] = useState(false);
   const [filterBorehole, setFilterBorehole] = useState(false);
   const [filterHotShower, setFilterHotShower] = useState(false);
@@ -578,7 +581,7 @@ export default function App() {
       setIsFilterLoading(false);
     }, 450);
     return () => clearTimeout(timer);
-  }, [filterArea, filterType, maxBudget, maxDistance, searchQuery]);
+  }, [filterArea, filterType, filterFormat, maxBudget, maxDistance, searchQuery]);
 
   // Reset active image index inside view details whenever selected hostel changes
   useEffect(() => {
@@ -685,10 +688,11 @@ export default function App() {
       }
     }
 
-    // Check if any room matches budget and type criteria
+    // Check if any room matches budget, type, and format criteria
     const hasMatchingRoom = hostel.rooms.some((room) => {
       if (room.priceKes > maxBudget) return false;
       if (filterType !== 'All' && room.roomType !== filterType) return false;
+      if (filterFormat !== 'All' && room.roomFormat !== filterFormat) return false;
       return true;
     });
 
@@ -699,6 +703,7 @@ export default function App() {
   const handleResetFilters = () => {
     setFilterArea('All');
     setFilterType('All');
+    setFilterFormat('All');
     setFilterWifi(false);
     setFilterBorehole(false);
     setFilterHotShower(false);
@@ -1025,24 +1030,31 @@ export default function App() {
   const handleSaveAdminHostel = async () => {
     if (!adminDraftHostel || !isAdminUser) return;
     setIsSavingHostel(true);
-    try {
-      // Write to Firestore first to check permissions/network
-      await setDoc(doc(db, 'hostels', adminDraftHostel.id), adminDraftHostel);
+    
+    const exists = hostels.some(h => h.id === adminDraftHostel.id);
+    let updatedHostels: Hostel[];
+    if (exists) {
+      updatedHostels = hostels.map((hostel) => hostel.id === adminDraftHostel.id ? adminDraftHostel : hostel);
+    } else {
+      updatedHostels = [...hostels, adminDraftHostel];
+    }
+    
+    // Save to local state and localStorage immediately
+    setHostels(updatedHostels);
+    if (selectedHostel?.id === adminDraftHostel.id) {
+      setSelectedHostel(adminDraftHostel);
+    }
+    setAdminSelectedHostelId(adminDraftHostel.id);
+    localStorage.setItem('kisii_hostels', JSON.stringify(updatedHostels));
 
-      const exists = hostels.some(h => h.id === adminDraftHostel.id);
-      let updatedHostels: Hostel[];
+    try {
+      // Write to Firestore to sync
+      await setDoc(doc(db, 'hostels', adminDraftHostel.id), adminDraftHostel);
       if (exists) {
-        updatedHostels = hostels.map((hostel) => hostel.id === adminDraftHostel.id ? adminDraftHostel : hostel);
         showFeedback(`${adminDraftHostel.name} details saved successfully and synced to Firebase.`, 'success');
       } else {
-        updatedHostels = [...hostels, adminDraftHostel];
         showFeedback(`${adminDraftHostel.name} created successfully and synced to Firebase.`, 'success');
       }
-      setHostels(updatedHostels);
-      if (selectedHostel?.id === adminDraftHostel.id) {
-        setSelectedHostel(adminDraftHostel);
-      }
-      setAdminSelectedHostelId(adminDraftHostel.id);
     } catch (error: any) {
       console.error('Firestore save failed:', error);
       if (error?.code === 'permission-denied' || error?.message?.includes('permission') || error?.message?.includes('denied')) {
@@ -1053,9 +1065,9 @@ export default function App() {
         } catch (e) {
           console.error('Failed to get token claims:', e);
         }
-        showFeedback(`Error: Permission denied by Firebase security rules. Logged in as: ${auth.currentUser?.email || 'Not logged in'} (Token email: "${claimsEmail}"). Only esaubornface73@gmail.com is authorized to write to hostels.`, 'warning');
+        showFeedback(`Saved locally! Warning: Permission denied by Firebase security rules. Logged in as: ${auth.currentUser?.email || 'Not logged in'} (Token email: "${claimsEmail}"). Only esaubornface73@gmail.com is authorized to write to hostels.`, 'warning');
       } else {
-        showFeedback(error?.message || 'Failed to sync with Firebase. Please try again.', 'warning');
+        showFeedback(`Saved locally! Warning: Failed to sync with Firebase (${error?.message || 'Please check your connection'}).`, 'warning');
       }
     } finally {
       setIsSavingHostel(false);
@@ -1071,6 +1083,7 @@ export default function App() {
       area: 'Mwembe',
       distanceMeters: 250,
       imageUrl: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80',
+      imageUrls: ['https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80'],
       imageKeyword: 'modern',
       securityRating: 5,
       hasWifi: true,
@@ -1084,6 +1097,7 @@ export default function App() {
           id: `${newHostelId.replace('hostel-', '')}-${Date.now()}`,
           roomNumber: '101',
           roomType: 'Single',
+          roomFormat: 'Single Room',
           floor: 1,
           currentOccupants: 0,
           maxOccupants: 1,
@@ -1111,19 +1125,28 @@ export default function App() {
     }
 
     setIsDeletingHostel(true);
-    try {
-      // Delete from Firestore first
-      await deleteDoc(doc(db, 'hostels', adminSelectedHostelId));
-
-      const remainingHostels = hostels.filter(h => h.id !== adminSelectedHostelId);
-      setHostels(remainingHostels);
-      showFeedback('Hostel deleted successfully and synced to Firebase.', 'success');
-      if (remainingHostels.length > 0) {
-        setAdminSelectedHostelId(remainingHostels[0].id);
-      } else {
-        setAdminSelectedHostelId('');
-        setAdminDraftHostel(null);
+    const remainingHostels = hostels.filter(h => h.id !== adminSelectedHostelId);
+    
+    // Save to local state and localStorage immediately
+    setHostels(remainingHostels);
+    if (remainingHostels.length > 0) {
+      setAdminSelectedHostelId(remainingHostels[0].id);
+      const nextHostel = remainingHostels[0];
+      setAdminDraftHostel(JSON.parse(JSON.stringify(nextHostel)));
+      if (selectedHostel?.id === adminSelectedHostelId) {
+        setSelectedHostel(nextHostel);
       }
+    } else {
+      setAdminSelectedHostelId('');
+      setAdminDraftHostel(null);
+      setSelectedHostel(null as any);
+    }
+    localStorage.setItem('kisii_hostels', JSON.stringify(remainingHostels));
+
+    try {
+      // Delete from Firestore
+      await deleteDoc(doc(db, 'hostels', adminSelectedHostelId));
+      showFeedback('Hostel deleted successfully and synced to Firebase.', 'success');
     } catch (error: any) {
       console.error('Firestore delete failed:', error);
       if (error?.code === 'permission-denied' || error?.message?.includes('permission') || error?.message?.includes('denied')) {
@@ -1134,9 +1157,9 @@ export default function App() {
         } catch (e) {
           console.error('Failed to get token claims:', e);
         }
-        showFeedback(`Error: Permission denied by Firebase security rules. Logged in as: ${auth.currentUser?.email || 'Not logged in'} (Token email: "${claimsEmail}"). Only esaubornface73@gmail.com is authorized to delete hostels.`, 'warning');
+        showFeedback(`Deleted locally! Warning: Permission denied by Firebase security rules. Logged in as: ${auth.currentUser?.email || 'Not logged in'} (Token email: "${claimsEmail}"). Only esaubornface73@gmail.com is authorized to delete hostels.`, 'warning');
       } else {
-        showFeedback(error?.message || 'Failed to sync deletion with Firebase.', 'warning');
+        showFeedback(`Deleted locally! Warning: Failed to sync deletion with Firebase (${error?.message || 'Please check your connection'}).`, 'warning');
       }
     } finally {
       setIsDeletingHostel(false);
@@ -1165,6 +1188,7 @@ export default function App() {
         id: `${prev.id.replace('hostel-', '')}-${Date.now()}`,
         roomNumber: `NEW-${nextNumber}`,
         roomType: 'Single',
+        roomFormat: 'Single Room',
         floor: 1,
         currentOccupants: 0,
         maxOccupants: 1,
@@ -1186,9 +1210,48 @@ export default function App() {
     if (!adminDraftHostel || !isAdminUser) return;
     setIsUploadingHostelImage(true);
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
+      // Compress the image client-side before uploading (prevents Payload Too Large errors and speeds up upload)
+      const compressed: { base64: string; type: string } = await new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            const MAX_WIDTH = 1200;
+            const MAX_HEIGHT = 900;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > MAX_WIDTH) {
+                height = Math.round((height * MAX_WIDTH) / width);
+                width = MAX_WIDTH;
+              }
+            } else {
+              if (height > MAX_HEIGHT) {
+                width = Math.round((width * MAX_HEIGHT) / height);
+                height = MAX_HEIGHT;
+              }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              reject(new Error('Failed to get canvas 2D context for compression.'));
+              return;
+            }
+
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Export as compressed JPEG at 0.7 quality
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            const base64 = dataUrl.split(',')[1] || '';
+            resolve({ base64, type: 'jpeg' });
+          };
+          img.onerror = () => reject(new Error('Failed to load image element for compression.'));
+          img.src = event.target?.result as string;
+        };
         reader.onerror = () => reject(new Error('Could not read selected image file.'));
         reader.readAsDataURL(file);
       });
@@ -1197,17 +1260,35 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          image: base64,
+          image: compressed.base64,
           name: file.name.replace(/\.[^.]+$/, '') || adminDraftHostel.name,
-          type: file.name.split('.').pop() || 'jpg'
+          type: compressed.type
         })
       });
-      const data = await response.json();
+
+      // Safely read response as text first, then parse to avoid cryptic parser crashes
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (jsonErr) {
+        throw new Error(responseText.slice(0, 150) || `Server error: Status code ${response.status}`);
+      }
+
       const hostedUrl = data?.url;
       if (!response.ok || !hostedUrl) {
         throw new Error(data?.error || data?.message || 'PostImage did not return a hosted image URL.');
       }
-      handleAdminHostelFieldChange('imageUrl', hostedUrl);
+      setAdminDraftHostel((prev) => {
+        if (!prev) return prev;
+        const currentUrls = prev.imageUrls || [];
+        const updatedUrls = [...currentUrls, hostedUrl];
+        return {
+          ...prev,
+          imageUrls: updatedUrls,
+          imageUrl: prev.imageUrl ? prev.imageUrl : hostedUrl
+        };
+      });
       showFeedback('Hostel image uploaded to PostImage. Save the hostel to keep it.', 'success');
     } catch (error: any) {
       console.error('PostImage upload failed:', error);
@@ -1943,6 +2024,25 @@ export default function App() {
                           </select>
                         </div>
 
+                        {/* Room Layout Filter Dropdown */}
+                        <div className="shrink-0 flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 transition shadow-sm hover:border-slate-300 dark:hover:border-slate-700">
+                          <span className="text-slate-500 text-[10px]">🏠</span>
+                          <select 
+                            value={filterFormat}
+                            onChange={(e) => {
+                              setFilterFormat(e.target.value);
+                              setExploreView('catalog');
+                            }}
+                            className="bg-transparent text-slate-700 dark:text-slate-200 text-xs font-bold focus:outline-none cursor-pointer pr-1"
+                          >
+                            <option value="All" className="dark:bg-slate-900">All Layouts</option>
+                            <option value="Bedsitter" className="dark:bg-slate-900">Bedsitter</option>
+                            <option value="Single Room" className="dark:bg-slate-900">Single Room</option>
+                            <option value="One Bedroom" className="dark:bg-slate-900">One Bedroom</option>
+                            <option value="Two Bedroom" className="dark:bg-slate-900">Two Bedroom</option>
+                          </select>
+                        </div>
+
                         {/* Budget Limit Filter Dropdown */}
                         <div className="shrink-0 flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 transition shadow-sm hover:border-slate-300 dark:hover:border-slate-700">
                           <span className="text-slate-500 text-[10px]">💰</span>
@@ -2225,9 +2325,25 @@ export default function App() {
 
                   {/* Profile and Landlord detail card */}
                   {selectedHostel && (() => {
-                    const monthlyRent = selectedHostel.rooms && selectedHostel.rooms.length > 0 
-                      ? (selectedHostel.rooms.map(r => r.rentMonthlyKes).filter(Boolean)[0] || Math.min(...selectedHostel.rooms.map(r => r.rentMonthlyKes || Math.round(r.priceKes / 4))))
-                      : (selectedHostel.rentMonthlyKes || 4500);
+                    const getMinMonthlyRent = () => {
+                      if (selectedHostel.rentMonthlyKes !== undefined && selectedHostel.rentMonthlyKes !== null && selectedHostel.rentMonthlyKes !== '') {
+                        return selectedHostel.rentMonthlyKes;
+                      }
+                      if (!selectedHostel.rooms || selectedHostel.rooms.length === 0) {
+                        return 4500;
+                      }
+                      const definedRents = selectedHostel.rooms.map(r => r.rentMonthlyKes).filter(Boolean);
+                      if (definedRents.length > 0) {
+                        return definedRents.reduce((min, current) => {
+                          const minVal = getNumericRent(min, 999999);
+                          const currVal = getNumericRent(current, 999999);
+                          return currVal < minVal ? current : min;
+                        }, definedRents[0]);
+                      }
+                      return Math.min(...selectedHostel.rooms.map(r => Math.round(r.priceKes / 4)));
+                    };
+
+                    const monthlyRent = getMinMonthlyRent();
 
                     const semesterRent = selectedHostel.rooms && selectedHostel.rooms.length > 0
                       ? Math.min(...selectedHostel.rooms.map(r => r.priceKes))
@@ -2242,6 +2358,10 @@ export default function App() {
                     const detailedDeposit = selectedHostel.depositRefundable || "Fully refundable on check-out";
                     const detailedCurfew = selectedHostel.gateClosingTime || "11:00 PM curfew limit";
 
+                    const detailImages = getHostelImages(selectedHostel.id, selectedHostel.imageUrl, selectedHostel.imageUrls);
+                    const totalImages = detailImages.length;
+                    const safeActiveIdx = activeImageIndex >= totalImages ? 0 : activeImageIndex;
+
                     return (
                       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-805 overflow-hidden shadow-sm space-y-0">
                         {/* 1. Interactive Multi-Media Showcase (Gallery + YouTube Walkthrough) */}
@@ -2251,8 +2371,8 @@ export default function App() {
                             <div className="space-y-3">
                               <div className="relative h-64 md:h-80 w-full bg-slate-950 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
                                 <img
-                                  src={getHostelImages(selectedHostel.id, selectedHostel.imageUrl)[activeImageIndex]}
-                                  alt={`${selectedHostel.name} View ${activeImageIndex + 1}`}
+                                  src={detailImages[safeActiveIdx]}
+                                  alt={`${selectedHostel.name} View ${safeActiveIdx + 1}`}
                                   className="w-full h-full object-cover"
                                   referrerPolicy="no-referrer"
                                 />
@@ -2260,7 +2380,7 @@ export default function App() {
                                 
                                 <div className="absolute top-4 left-4 flex gap-1.5 flex-wrap">
                                   <span className="text-[9px] bg-indigo-605/95 border border-indigo-400/40 text-white font-bold px-2.5 py-1 rounded-full uppercase tracking-wider font-mono shadow-sm">
-                                    📸 Space View {activeImageIndex + 1} of 4
+                                    📸 Space View {safeActiveIdx + 1} of {totalImages}
                                   </span>
                                   <span className="text-[9px] bg-emerald-500 border border-emerald-400/40 text-white font-bold px-2.5 py-1 rounded-full uppercase tracking-wider font-mono shadow-sm flex items-center gap-1">
                                     ✓ Verified Shoot
@@ -2269,7 +2389,7 @@ export default function App() {
 
                                 <div className="absolute bottom-4 left-4 right-4 text-white p-1">
                                   <span className="text-[8px] font-mono uppercase bg-black/50 backdrop-blur-sm px-1.5 py-0.5 rounded border border-white/10 inline-block mb-1">
-                                    {['Exterior Facade', 'Room Interior', 'Study Suite', 'Amenities & Utilities'][activeImageIndex]}
+                                    {['Exterior Facade', 'Room Interior', 'Study Suite', 'Amenities & Utilities'][safeActiveIdx] || `Additional Space Photo ${safeActiveIdx - 3}`}
                                   </span>
                                   <h2 className="text-lg md:text-xl font-black font-sans tracking-tight">
                                     {selectedHostel.name}
@@ -2278,15 +2398,16 @@ export default function App() {
                               </div>
 
                               {/* Thumbnail Selector Row */}
-                              <div className="grid grid-cols-4 gap-2">
-                                {getHostelImages(selectedHostel.id, selectedHostel.imageUrl).map((imgUrl, idx) => {
-                                  const label = ['Facade', 'Room', 'Study', 'Amenity'][idx];
+                              <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+                                {detailImages.map((imgUrl, idx) => {
+                                  const thumbnailLabels = ['Facade', 'Interior', 'Study', 'Amenity'];
+                                  const label = thumbnailLabels[idx] || `View ${idx + 1}`;
                                   return (
                                     <button
                                       key={idx}
                                       onClick={() => setActiveImageIndex(idx)}
-                                      className={`relative rounded-xl overflow-hidden aspect-[4/3] border transition-all duration-200 focus:outline-none cursor-pointer ${
-                                        activeImageIndex === idx
+                                      className={`relative rounded-xl overflow-hidden aspect-[4/3] w-20 shrink-0 border transition-all duration-200 focus:outline-none cursor-pointer ${
+                                        safeActiveIdx === idx
                                           ? 'border-indigo-600 ring-2 ring-indigo-500/25 opacity-100 scale-102'
                                           : 'border-slate-300 dark:border-slate-700 opacity-90 hover:opacity-100 hover:border-slate-400'
                                       }`}
@@ -2356,7 +2477,7 @@ export default function App() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                   <div className="bg-white border border-emerald-50 p-3 rounded-xl">
                                     <span className="text-[10px] text-slate-500 block font-sans">Monthly Rate (Per Person)</span>
-                                    <span className="text-lg font-black text-emerald-600 font-mono">KES {monthlyRent.toLocaleString()} / Month</span>
+                                    <span className="text-lg font-black text-emerald-600 font-mono break-all">{formatMonthlyRent(monthlyRent)}</span>
                                     <span className="text-[9px] text-slate-400 block mt-0.5 font-mono">Electricity and water inclusive</span>
                                   </div>
                                   <div className="bg-white border border-slate-100 p-3 rounded-xl">
@@ -3410,32 +3531,172 @@ export default function App() {
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                    <div className="space-y-3">
-                      <div className="aspect-[4/3] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950">
+                    <div className="space-y-4">
+                      {/* Cover Image Preview */}
+                      <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950">
                         <img
-                          src={getHostelImages(adminDraftHostel.id, adminDraftHostel.imageUrl)[0]}
+                          src={adminDraftHostel.imageUrl || getHostelImages(adminDraftHostel.id, adminDraftHostel.imageUrl, adminDraftHostel.imageUrls)[0]}
                           alt={adminDraftHostel.name}
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
                         />
+                        <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md text-white px-2 py-0.5 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider border border-white/10">
+                          ★ Cover/Primary Image
+                        </div>
                       </div>
-                      <label className="block">
-                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Upload to PostImage</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          disabled={isUploadingHostelImage}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) uploadHostelImageToPostImage(file);
-                            e.currentTarget.value = '';
-                          }}
-                          className="mt-1 w-full text-xs text-slate-600 dark:text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-3 file:py-2 file:text-xs file:font-bold file:text-white disabled:opacity-60"
-                        />
-                      </label>
-                      {isUploadingHostelImage && (
-                        <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold">Uploading image...</p>
-                      )}
+
+                      {/* Gallery grid of custom images */}
+                      {(() => {
+                        const customImages = [
+                          ...(adminDraftHostel.imageUrls || []),
+                          ...(adminDraftHostel.imageUrl ? [adminDraftHostel.imageUrl] : [])
+                        ].filter((url, idx, self) => url && (url.startsWith('http') || url.startsWith('/src/')) && self.indexOf(url) === idx);
+
+                        return (
+                          <div className="space-y-2">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">
+                              Hostel Gallery ({customImages.length} images)
+                            </span>
+                            {customImages.length > 0 ? (
+                              <div className="grid grid-cols-3 gap-2">
+                                {customImages.map((imgUrl, idx) => {
+                                  const isPrimary = adminDraftHostel.imageUrl === imgUrl;
+                                  return (
+                                    <div key={idx} className={`relative aspect-[4/3] rounded-xl overflow-hidden border group ${isPrimary ? 'border-indigo-600 ring-2 ring-indigo-500/20' : 'border-slate-200 dark:border-slate-800'}`}>
+                                      <img src={imgUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                      {/* Action buttons on hover */}
+                                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 p-1">
+                                        {!isPrimary && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              handleAdminHostelFieldChange('imageUrl', imgUrl);
+                                            }}
+                                            className="px-1.5 py-0.5 bg-white text-slate-900 hover:bg-indigo-50 rounded text-[9px] font-bold shadow transition active:scale-95"
+                                          >
+                                            Cover
+                                          </button>
+                                        )}
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const updatedUrls = customImages.filter(u => u !== imgUrl);
+                                            let newPrimary = adminDraftHostel.imageUrl;
+                                            if (isPrimary) {
+                                              newPrimary = updatedUrls[0] || '';
+                                            }
+                                            setAdminDraftHostel(prev => prev ? {
+                                              ...prev,
+                                              imageUrls: updatedUrls,
+                                              imageUrl: newPrimary
+                                            } : prev);
+                                            showFeedback('Image removed from gallery.', 'info');
+                                          }}
+                                          className="p-1 bg-rose-600 hover:bg-rose-700 text-white rounded transition active:scale-95"
+                                          title="Delete image"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                      {isPrimary && (
+                                        <div className="absolute top-1 right-1 bg-indigo-650 text-white text-[8px] font-bold px-1 py-0.5 rounded shadow leading-none font-mono">
+                                          Cover
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-[10px] text-slate-400 italic">No custom images added yet. Using system-generated placeholders.</p>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Image Source Inputs */}
+                      <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        {/* Upload to PostImage */}
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">Upload to PostImage (Adds to Gallery)</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={isUploadingHostelImage}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) uploadHostelImageToPostImage(file);
+                              e.currentTarget.value = '';
+                            }}
+                            className="w-full text-xs text-slate-600 dark:text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white disabled:opacity-60 cursor-pointer"
+                          />
+                          {isUploadingHostelImage && (
+                            <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold mt-1">Uploading image...</p>
+                          )}
+                        </div>
+
+                        {/* Add image URL manually */}
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">Or Add Image URL Manually</span>
+                          <div className="flex gap-2">
+                            <input
+                              id="custom-image-url-input"
+                              type="text"
+                              placeholder="https://example.com/image.jpg"
+                              className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const input = document.getElementById('custom-image-url-input') as HTMLInputElement;
+                                  if (input && input.value.trim().startsWith('http')) {
+                                    const url = input.value.trim();
+                                    const currentUrls = adminDraftHostel.imageUrls || [];
+                                    if (!currentUrls.includes(url)) {
+                                      const updatedUrls = [...currentUrls, url];
+                                      setAdminDraftHostel(prev => prev ? {
+                                        ...prev,
+                                        imageUrls: updatedUrls,
+                                        imageUrl: prev.imageUrl ? prev.imageUrl : url
+                                      } : prev);
+                                      showFeedback('Image URL added to gallery.', 'success');
+                                      input.value = '';
+                                    } else {
+                                      showFeedback('Image URL already exists.', 'warning');
+                                    }
+                                  }
+                                }
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const input = document.getElementById('custom-image-url-input') as HTMLInputElement;
+                                if (input && input.value.trim().startsWith('http')) {
+                                  const url = input.value.trim();
+                                  const currentUrls = adminDraftHostel.imageUrls || [];
+                                  if (!currentUrls.includes(url)) {
+                                    const updatedUrls = [...currentUrls, url];
+                                    setAdminDraftHostel(prev => prev ? {
+                                      ...prev,
+                                      imageUrls: updatedUrls,
+                                      imageUrl: prev.imageUrl ? prev.imageUrl : url
+                                    } : prev);
+                                    showFeedback('Image URL added to gallery.', 'success');
+                                    input.value = '';
+                                  } else {
+                                    showFeedback('Image URL already exists.', 'warning');
+                                  }
+                                } else {
+                                  showFeedback('Please enter a valid URL starting with http.', 'warning');
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 rounded-xl text-xs font-bold hover:opacity-90 active:scale-95 transition cursor-pointer"
+                            >
+                              Add
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -3463,11 +3724,7 @@ export default function App() {
                       </label>
                       <label className="space-y-1">
                         <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Monthly Rent From</span>
-                        <input type="number" value={adminDraftHostel.rentMonthlyKes || ''} onChange={(e) => handleAdminHostelFieldChange('rentMonthlyKes', Number(e.target.value) || undefined)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
-                      </label>
-                      <label className="space-y-1 md:col-span-2">
-                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">PostImage / Hosted Image URL</span>
-                        <input value={adminDraftHostel.imageUrl || ''} onChange={(e) => handleAdminHostelFieldChange('imageUrl', e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
+                        <input type="text" value={adminDraftHostel.rentMonthlyKes || ''} onChange={(e) => handleAdminHostelFieldChange('rentMonthlyKes', e.target.value || undefined)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
                       </label>
                       <label className="space-y-1 md:col-span-2">
                         <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Description</span>
@@ -3495,16 +3752,22 @@ export default function App() {
                     </div>
                     <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
                       {adminDraftHostel.rooms.map((room) => (
-                        <div key={room.id} className="grid grid-cols-2 lg:grid-cols-8 gap-2 rounded-xl border border-slate-100 dark:border-slate-800 p-3">
+                        <div key={room.id} className="grid grid-cols-2 lg:grid-cols-9 gap-2 rounded-xl border border-slate-100 dark:border-slate-800 p-3">
                           <input aria-label="Room number" value={room.roomNumber} onChange={(e) => handleAdminRoomFieldChange(room.id, 'roomNumber', e.target.value)} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
                           <select aria-label="Room type" value={room.roomType} onChange={(e) => handleAdminRoomFieldChange(room.id, 'roomType', e.target.value as Room['roomType'])} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100">
                             <option>Single</option><option>Double</option><option>4-Sharing</option>
+                          </select>
+                          <select aria-label="Room layout format" value={room.roomFormat || 'Single Room'} onChange={(e) => handleAdminRoomFieldChange(room.id, 'roomFormat', e.target.value as Room['roomFormat'])} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100">
+                            <option value="Single Room">Single Room</option>
+                            <option value="Bedsitter">Bedsitter</option>
+                            <option value="One Bedroom">One Bedroom</option>
+                            <option value="Two Bedroom">Two Bedroom</option>
                           </select>
                           <input aria-label="Floor" type="number" value={room.floor} onChange={(e) => handleAdminRoomFieldChange(room.id, 'floor', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
                           <input aria-label="Occupants" type="number" value={room.currentOccupants} onChange={(e) => handleAdminRoomFieldChange(room.id, 'currentOccupants', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
                           <input aria-label="Max occupants" type="number" value={room.maxOccupants} onChange={(e) => handleAdminRoomFieldChange(room.id, 'maxOccupants', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
                           <input aria-label="Semester rent" type="number" value={room.priceKes} onChange={(e) => handleAdminRoomFieldChange(room.id, 'priceKes', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
-                          <input aria-label="Monthly rent" type="number" value={room.rentMonthlyKes || ''} onChange={(e) => handleAdminRoomFieldChange(room.id, 'rentMonthlyKes', Number(e.target.value) || undefined)} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
+                          <input aria-label="Monthly rent" type="text" value={room.rentMonthlyKes || ''} onChange={(e) => handleAdminRoomFieldChange(room.id, 'rentMonthlyKes', e.target.value || undefined)} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
                           <button onClick={() => handleAdminRemoveRoom(room.id)} className="rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-[10px] font-black hover:bg-rose-100 cursor-pointer">Remove</button>
                         </div>
                       ))}
@@ -3764,7 +4027,7 @@ export default function App() {
                     {compareHostels.map(hostel => (
                       <th key={hostel.id} className="p-4 border-b border-slate-200 dark:border-slate-800 w-1/3 min-w-[200px]">
                         <div className="relative h-32 rounded-2xl overflow-hidden mb-3">
-                          <img src={getHostelImages(hostel.id, hostel.imageUrl)[0]} alt={hostel.name} className="w-full h-full object-cover" />
+                          <img src={getHostelImages(hostel.id, hostel.imageUrl, hostel.imageUrls)[0]} alt={hostel.name} className="w-full h-full object-cover" />
                           <button 
                             onClick={() => {
                                 const newHostels = compareHostels.filter(h => h.id !== hostel.id);

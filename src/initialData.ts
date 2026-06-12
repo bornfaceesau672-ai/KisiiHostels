@@ -13,12 +13,12 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'hilltop',
     rooms: [
-      { id: 'ny-101', roomNumber: '101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Male', priceKes: 18000, isAvailable: true, amenities: ['Study Desk', 'Built-in Closet', 'Balcony'] },
-      { id: 'ny-102', roomNumber: '102', roomType: 'Single', floor: 1, currentOccupants: 1, maxOccupants: 1, genderPreference: 'Male', priceKes: 18000, isAvailable: false, amenities: ['Study Desk', 'Built-in Closet'] },
-      { id: 'ny-201', roomNumber: '201', roomType: 'Double', floor: 2, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 11500, isAvailable: true, amenities: ['Study Desk', 'Balcony', 'Mirror'] },
-      { id: 'ny-202', roomNumber: '202', roomType: 'Double', floor: 2, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Female', priceKes: 11500, isAvailable: false, amenities: ['Study Desk', 'Soft Pillows'] },
-      { id: 'ny-301', roomNumber: '301', roomType: 'Single', floor: 3, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 19000, isAvailable: true, amenities: ['Premium Finish', 'Study Desk', 'Balcony with Horizon View'] },
-      { id: 'ny-302', roomNumber: '302', roomType: 'Double', floor: 3, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Male', priceKes: 12000, isAvailable: true, amenities: ['Balcony', 'Fitted Curtains'] }
+      { id: 'ny-101', roomNumber: '101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Male', priceKes: 18000, isAvailable: true, amenities: ['Study Desk', 'Built-in Closet', 'Balcony'] },
+      { id: 'ny-102', roomNumber: '102', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 1, genderPreference: 'Male', priceKes: 18000, isAvailable: false, amenities: ['Study Desk', 'Built-in Closet'] },
+      { id: 'ny-201', roomNumber: '201', roomType: 'Double', roomFormat: 'Single Room', floor: 2, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 11500, isAvailable: true, amenities: ['Study Desk', 'Balcony', 'Mirror'] },
+      { id: 'ny-202', roomNumber: '202', roomType: 'Double', roomFormat: 'Single Room', floor: 2, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Female', priceKes: 11500, isAvailable: false, amenities: ['Study Desk', 'Soft Pillows'] },
+      { id: 'ny-301', roomNumber: '301', roomType: 'Single', roomFormat: 'One Bedroom', floor: 3, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 19000, isAvailable: true, amenities: ['Premium Finish', 'Study Desk', 'Balcony with Horizon View'] },
+      { id: 'ny-302', roomNumber: '302', roomType: 'Double', roomFormat: 'Two Bedroom', floor: 3, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Male', priceKes: 12000, isAvailable: true, amenities: ['Balcony', 'Fitted Curtains'] }
     ]
   },
   {
@@ -33,11 +33,11 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'courtyard',
     rooms: [
-      { id: 'mw-101', roomNumber: '101', roomType: 'Double', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Male', priceKes: 9500, isAvailable: false, amenities: ['Shoe Rack', 'High-speed Wi-Fi Access'] },
-      { id: 'mw-102', roomNumber: '102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 9500, isAvailable: true, amenities: ['Shoe Rack', 'Window View'] },
-      { id: 'mw-201', roomNumber: '201', roomType: '4-Sharing', floor: 2, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Mixed', priceKes: 7000, isAvailable: true, amenities: ['Personal Lockers', 'Study Table', 'Bunk Beds'] },
-      { id: 'mw-202', roomNumber: '202', roomType: '4-Sharing', floor: 2, currentOccupants: 4, maxOccupants: 4, genderPreference: 'Female', priceKes: 7200, isAvailable: false, amenities: ['Personal Lockers', 'Comfort Mattresses'] },
-      { id: 'mw-301', roomNumber: '301', roomType: 'Double', floor: 3, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Female', priceKes: 9800, isAvailable: true, amenities: ['Scenic Window', 'Wi-Fi Extender'] }
+      { id: 'mw-101', roomNumber: '101', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Male', priceKes: 9500, isAvailable: false, amenities: ['Shoe Rack', 'High-speed Wi-Fi Access'] },
+      { id: 'mw-102', roomNumber: '102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 9500, isAvailable: true, amenities: ['Shoe Rack', 'Window View'] },
+      { id: 'mw-201', roomNumber: '201', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 2, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Mixed', priceKes: 7000, isAvailable: true, amenities: ['Personal Lockers', 'Study Table', 'Bunk Beds'] },
+      { id: 'mw-202', roomNumber: '202', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 2, currentOccupants: 4, maxOccupants: 4, genderPreference: 'Female', priceKes: 7200, isAvailable: false, amenities: ['Personal Lockers', 'Comfort Mattresses'] },
+      { id: 'mw-301', roomNumber: '301', roomType: 'Double', roomFormat: 'Single Room', floor: 3, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Female', priceKes: 9800, isAvailable: true, amenities: ['Scenic Window', 'Wi-Fi Extender'] }
     ]
   },
   {
@@ -52,10 +52,10 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'luxury',
     rooms: [
-      { id: 'ml-101', roomNumber: 'A1', roomType: 'Single', floor: 1, currentOccupants: 1, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 22000, isAvailable: false, amenities: ['In-room Sink', 'Executive Chair', 'Instant Hot Water'] },
-      { id: 'ml-102', roomNumber: 'A2', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 22000, isAvailable: true, amenities: ['Executive Chair', 'Smart Socket', 'Private Kitchenette'] },
-      { id: 'ml-201', roomNumber: 'B1', roomType: 'Double', floor: 2, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 14000, isAvailable: true, amenities: ['Kitchen Sink', 'Built-in Closet Desk'] },
-      { id: 'ml-202', roomNumber: 'B2', roomType: 'Double', floor: 2, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Male', priceKes: 14000, isAvailable: false, amenities: ['Built-in Bookcase', 'Balcony'] }
+      { id: 'ml-101', roomNumber: 'A1', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 22000, isAvailable: false, amenities: ['In-room Sink', 'Executive Chair', 'Instant Hot Water'] },
+      { id: 'ml-102', roomNumber: 'A2', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 22000, isAvailable: true, amenities: ['Executive Chair', 'Smart Socket', 'Private Kitchenette'] },
+      { id: 'ml-201', roomNumber: 'B1', roomType: 'Double', roomFormat: 'Single Room', floor: 2, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 14000, isAvailable: true, amenities: ['Kitchen Sink', 'Built-in Closet Desk'] },
+      { id: 'ml-202', roomNumber: 'B2', roomType: 'Double', roomFormat: 'Single Room', floor: 2, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Male', priceKes: 14000, isAvailable: false, amenities: ['Built-in Bookcase', 'Balcony'] }
     ]
   },
   {
@@ -70,10 +70,10 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: false,
     imageKeyword: 'campus',
     rooms: [
-      { id: 'jg-101', roomNumber: 'F1', roomType: 'Double', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Female', priceKes: 8000, isAvailable: true, amenities: ['Drying Lines Access', 'Fitted Curtains'] },
-      { id: 'jg-102', roomNumber: 'F2', roomType: '4-Sharing', floor: 1, currentOccupants: 3, maxOccupants: 4, genderPreference: 'Male', priceKes: 6000, isAvailable: true, amenities: ['Lockable Cabinets', 'Study Bench'] },
-      { id: 'jg-201', roomNumber: 'S1', roomType: 'Double', floor: 2, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Male', priceKes: 8000, isAvailable: false, amenities: ['Full Rugs Area'] },
-      { id: 'jg-202', roomNumber: 'S2', roomType: '4-Sharing', floor: 2, currentOccupants: 1, maxOccupants: 4, genderPreference: 'Female', priceKes: 6200, isAvailable: true, amenities: ['Large Wardrobe', 'Shared Balcony'] }
+      { id: 'jg-101', roomNumber: 'F1', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Female', priceKes: 8000, isAvailable: true, amenities: ['Drying Lines Access', 'Fitted Curtains'] },
+      { id: 'jg-102', roomNumber: 'F2', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 1, currentOccupants: 3, maxOccupants: 4, genderPreference: 'Male', priceKes: 6000, isAvailable: true, amenities: ['Lockable Cabinets', 'Study Bench'] },
+      { id: 'jg-201', roomNumber: 'S1', roomType: 'Double', roomFormat: 'Single Room', floor: 2, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Male', priceKes: 8000, isAvailable: false, amenities: ['Full Rugs Area'] },
+      { id: 'jg-202', roomNumber: 'S2', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 2, currentOccupants: 1, maxOccupants: 4, genderPreference: 'Female', priceKes: 6200, isAvailable: true, amenities: ['Large Wardrobe', 'Shared Balcony'] }
     ]
   },
   {
@@ -88,9 +88,9 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'plaza',
     rooms: [
-      { id: 'sl-101', roomNumber: '101', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 10000, isAvailable: true, amenities: ['Fitted Bedframes', 'Mirror', 'Study Desks'] },
-      { id: 'sl-102', roomNumber: '102', roomType: 'Double', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 10000, isAvailable: true, amenities: ['Fitted Bedframes', 'Balcony Access'] },
-      { id: 'sl-201', roomNumber: '201', roomType: '4-Sharing', floor: 2, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Female', priceKes: 7500, isAvailable: true, amenities: ['Separate Study Stools', 'Lockers'] }
+      { id: 'sl-101', roomNumber: '101', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 10000, isAvailable: true, amenities: ['Fitted Bedframes', 'Mirror', 'Study Desks'] },
+      { id: 'sl-102', roomNumber: '102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 10000, isAvailable: true, amenities: ['Fitted Bedframes', 'Balcony Access'] },
+      { id: 'sl-201', roomNumber: '201', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 2, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Female', priceKes: 7500, isAvailable: true, amenities: ['Separate Study Stools', 'Lockers'] }
     ]
   },
   {
@@ -105,9 +105,9 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'palace',
     rooms: [
-      { id: 'ls-101', roomNumber: '101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 20000, isAvailable: true, amenities: ['Biometric Access Key', 'In-room Basin', 'Writing Desk'] },
-      { id: 'ls-102', roomNumber: '102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 12500, isAvailable: true, amenities: ['Reading Lamps', 'Spacious Wardrobes'] },
-      { id: 'ls-201', roomNumber: '201', roomType: 'Double', floor: 2, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Male', priceKes: 12500, isAvailable: true, amenities: ['Balcony Overlook', 'Shoe Rack'] }
+      { id: 'ls-101', roomNumber: '101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 20000, isAvailable: true, amenities: ['Biometric Access Key', 'In-room Basin', 'Writing Desk'] },
+      { id: 'ls-102', roomNumber: '102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 12500, isAvailable: true, amenities: ['Reading Lamps', 'Spacious Wardrobes'] },
+      { id: 'ls-201', roomNumber: '201', roomType: 'Double', roomFormat: 'Single Room', floor: 2, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Male', priceKes: 12500, isAvailable: true, amenities: ['Balcony Overlook', 'Shoe Rack'] }
     ]
   },
   {
@@ -122,9 +122,9 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'ridge',
     rooms: [
-      { id: 'ev-11', roomNumber: '11', roomType: 'Single', floor: 1, currentOccupants: 1, maxOccupants: 1, genderPreference: 'Male', priceKes: 16500, isAvailable: false, amenities: ['Custom Headboard', 'Wired Ethernet Hookup'] },
-      { id: 'ev-12', roomNumber: '12', roomType: 'Double', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Male', priceKes: 10500, isAvailable: true, amenities: ['Study Table for Two', 'Mirror Box'] },
-      { id: 'ev-21', roomNumber: '21', roomType: 'Double', floor: 2, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 11000, isAvailable: true, amenities: ['Tiled Balcony', 'Soft Carpet Area'] }
+      { id: 'ev-11', roomNumber: '11', roomType: 'Single', roomFormat: 'Bedsitter', floor: 1, currentOccupants: 1, maxOccupants: 1, genderPreference: 'Male', priceKes: 16500, isAvailable: false, amenities: ['Custom Headboard', 'Wired Ethernet Hookup'] },
+      { id: 'ev-12', roomNumber: '12', roomType: 'Double', roomFormat: 'Bedsitter', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Male', priceKes: 10500, isAvailable: true, amenities: ['Study Table for Two', 'Mirror Box'] },
+      { id: 'ev-21', roomNumber: '21', roomType: 'Double', roomFormat: 'Bedsitter', floor: 2, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 11000, isAvailable: true, amenities: ['Tiled Balcony', 'Soft Carpet Area'] }
     ]
   },
   {
@@ -139,9 +139,9 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'towers',
     rooms: [
-      { id: 'me-101', roomNumber: 'E-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 24000, isAvailable: true, amenities: ['Kitchenette', 'Prepaid Electricity Meter', 'Modern Sink'] },
-      { id: 'me-102', roomNumber: 'E-102', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Male', priceKes: 24000, isAvailable: true, amenities: ['Kitchenette', 'Memory Foam Bed', 'Prepaid Meter'] },
-      { id: 'me-201', roomNumber: 'E-201', roomType: 'Double', floor: 2, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 15500, isAvailable: true, amenities: ['Spacious Lounge Area', 'Large Study Corner'] }
+      { id: 'me-101', roomNumber: 'E-101', roomType: 'Single', roomFormat: 'Bedsitter', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 24000, isAvailable: true, amenities: ['Kitchenette', 'Prepaid Electricity Meter', 'Modern Sink'] },
+      { id: 'me-102', roomNumber: 'E-102', roomType: 'Single', roomFormat: 'Bedsitter', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Male', priceKes: 24000, isAvailable: true, amenities: ['Kitchenette', 'Memory Foam Bed', 'Prepaid Meter'] },
+      { id: 'me-201', roomNumber: 'E-201', roomType: 'Double', roomFormat: 'Bedsitter', floor: 2, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 15500, isAvailable: true, amenities: ['Spacious Lounge Area', 'Large Study Corner'] }
     ]
   },
   {
@@ -156,9 +156,9 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'village',
     rooms: [
-      { id: 'vj-101', roomNumber: 'V-101', roomType: '4-Sharing', floor: 1, currentOccupants: 3, maxOccupants: 4, genderPreference: 'Male', priceKes: 5800, isAvailable: true, amenities: ['Ironing Station Access', 'Lockable Box Under Bed'] },
-      { id: 'vj-102', roomNumber: 'V-102', roomType: '4-Sharing', floor: 1, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Female', priceKes: 5800, isAvailable: true, amenities: ['Spacious Cabinets', 'Study Desk for Four'] },
-      { id: 'vj-201', roomNumber: 'V-201', roomType: 'Double', floor: 2, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 7800, isAvailable: true, amenities: ['Shared Lounge Chair', 'Tiled Floor'] }
+      { id: 'vj-101', roomNumber: 'V-101', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 1, currentOccupants: 3, maxOccupants: 4, genderPreference: 'Male', priceKes: 5800, isAvailable: true, amenities: ['Ironing Station Access', 'Lockable Box Under Bed'] },
+      { id: 'vj-102', roomNumber: 'V-102', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 1, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Female', priceKes: 5800, isAvailable: true, amenities: ['Spacious Cabinets', 'Study Desk for Four'] },
+      { id: 'vj-201', roomNumber: 'V-201', roomType: 'Double', roomFormat: 'Single Room', floor: 2, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 7800, isAvailable: true, amenities: ['Shared Lounge Chair', 'Tiled Floor'] }
     ]
   },
   {
@@ -173,9 +173,9 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'haven',
     rooms: [
-      { id: 'uc-101', roomNumber: 'B-101', roomType: 'Double', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Male', priceKes: 8800, isAvailable: false, amenities: ['Wi-Fi Extended Range', 'Shoe Cabinet'] },
-      { id: 'uc-102', roomNumber: 'B-102', roomType: '4-Sharing', floor: 1, currentOccupants: 1, maxOccupants: 4, genderPreference: 'Male', priceKes: 6500, isAvailable: true, amenities: ['Individual Study Desks', 'Steel Lockers'] },
-      { id: 'uc-201', roomNumber: 'B-201', roomType: 'Double', floor: 2, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Female', priceKes: 9000, isAvailable: true, amenities: ['Clean Curtain Fittings', 'Balcony View'] }
+      { id: 'uc-101', roomNumber: 'B-101', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Male', priceKes: 8800, isAvailable: false, amenities: ['Wi-Fi Extended Range', 'Shoe Cabinet'] },
+      { id: 'uc-102', roomNumber: 'B-102', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 4, genderPreference: 'Male', priceKes: 6500, isAvailable: true, amenities: ['Individual Study Desks', 'Steel Lockers'] },
+      { id: 'uc-201', roomNumber: 'B-201', roomType: 'Double', roomFormat: 'Single Room', floor: 2, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Female', priceKes: 9000, isAvailable: true, amenities: ['Clean Curtain Fittings', 'Balcony View'] }
     ]
   },
   {
@@ -190,8 +190,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'castle',
     rooms: [
-      { id: 'ec-101', roomNumber: 'C-01', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Male', priceKes: 17500, isAvailable: true, amenities: ['Luxury Finish', 'Full Storage Rack', 'Private Balcony'] },
-      { id: 'ec-102', roomNumber: 'C-02', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 11000, isAvailable: true, amenities: ['Dual Study Sockets', 'Mirror Box'] }
+      { id: 'ec-101', roomNumber: 'C-01', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Male', priceKes: 17500, isAvailable: true, amenities: ['Luxury Finish', 'Full Storage Rack', 'Private Balcony'] },
+      { id: 'ec-102', roomNumber: 'C-02', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 11000, isAvailable: true, amenities: ['Dual Study Sockets', 'Mirror Box'] }
     ]
   },
   {
@@ -206,8 +206,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'executive',
     rooms: [
-      { id: 'ax-101', roomNumber: 'X-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 18500, isAvailable: true, amenities: ['Premium Mirror Set', 'Study Office Chair', 'Keycard Lock'] },
-      { id: 'ax-102', roomNumber: 'X-102', roomType: 'Double', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Female', priceKes: 11800, isAvailable: false, amenities: ['Smart Charging USB Hubs', 'Comfy Bedding'] }
+      { id: 'ax-101', roomNumber: 'X-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 18500, isAvailable: true, amenities: ['Premium Mirror Set', 'Study Office Chair', 'Keycard Lock'] },
+      { id: 'ax-102', roomNumber: 'X-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Female', priceKes: 11800, isAvailable: false, amenities: ['Smart Charging USB Hubs', 'Comfy Bedding'] }
     ]
   },
   {
@@ -222,8 +222,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'balcony',
     rooms: [
-      { id: 'mn-101', roomNumber: '101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Male', priceKes: 16000, isAvailable: true, amenities: ['Custom Study Desk', 'Fitted Closet'] },
-      { id: 'mn-102', roomNumber: '102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 10000, isAvailable: true, amenities: ['Book Shelf', 'Balcony Access'] }
+      { id: 'mn-101', roomNumber: '101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Male', priceKes: 16000, isAvailable: true, amenities: ['Custom Study Desk', 'Fitted Closet'] },
+      { id: 'mn-102', roomNumber: '102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 10000, isAvailable: true, amenities: ['Book Shelf', 'Balcony Access'] }
     ]
   },
   {
@@ -238,8 +238,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'modern',
     rooms: [
-      { id: 'vc-101', roomNumber: 'V-101', roomType: 'Single', floor: 1, currentOccupants: 1, maxOccupants: 1, genderPreference: 'Female', priceKes: 18000, isAvailable: false, amenities: ['Biometric Safe Locker', 'Preinstalled Wardrobe'] },
-      { id: 'vc-102', roomNumber: 'V-102', roomType: 'Double', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Female', priceKes: 12000, isAvailable: true, amenities: ['Reading Table Set', 'Wide Mirrors'] }
+      { id: 'vc-101', roomNumber: 'V-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 1, genderPreference: 'Female', priceKes: 18000, isAvailable: false, amenities: ['Biometric Safe Locker', 'Preinstalled Wardrobe'] },
+      { id: 'vc-102', roomNumber: 'V-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Female', priceKes: 12000, isAvailable: true, amenities: ['Reading Table Set', 'Wide Mirrors'] }
     ]
   },
   {
@@ -254,8 +254,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'campus',
     rooms: [
-      { id: 'sv-101', roomNumber: 'S-101', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 9000, isAvailable: true, amenities: ['Integrated Study Boards', 'Storage Cabinets'] },
-      { id: 'sv-102', roomNumber: 'S-102', roomType: '4-Sharing', floor: 1, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Male', priceKes: 6800, isAvailable: true, amenities: ['Personal Bunk Beds', 'Under-bed Lockers'] }
+      { id: 'sv-101', roomNumber: 'S-101', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 9000, isAvailable: true, amenities: ['Integrated Study Boards', 'Storage Cabinets'] },
+      { id: 'sv-102', roomNumber: 'S-102', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 1, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Male', priceKes: 6800, isAvailable: true, amenities: ['Personal Bunk Beds', 'Under-bed Lockers'] }
     ]
   },
   {
@@ -270,8 +270,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'sunny',
     rooms: [
-      { id: 'wg-101', roomNumber: 'W-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 14000, isAvailable: true, amenities: ['Tiled Kitchenette', 'Large Closet'] },
-      { id: 'wg-102', roomNumber: 'W-102', roomType: 'Double', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Female', priceKes: 9500, isAvailable: false, amenities: ['USB Reading Outlets', 'Comfort Foam Bed'] }
+      { id: 'wg-101', roomNumber: 'W-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 14000, isAvailable: true, amenities: ['Tiled Kitchenette', 'Large Closet'] },
+      { id: 'wg-102', roomNumber: 'W-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Female', priceKes: 9500, isAvailable: false, amenities: ['USB Reading Outlets', 'Comfort Foam Bed'] }
     ]
   },
   {
@@ -286,8 +286,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'library',
     rooms: [
-      { id: 'ik-101', roomNumber: 'I-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 19500, isAvailable: true, amenities: ['Private Study Chair', 'Intercom System', 'Accent Light'] },
-      { id: 'ik-102', roomNumber: 'I-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 13000, isAvailable: true, amenities: ['Study Office Table', 'Soft Window Seats'] }
+      { id: 'ik-101', roomNumber: 'I-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 19500, isAvailable: true, amenities: ['Private Study Chair', 'Intercom System', 'Accent Light'] },
+      { id: 'ik-102', roomNumber: 'I-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 13000, isAvailable: true, amenities: ['Study Office Table', 'Soft Window Seats'] }
     ]
   },
   {
@@ -302,8 +302,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'breeze',
     rooms: [
-      { id: 'uh-101', roomNumber: 'U-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 17000, isAvailable: true, amenities: ['Bespoke Shelves', 'Hot Bath Unit', 'Prepaid Electricity Meter'] },
-      { id: 'uh-102', roomNumber: 'U-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 11000, isAvailable: true, amenities: ['Study Desk Set', 'Premium Balcony View'] }
+      { id: 'uh-101', roomNumber: 'U-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 17000, isAvailable: true, amenities: ['Bespoke Shelves', 'Hot Bath Unit', 'Prepaid Electricity Meter'] },
+      { id: 'uh-102', roomNumber: 'U-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 11000, isAvailable: true, amenities: ['Study Desk Set', 'Premium Balcony View'] }
     ]
   },
   {
@@ -318,8 +318,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'cozy',
     rooms: [
-      { id: 'so-101', roomNumber: 'S-22', roomType: 'Double', floor: 2, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 11500, isAvailable: true, amenities: ['Smart Powerstrip', 'Comfort Double Mattress'] },
-      { id: 'so-102', roomNumber: 'S-23', roomType: '4-Sharing', floor: 2, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Female', priceKes: 7800, isAvailable: true, amenities: ['Security Lockers', 'Drying Rack'] }
+      { id: 'so-101', roomNumber: 'S-22', roomType: 'Double', roomFormat: 'Single Room', floor: 2, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 11500, isAvailable: true, amenities: ['Smart Powerstrip', 'Comfort Double Mattress'] },
+      { id: 'so-102', roomNumber: 'S-23', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 2, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Female', priceKes: 7800, isAvailable: true, amenities: ['Security Lockers', 'Drying Rack'] }
     ]
   },
   {
@@ -334,8 +334,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'palace',
     rooms: [
-      { id: 'kv-101', roomNumber: 'K-01', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 21000, isAvailable: true, amenities: ['Kitchenette Suite', 'Executive Chair', 'Spacious Sink Block'] },
-      { id: 'kv-102', roomNumber: 'K-02', roomType: 'Double', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Female', priceKes: 14500, isAvailable: false, amenities: ['Two Wardrobe Closets', 'Study Bench'] }
+      { id: 'kv-101', roomNumber: 'K-01', roomType: 'Single', roomFormat: 'One Bedroom', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 21000, isAvailable: true, amenities: ['Kitchenette Suite', 'Executive Chair', 'Spacious Sink Block'] },
+      { id: 'kv-102', roomNumber: 'K-02', roomType: 'Double', roomFormat: 'One Bedroom', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Female', priceKes: 14500, isAvailable: false, amenities: ['Two Wardrobe Closets', 'Study Bench'] }
     ]
   },
   {
@@ -350,8 +350,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'towers',
     rooms: [
-      { id: 'lt-101', roomNumber: 'L-11', roomType: 'Double', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 8900, isAvailable: true, amenities: ['Study Desk Set', 'Curtain Rails'] },
-      { id: 'lt-102', roomNumber: 'L-12', roomType: '4-Sharing', floor: 1, currentOccupants: 1, maxOccupants: 4, genderPreference: 'Male', priceKes: 6400, isAvailable: true, amenities: ['Security Locker', 'Hanging Racks'] }
+      { id: 'lt-101', roomNumber: 'L-11', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 8900, isAvailable: true, amenities: ['Study Desk Set', 'Curtain Rails'] },
+      { id: 'lt-102', roomNumber: 'L-12', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 4, genderPreference: 'Male', priceKes: 6400, isAvailable: true, amenities: ['Security Locker', 'Hanging Racks'] }
     ]
   },
   {
@@ -366,8 +366,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'haven',
     rooms: [
-      { id: 'ba-101', roomNumber: 'B-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 16500, isAvailable: true, amenities: ['Full Study Cabinet', 'Heavy-duty Metal Safe', 'Mirror'] },
-      { id: 'ba-102', roomNumber: 'B-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 10500, isAvailable: true, amenities: ['Separate Bedside Tables', 'Cozy Balcony View'] }
+      { id: 'ba-101', roomNumber: 'B-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 16500, isAvailable: true, amenities: ['Full Study Cabinet', 'Heavy-duty Metal Safe', 'Mirror'] },
+      { id: 'ba-102', roomNumber: 'B-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 10500, isAvailable: true, amenities: ['Separate Bedside Tables', 'Cozy Balcony View'] }
     ]
   },
   {
@@ -382,8 +382,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'courtyard',
     rooms: [
-      { id: 'ns-101', roomNumber: 'N-101', roomType: 'Double', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 8500, isAvailable: true, amenities: ['Extended Wi-Fi Antennas', 'Under-bed Storage Drawer'] },
-      { id: 'ns-102', roomNumber: 'N-102', roomType: '4-Sharing', floor: 1, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Male', priceKes: 6000, isAvailable: true, amenities: ['Metal Bunk Bed Set', 'Comfy Reading Stools'] }
+      { id: 'ns-101', roomNumber: 'N-101', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 8500, isAvailable: true, amenities: ['Extended Wi-Fi Antennas', 'Under-bed Storage Drawer'] },
+      { id: 'ns-102', roomNumber: 'N-102', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 1, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Male', priceKes: 6000, isAvailable: true, amenities: ['Metal Bunk Bed Set', 'Comfy Reading Stools'] }
     ]
   },
   {
@@ -398,8 +398,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'balcony',
     rooms: [
-      { id: 'ch-101', roomNumber: 'C-201', roomType: 'Single', floor: 2, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 19000, isAvailable: true, amenities: ['Smart Keycard Lock', 'Integrated Kitchenette Unit', 'Study Desk Set'] },
-      { id: 'ch-102', roomNumber: 'C-202', roomType: 'Double', floor: 2, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Female', priceKes: 12500, isAvailable: false, amenities: ['Scenic Balcony', 'Reading Spotlights', 'Fitted Curtains'] }
+      { id: 'ch-101', roomNumber: 'C-201', roomType: 'Single', roomFormat: 'Bedsitter', floor: 2, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 19000, isAvailable: true, amenities: ['Smart Keycard Lock', 'Integrated Kitchenette Unit', 'Study Desk Set'] },
+      { id: 'ch-102', roomNumber: 'C-202', roomType: 'Double', roomFormat: 'Bedsitter', floor: 2, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Female', priceKes: 12500, isAvailable: false, amenities: ['Scenic Balcony', 'Reading Spotlights', 'Fitted Curtains'] }
     ]
   },
   {
@@ -414,8 +414,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'modern',
     rooms: [
-      { id: 'cg-101', roomNumber: 'G-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 16000, rentMonthlyKes: 4000, isAvailable: true, amenities: ['Built-in wardrobes', 'Spacious Study Desk', 'Private Kitchenette'] },
-      { id: 'cg-102', roomNumber: 'G-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 10500, rentMonthlyKes: 2700, isAvailable: true, amenities: ['Shared Study Table', 'Shoe Racks'] }
+      { id: 'cg-101', roomNumber: 'G-101', roomType: 'Single', roomFormat: 'Bedsitter', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 16000, rentMonthlyKes: 4000, isAvailable: true, amenities: ['Built-in wardrobes', 'Spacious Study Desk', 'Private Kitchenette'] },
+      { id: 'cg-102', roomNumber: 'G-102', roomType: 'Double', roomFormat: 'Bedsitter', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 10500, rentMonthlyKes: 2700, isAvailable: true, amenities: ['Shared Study Table', 'Shoe Racks'] }
     ]
   },
   {
@@ -430,9 +430,9 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'sunny',
     rooms: [
-      { id: 'oh-101', roomNumber: 'O-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 15500, isAvailable: true, amenities: ['Bespoke Orange Accent Wall', 'Large Wardrobes', 'Comfy Study Table Set'] },
-      { id: 'oh-102', roomNumber: 'O-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 10000, isAvailable: true, amenities: ['Study Desk Set', 'Ample Window Lighting'] },
-      { id: 'oh-201', roomNumber: 'O-201', roomType: '4-Sharing', floor: 2, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Male', priceKes: 6800, isAvailable: true, amenities: ['Steel Double Bunks', 'Personal Lockers'] }
+      { id: 'oh-101', roomNumber: 'O-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 15500, isAvailable: true, amenities: ['Bespoke Orange Accent Wall', 'Large Wardrobes', 'Comfy Study Table Set'] },
+      { id: 'oh-102', roomNumber: 'O-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 10000, isAvailable: true, amenities: ['Study Desk Set', 'Ample Window Lighting'] },
+      { id: 'oh-201', roomNumber: 'O-201', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 2, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Male', priceKes: 6800, isAvailable: true, amenities: ['Steel Double Bunks', 'Personal Lockers'] }
     ]
   },
 
@@ -448,9 +448,10 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'campus',
     imageUrl: '/src/assets/images/kisii_oncampus_hostel_1779545601491.png',
+    imageUrls: ['/src/assets/images/kisii_oncampus_hostel_1779545601491.png'],
     rooms: [
-      { id: 'vm-101', roomNumber: 'Venus Block V-01', roomType: '4-Sharing', floor: 1, currentOccupants: 1, maxOccupants: 4, genderPreference: 'Female', priceKes: 3500, isAvailable: true, amenities: ['Comfortable Study Desks', 'University Standard Bunk Beds', 'Private Lockers'] },
-      { id: 'vm-102', roomNumber: 'Mars Block M-03', roomType: 'Double', floor: 2, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 5200, isAvailable: true, amenities: ['Private Study Table Set', 'Fitted Closets', 'Serene Landscape View'] }
+      { id: 'vm-101', roomNumber: 'Venus Block V-01', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 4, genderPreference: 'Female', priceKes: 3500, isAvailable: true, amenities: ['Comfortable Study Desks', 'University Standard Bunk Beds', 'Private Lockers'] },
+      { id: 'vm-102', roomNumber: 'Mars Block M-03', roomType: 'Double', roomFormat: 'Single Room', floor: 2, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 5200, isAvailable: true, amenities: ['Private Study Table Set', 'Fitted Closets', 'Serene Landscape View'] }
     ]
   },
   {
@@ -465,9 +466,10 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'campus',
     imageUrl: '/src/assets/images/kisii_oncampus_hostel_1779545601491.png',
+    imageUrls: ['/src/assets/images/kisii_oncampus_hostel_1779545601491.png'],
     rooms: [
-      { id: 'czb-101', roomNumber: 'CZ Block C-12', roomType: '4-Sharing', floor: 1, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Male', priceKes: 3500, isAvailable: true, amenities: ['Standard Bunk Beds', 'Under-bed Secure Lockers', 'Comrade Study Bench'] },
-      { id: 'czb-102', roomNumber: 'Black House D-05', roomType: 'Double', floor: 2, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Male', priceKes: 5000, isAvailable: true, amenities: ['Fitted Study Desk', 'Spacious Personal Wardrobe'] }
+      { id: 'czb-101', roomNumber: 'CZ Block C-12', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 1, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Male', priceKes: 3500, isAvailable: true, amenities: ['Standard Bunk Beds', 'Under-bed Secure Lockers', 'Comrade Study Bench'] },
+      { id: 'czb-102', roomNumber: 'Black House D-05', roomType: 'Double', roomFormat: 'Single Room', floor: 2, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Male', priceKes: 5000, isAvailable: true, amenities: ['Fitted Study Desk', 'Spacious Personal Wardrobe'] }
     ]
   },
   {
@@ -482,12 +484,13 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'luxury',
     imageUrl: '/src/assets/images/kerubo_hostel_1779717867692.png',
+    imageUrls: ['/src/assets/images/kerubo_hostel_1779717867692.png'],
     landlordPhone: '0710748699',
     rentMonthlyKes: 4500,
     rooms: [
-      { id: 'ka-101', roomNumber: '101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 15500, rentMonthlyKes: 4500, isAvailable: true, amenities: ['Study Desk Set', 'Spacious Closet', 'In-room Sink'] },
-      { id: 'ka-102', roomNumber: '102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 11000, rentMonthlyKes: 2750, isAvailable: true, amenities: ['Reading Overlook Balcony', 'Individual Steel Lockers'] },
-      { id: 'ka-201', roomNumber: '201', roomType: 'Double', floor: 2, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Male', priceKes: 11000, rentMonthlyKes: 2750, isAvailable: true, amenities: ['Bespoke Writing Desks', 'Fitted Shoe Racks'] }
+      { id: 'ka-101', roomNumber: '101', roomType: 'Single', roomFormat: 'Bedsitter', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 15500, rentMonthlyKes: 4500, isAvailable: true, amenities: ['Study Desk Set', 'Spacious Closet', 'In-room Sink'] },
+      { id: 'ka-102', roomNumber: '102', roomType: 'Double', roomFormat: 'Bedsitter', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 11000, rentMonthlyKes: 2750, isAvailable: true, amenities: ['Reading Overlook Balcony', 'Individual Steel Lockers'] },
+      { id: 'ka-201', roomNumber: '201', roomType: 'Double', roomFormat: 'Bedsitter', floor: 2, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Male', priceKes: 11000, rentMonthlyKes: 2750, isAvailable: true, amenities: ['Bespoke Writing Desks', 'Fitted Shoe Racks'] }
     ]
   },
   {
@@ -502,9 +505,9 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'cozy',
     rooms: [
-      { id: 'oba-101', roomNumber: 'A-01', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 14000, isAvailable: true, amenities: ['Study Desk Set', 'Spacious Bedside Table', 'Fitted Curtains'] },
-      { id: 'oba-102', roomNumber: 'A-02', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 9500, isAvailable: true, amenities: ['Individual Storage Lockers', 'Under-bed Storage Drawer'] },
-      { id: 'oba-201', roomNumber: 'B-01', roomType: 'Double', floor: 2, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Female', priceKes: 9800, isAvailable: false, amenities: ['Cozy Windowsill Views', 'Joint Writing Desks'] }
+      { id: 'oba-101', roomNumber: 'A-01', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 14000, isAvailable: true, amenities: ['Study Desk Set', 'Spacious Bedside Table', 'Fitted Curtains'] },
+      { id: 'oba-102', roomNumber: 'A-02', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 9500, isAvailable: true, amenities: ['Individual Storage Lockers', 'Under-bed Storage Drawer'] },
+      { id: 'oba-201', roomNumber: 'B-01', roomType: 'Double', roomFormat: 'Single Room', floor: 2, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Female', priceKes: 9800, isAvailable: false, amenities: ['Cozy Windowsill Views', 'Joint Writing Desks'] }
     ]
   },
   {
@@ -519,8 +522,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'plaza',
     rooms: [
-      { id: 'mo-101', roomNumber: 'M-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 16000, isAvailable: true, amenities: ['Study Desk Set', 'Spacious Locker', 'Bright LED Spotlights'] },
-      { id: 'mo-102', roomNumber: 'M-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 10500, isAvailable: true, amenities: ['Bedside Tables', 'Wall Hanging Racks'] }
+      { id: 'mo-101', roomNumber: 'M-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 16000, isAvailable: true, amenities: ['Study Desk Set', 'Spacious Locker', 'Bright LED Spotlights'] },
+      { id: 'mo-102', roomNumber: 'M-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 10500, isAvailable: true, amenities: ['Bedside Tables', 'Wall Hanging Racks'] }
     ]
   },
   {
@@ -535,8 +538,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'luxury',
     rooms: [
-      { id: 'sw-101', roomNumber: 'S-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 17000, isAvailable: true, amenities: ['Comfort Study Desk', 'Private Kitchenette', 'Hot Shower Controller'] },
-      { id: 'sw-102', roomNumber: 'S-102', roomType: 'Double', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 11000, isAvailable: false, amenities: ['Fitted Curtains', 'Separate Reading Lights'] }
+      { id: 'sw-101', roomNumber: 'S-101', roomType: 'Single', roomFormat: 'Bedsitter', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 17000, isAvailable: true, amenities: ['Comfort Study Desk', 'Private Kitchenette', 'Hot Shower Controller'] },
+      { id: 'sw-102', roomNumber: 'S-102', roomType: 'Double', roomFormat: 'Bedsitter', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 11000, isAvailable: false, amenities: ['Fitted Curtains', 'Separate Reading Lights'] }
     ]
   },
   {
@@ -551,8 +554,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'breeze',
     rooms: [
-      { id: 'rs-101', roomNumber: 'R-101', roomType: 'Double', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 8800, isAvailable: true, amenities: ['River Breeze Balcony', 'Double Wardrobe'] },
-      { id: 'rs-102', roomNumber: 'R-102', roomType: '4-Sharing', floor: 1, currentOccupants: 1, maxOccupants: 4, genderPreference: 'Male', priceKes: 6200, isAvailable: true, amenities: ['Steel Bunks', 'Individual Clothing Lockers'] }
+      { id: 'rs-101', roomNumber: 'R-101', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 8800, isAvailable: true, amenities: ['River Breeze Balcony', 'Double Wardrobe'] },
+      { id: 'rs-102', roomNumber: 'R-102', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 4, genderPreference: 'Male', priceKes: 6200, isAvailable: true, amenities: ['Steel Bunks', 'Individual Clothing Lockers'] }
     ]
   },
   {
@@ -567,8 +570,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'towers',
     rooms: [
-      { id: 'wgh-101', roomNumber: 'W-201', roomType: 'Single', floor: 2, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 17500, isAvailable: true, amenities: ['Fitted Study Desk', 'Private Balcony', 'Integrated Bathroom'] },
-      { id: 'wgh-102', roomNumber: 'W-202', roomType: 'Double', floor: 2, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 11200, isAvailable: true, amenities: ['Reading Spotlights', 'Ample Window Lighting'] }
+      { id: 'wgh-101', roomNumber: 'W-201', roomType: 'Single', roomFormat: 'Single Room', floor: 2, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 17500, isAvailable: true, amenities: ['Fitted Study Desk', 'Private Balcony', 'Integrated Bathroom'] },
+      { id: 'wgh-102', roomNumber: 'W-202', roomType: 'Double', roomFormat: 'Single Room', floor: 2, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 11200, isAvailable: true, amenities: ['Reading Spotlights', 'Ample Window Lighting'] }
     ]
   },
   {
@@ -583,8 +586,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'executive',
     rooms: [
-      { id: 'sm-101', roomNumber: 'S-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 18500, isAvailable: true, amenities: ['Executive Desk Set', 'In-room Sink Unit', 'Kitchen Counter'] },
-      { id: 'sm-102', roomNumber: 'S-102', roomType: 'Double', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Female', priceKes: 12000, isAvailable: false, amenities: ['Scenic Rooftop Access', 'Built-in Bookcase'] }
+      { id: 'sm-101', roomNumber: 'S-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 18500, isAvailable: true, amenities: ['Executive Desk Set', 'In-room Sink Unit', 'Kitchen Counter'] },
+      { id: 'sm-102', roomNumber: 'S-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Female', priceKes: 12000, isAvailable: false, amenities: ['Scenic Rooftop Access', 'Built-in Bookcase'] }
     ]
   },
   {
@@ -599,8 +602,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasHotShower: true,
     imageKeyword: 'hilltop',
     rooms: [
-      { id: 'uhe-101', roomNumber: 'U-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 20000, isAvailable: true, amenities: ['Premium Study Desk', 'Wardrobes', 'Balcony Overlook'] },
-      { id: 'uhe-102', roomNumber: 'U-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 13500, isAvailable: true, amenities: ['Study Desk Set', 'Ample Closet Space'] }
+      { id: 'uhe-101', roomNumber: 'U-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 20000, isAvailable: true, amenities: ['Premium Study Desk', 'Wardrobes', 'Balcony Overlook'] },
+      { id: 'uhe-102', roomNumber: 'U-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 13500, isAvailable: true, amenities: ['Study Desk Set', 'Ample Closet Space'] }
     ]
   },
   {
@@ -616,8 +619,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'cozy',
     landlordPhone: '0722100456',
     rooms: [
-      { id: 'len-101', roomNumber: 'L-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 15000, isAvailable: true, amenities: ['Study Desk Set', 'Spacious Shelf Unit', 'Private Washroom'] },
-      { id: 'len-102', roomNumber: 'L-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 10000, isAvailable: true, amenities: ['Wall-mounted Hangers', 'Individual Sockets'] }
+      { id: 'len-101', roomNumber: 'L-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 15000, isAvailable: true, amenities: ['Study Desk Set', 'Spacious Shelf Unit', 'Private Washroom'] },
+      { id: 'len-102', roomNumber: 'L-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 10000, isAvailable: true, amenities: ['Wall-mounted Hangers', 'Individual Sockets'] }
     ]
   },
   {
@@ -633,8 +636,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'luxury',
     landlordPhone: '0733890214',
     rooms: [
-      { id: 'emm-101', roomNumber: 'E-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 16500, isAvailable: true, amenities: ['Fitted Study Desk', 'Cozy Reading Light', 'Fitted Curtains'] },
-      { id: 'emm-102', roomNumber: 'E-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 10800, isAvailable: true, amenities: ['Under-bed Storage Drawers', 'Steel Lockers'] }
+      { id: 'emm-101', roomNumber: 'E-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 16500, isAvailable: true, amenities: ['Fitted Study Desk', 'Cozy Reading Light', 'Fitted Curtains'] },
+      { id: 'emm-102', roomNumber: 'E-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 10800, isAvailable: true, amenities: ['Under-bed Storage Drawers', 'Steel Lockers'] }
     ]
   },
   {
@@ -650,8 +653,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'breeze',
     landlordPhone: '0711554433',
     rooms: [
-      { id: 'day-101', roomNumber: 'D-101', roomType: 'Double', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 9200, isAvailable: true, amenities: ['Breeze Balcony Access', 'Ample Shared Closets'] },
-      { id: 'day-102', roomNumber: 'D-102', roomType: '4-Sharing', floor: 1, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Male', priceKes: 6500, isAvailable: true, amenities: ['Metal Bunkbeds', 'Four Individual Wardrobe Units'] }
+      { id: 'day-101', roomNumber: 'D-101', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 9200, isAvailable: true, amenities: ['Breeze Balcony Access', 'Ample Shared Closets'] },
+      { id: 'day-102', roomNumber: 'D-102', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 1, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Male', priceKes: 6500, isAvailable: true, amenities: ['Metal Bunkbeds', 'Four Individual Wardrobe Units'] }
     ]
   },
   {
@@ -667,8 +670,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'executive',
     landlordPhone: '0799887766',
     rooms: [
-      { id: 'qns-101', roomNumber: 'Q-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 19500, isAvailable: true, amenities: ['Executive Vanity Desk', 'Integrated Kitchenette Counter', 'Hot Shower Controller'] },
-      { id: 'qns-102', roomNumber: 'Q-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 13000, isAvailable: true, amenities: ['Large Balcony with Sunset Vista', 'Integrated Bookcase'] }
+      { id: 'qns-101', roomNumber: 'Q-101', roomType: 'Single', roomFormat: 'One Bedroom', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 19500, isAvailable: true, amenities: ['Executive Vanity Desk', 'Integrated Kitchenette Counter', 'Hot Shower Controller'] },
+      { id: 'qns-102', roomNumber: 'Q-102', roomType: 'Double', roomFormat: 'One Bedroom', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 13000, isAvailable: true, amenities: ['Large Balcony with Sunset Vista', 'Integrated Bookcase'] }
     ]
   },
   {
@@ -684,8 +687,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'nature',
     landlordPhone: '0715334455',
     rooms: [
-      { id: 'vok-101', roomNumber: 'VO-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 16000, isAvailable: true, amenities: ['Premium Study Desk', 'Spacious Closet', 'In-room Sink'] },
-      { id: 'vok-102', roomNumber: 'VO-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 11000, isAvailable: true, amenities: ['Private Study Space', 'Balcony Access'] }
+      { id: 'vok-101', roomNumber: 'VO-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 16000, isAvailable: true, amenities: ['Premium Study Desk', 'Spacious Closet', 'In-room Sink'] },
+      { id: 'vok-102', roomNumber: 'VO-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 11000, isAvailable: true, amenities: ['Private Study Space', 'Balcony Access'] }
     ]
   },
   {
@@ -701,8 +704,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'modern',
     landlordPhone: '0712883311',
     rooms: [
-      { id: 'rm-101', roomNumber: 'RM-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 17500, isAvailable: true, amenities: ['Modern Tiled Study Desk', 'Spacious Inbuilt Wardrobe', 'Private Sink'] },
-      { id: 'rm-102', roomNumber: 'RM-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 11500, isAvailable: true, amenities: ['Quiet Study Spotlights', 'Individual USB Outlets'] }
+      { id: 'rm-101', roomNumber: 'RM-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 17500, isAvailable: true, amenities: ['Modern Tiled Study Desk', 'Spacious Inbuilt Wardrobe', 'Private Sink'] },
+      { id: 'rm-102', roomNumber: 'RM-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 11500, isAvailable: true, amenities: ['Quiet Study Spotlights', 'Individual USB Outlets'] }
     ]
   },
   {
@@ -718,8 +721,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'towers',
     landlordPhone: '0722334455',
     rooms: [
-      { id: 'gl-101', roomNumber: 'GL-101', roomType: 'Double', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 9500, isAvailable: true, amenities: ['Breeze Balcony Access', 'Under-bed Storage Boxes'] },
-      { id: 'gl-102', roomNumber: 'GL-102', roomType: '4-Sharing', floor: 1, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Male', priceKes: 6800, isAvailable: true, amenities: ['Metal Bunk Bed Set', 'Lockable Personal Safety Closets'] }
+      { id: 'gl-101', roomNumber: 'GL-101', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 9500, isAvailable: true, amenities: ['Breeze Balcony Access', 'Under-bed Storage Boxes'] },
+      { id: 'gl-102', roomNumber: 'GL-102', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 1, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Male', priceKes: 6800, isAvailable: true, amenities: ['Metal Bunk Bed Set', 'Lockable Personal Safety Closets'] }
     ]
   },
   {
@@ -735,8 +738,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'sunny',
     landlordPhone: '0701122334',
     rooms: [
-      { id: 'rh-101', roomNumber: 'RH-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 16000, isAvailable: true, amenities: ['Red Accent Design Theme', 'Executive Working Chair', 'Spacious Balcony'] },
-      { id: 'rh-102', roomNumber: 'RH-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 10500, isAvailable: true, amenities: ['Dual Study Tables', 'Soft Mattress Topper'] }
+      { id: 'rh-101', roomNumber: 'RH-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 16000, isAvailable: true, amenities: ['Red Accent Design Theme', 'Executive Working Chair', 'Spacious Balcony'] },
+      { id: 'rh-102', roomNumber: 'RH-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 10500, isAvailable: true, amenities: ['Dual Study Tables', 'Soft Mattress Topper'] }
     ]
   },
   {
@@ -752,8 +755,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'courtyard',
     landlordPhone: '0733556677',
     rooms: [
-      { id: 'fn-101', roomNumber: 'FN-101', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 8900, isAvailable: true, amenities: ['Prepaid Utility Meters', 'Convenient Balcony Hangers'] },
-      { id: 'fn-102', roomNumber: 'FN-102', roomType: '4-Sharing', floor: 1, currentOccupants: 3, maxOccupants: 4, genderPreference: 'Mixed', priceKes: 6200, isAvailable: true, amenities: ['Shared Center Dining Table', 'Drying Rack Access'] }
+      { id: 'fn-101', roomNumber: 'FN-101', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 8900, isAvailable: true, amenities: ['Prepaid Utility Meters', 'Convenient Balcony Hangers'] },
+      { id: 'fn-102', roomNumber: 'FN-102', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 1, currentOccupants: 3, maxOccupants: 4, genderPreference: 'Mixed', priceKes: 6200, isAvailable: true, amenities: ['Shared Center Dining Table', 'Drying Rack Access'] }
     ]
   },
   {
@@ -769,8 +772,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'luxury',
     landlordPhone: '0711993388',
     rooms: [
-      { id: 'pt-101', roomNumber: 'PT-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 18500, isAvailable: true, amenities: ['Panoramic View Balcony', 'Smart Keycard Entry', 'In-room Fitted Kitchenette'] },
-      { id: 'pt-102', roomNumber: 'PT-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 12000, isAvailable: true, amenities: ['Modern Tiled Finishes', 'Large Built-in Shoe Cases'] }
+      { id: 'pt-101', roomNumber: 'PT-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 18500, isAvailable: true, amenities: ['Panoramic View Balcony', 'Smart Keycard Entry', 'In-room Fitted Kitchenette'] },
+      { id: 'pt-102', roomNumber: 'PT-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 12000, isAvailable: true, amenities: ['Modern Tiled Finishes', 'Large Built-in Shoe Cases'] }
     ]
   },
   {
@@ -786,8 +789,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'breeze',
     landlordPhone: '0724889900',
     rooms: [
-      { id: 'uhh-101', roomNumber: 'UH-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 19000, isAvailable: true, amenities: ['Scenic Rooftop Deck Pass', 'Spacious Executive Study Area', 'Hot Bathroom Unit'] },
-      { id: 'uhh-102', roomNumber: 'UH-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 12500, isAvailable: true, amenities: ['Custom Fitted Study Desks', 'Silent Dual-speed Wall Fan'] }
+      { id: 'uhh-101', roomNumber: 'UH-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 19000, isAvailable: true, amenities: ['Scenic Rooftop Deck Pass', 'Spacious Executive Study Area', 'Hot Bathroom Unit'] },
+      { id: 'uhh-102', roomNumber: 'UH-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 12500, isAvailable: true, amenities: ['Custom Fitted Study Desks', 'Silent Dual-speed Wall Fan'] }
     ]
   },
   {
@@ -803,8 +806,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'cozy',
     landlordPhone: '0791445566',
     rooms: [
-      { id: 'mr-101', roomNumber: 'MR-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 15500, isAvailable: true, amenities: ['Quiet Private Study Corner', 'Quality Latex Foam Bed', 'Preinstalled Wardrobes'] },
-      { id: 'mr-102', roomNumber: 'MR-102', roomType: 'Double', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Female', priceKes: 9800, isAvailable: false, amenities: ['Dual Study Spotlights', 'Individual Sockets per Bed'] }
+      { id: 'mr-101', roomNumber: 'MR-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 15500, isAvailable: true, amenities: ['Quiet Private Study Corner', 'Quality Latex Foam Bed', 'Preinstalled Wardrobes'] },
+      { id: 'mr-102', roomNumber: 'MR-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Female', priceKes: 9800, isAvailable: false, amenities: ['Dual Study Spotlights', 'Individual Sockets per Bed'] }
     ]
   },
   {
@@ -820,8 +823,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'towers',
     landlordPhone: '0722339944',
     rooms: [
-      { id: 'bt-101', roomNumber: 'BT-101', roomType: 'Double', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 8800, isAvailable: true, amenities: ['Silent Study Environment', 'Double Wardrobe Hookups'] },
-      { id: 'bt-102', roomNumber: 'BT-102', roomType: '4-Sharing', floor: 1, currentOccupants: 1, maxOccupants: 4, genderPreference: 'Female', priceKes: 5900, isAvailable: true, amenities: ['Under-bed Secure Lockers', 'Study Bench Set'] }
+      { id: 'bt-101', roomNumber: 'BT-101', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 8800, isAvailable: true, amenities: ['Silent Study Environment', 'Double Wardrobe Hookups'] },
+      { id: 'bt-102', roomNumber: 'BT-102', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 4, genderPreference: 'Female', priceKes: 5900, isAvailable: true, amenities: ['Under-bed Secure Lockers', 'Study Bench Set'] }
     ]
   },
   {
@@ -837,8 +840,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'plaza',
     landlordPhone: '0702667788',
     rooms: [
-      { id: 'mg-101', roomNumber: 'MG-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 17500, isAvailable: true, amenities: ['Dedicated Ultra Fast Fiber Port', 'Premium Study Desk Set', 'Spacious Closet'] },
-      { id: 'mg-102', roomNumber: 'MG-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 11000, isAvailable: true, amenities: ['Dual Smart USB Outlets', 'Individual Study Chairs'] }
+      { id: 'mg-101', roomNumber: 'MG-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 17500, isAvailable: true, amenities: ['Dedicated Ultra Fast Fiber Port', 'Premium Study Desk Set', 'Spacious Closet'] },
+      { id: 'mg-102', roomNumber: 'MG-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 11000, isAvailable: true, amenities: ['Dual Smart USB Outlets', 'Individual Study Chairs'] }
     ]
   },
   {
@@ -854,8 +857,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'haven',
     landlordPhone: '0714778899',
     rooms: [
-      { id: 'nw-101', roomNumber: 'NW-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 16500, isAvailable: true, amenities: ['Clean Elegant Tiling', 'Solar Backup Lighting Bulbs', 'Fitted Closets'] },
-      { id: 'nw-102', roomNumber: 'NW-102', roomType: 'Double', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Female', priceKes: 10205, isAvailable: false, amenities: ['Cozy Windowsill Views', 'Joint Writing Desks'] }
+      { id: 'nw-101', roomNumber: 'NW-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 16500, isAvailable: true, amenities: ['Clean Elegant Tiling', 'Solar Backup Lighting Bulbs', 'Fitted Closets'] },
+      { id: 'nw-102', roomNumber: 'NW-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Female', priceKes: 10205, isAvailable: false, amenities: ['Cozy Windowsill Views', 'Joint Writing Desks'] }
     ]
   },
   {
@@ -871,8 +874,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'balcony',
     landlordPhone: '0715223344',
     rooms: [
-      { id: 'bm-101', roomNumber: 'BM-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 15000, isAvailable: true, amenities: ['Large Wardrobes', 'Comfy Study Table Set'] },
-      { id: 'bm-102', roomNumber: 'BM-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 9800, isAvailable: true, amenities: ['Shared Study Spotlights', 'Individual Sockets'] }
+      { id: 'bm-101', roomNumber: 'BM-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 15000, isAvailable: true, amenities: ['Large Wardrobes', 'Comfy Study Table Set'] },
+      { id: 'bm-102', roomNumber: 'BM-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 9800, isAvailable: true, amenities: ['Shared Study Spotlights', 'Individual Sockets'] }
     ]
   },
   {
@@ -888,8 +891,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'luxury',
     landlordPhone: '0711224466',
     rooms: [
-      { id: 'er-101', roomNumber: 'ER-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 22000, isAvailable: true, amenities: ['Elegantly Styled Vanity Desk', 'Biometric Gate Access', 'Memory Foam Mattresses'] },
-      { id: 'er-102', roomNumber: 'ER-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 14000, isAvailable: true, amenities: ['Individual Shoe Display Cabinets', 'Private Lounge Balcony'] }
+      { id: 'er-101', roomNumber: 'ER-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 22000, isAvailable: true, amenities: ['Elegantly Styled Vanity Desk', 'Biometric Gate Access', 'Memory Foam Mattresses'] },
+      { id: 'er-102', roomNumber: 'ER-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 14000, isAvailable: true, amenities: ['Individual Shoe Display Cabinets', 'Private Lounge Balcony'] }
     ]
   },
   {
@@ -905,8 +908,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'modern',
     landlordPhone: '0721778899',
     rooms: [
-      { id: 'tk-101', roomNumber: 'TK-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 16000, isAvailable: true, amenities: ['Highly Tailored Compact Layout', 'Space-efficient Closet Fold', 'Writing Desk Set'] },
-      { id: 'tk-102', roomNumber: 'TK-102', roomType: 'Double', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Male', priceKes: 10200, isAvailable: false, amenities: ['Sleek Wall Storage System', 'Bedside Charging Docks'] }
+      { id: 'tk-101', roomNumber: 'TK-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 16000, isAvailable: true, amenities: ['Highly Tailored Compact Layout', 'Space-efficient Closet Fold', 'Writing Desk Set'] },
+      { id: 'tk-102', roomNumber: 'TK-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Male', priceKes: 10200, isAvailable: false, amenities: ['Sleek Wall Storage System', 'Bedside Charging Docks'] }
     ]
   },
   {
@@ -922,8 +925,8 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageKeyword: 'breeze',
     landlordPhone: '0729112233',
     rooms: [
-      { id: 'hw-101', roomNumber: 'HW-101', roomType: 'Single', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 17000, isAvailable: true, amenities: ['Sunset View Balcony Access', 'Integrated Smart Home Sound', 'Spacious Desk Set'] },
-      { id: 'hw-102', roomNumber: 'HW-102', roomType: 'Double', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 11000, isAvailable: true, amenities: ['Joint Study Tables', 'Soft Bedding Setup'] }
+      { id: 'hw-101', roomNumber: 'HW-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 17000, isAvailable: true, amenities: ['Sunset View Balcony Access', 'Integrated Smart Home Sound', 'Spacious Desk Set'] },
+      { id: 'hw-102', roomNumber: 'HW-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 11000, isAvailable: true, amenities: ['Joint Study Tables', 'Soft Bedding Setup'] }
     ]
   }
 ];

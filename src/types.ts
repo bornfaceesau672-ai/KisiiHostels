@@ -2,12 +2,13 @@ export interface Room {
   id: string;
   roomNumber: string;
   roomType: 'Single' | 'Double' | '4-Sharing';
+  roomFormat: 'Bedsitter' | 'Single Room' | 'One Bedroom' | 'Two Bedroom';
   floor: number;
   currentOccupants: number;
   maxOccupants: number;
   genderPreference: 'Male' | 'Female' | 'Mixed';
   priceKes: number; // Price in KES per semester
-  rentMonthlyKes?: number; // Optional price in KES per month
+  rentMonthlyKes?: string | number; // Optional price in KES per month
   isAvailable: boolean;
   amenities: string[];
 }
@@ -24,11 +25,12 @@ export interface Hostel {
   hasHotShower: boolean;
   imageKeyword: string; // Used to fetch an aesthetic UI color/image concept
   imageUrl?: string; // Optional URL or local path to a real image illustration
+  imageUrls?: string[]; // Optional multiple uploaded image URLs
   landlordPhone?: string; // Optional landlord contact phone number
   rules?: string[]; // Standard house rules
   depositRefundable?: 'Refundable' | 'Non-refundable' | '50% Refundable' | string; // Deposit refund policy
   gateClosingTime?: string; // Gate curfew / closing time
-  rentMonthlyKes?: number; // Optional starting monthly rent for the entire hostel
+  rentMonthlyKes?: string | number; // Optional starting monthly rent for the entire hostel
   rooms: Room[];
 }
 

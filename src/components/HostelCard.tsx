@@ -2,6 +2,7 @@ import React from 'react';
 import { Hostel } from '../types';
 import { Shield, MapPin, Video, ArrowRight, BarChart2 } from 'lucide-react';
 import { getHostelImages } from '../utils/mediaHelper';
+import { getNumericRent, formatMonthlyRent } from '../utils/rentHelper';
 
 interface HostelCardProps {
   key?: string;
@@ -23,15 +24,31 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
   }, 0);
 
   // Safe pricing calculation
-  const monthlyRent = hostel.rooms && hostel.rooms.length > 0 
-    ? (hostel.rooms.map(r => r.rentMonthlyKes).filter(Boolean)[0] || Math.min(...hostel.rooms.map(r => r.rentMonthlyKes || Math.round(r.priceKes / 4))))
-    : (hostel.rentMonthlyKes || 4500);
+  const getMinMonthlyRent = () => {
+    if (hostel.rentMonthlyKes !== undefined && hostel.rentMonthlyKes !== null && hostel.rentMonthlyKes !== '') {
+      return hostel.rentMonthlyKes;
+    }
+    if (!hostel.rooms || hostel.rooms.length === 0) {
+      return 4500;
+    }
+    const definedRents = hostel.rooms.map(r => r.rentMonthlyKes).filter(Boolean);
+    if (definedRents.length > 0) {
+      return definedRents.reduce((min, current) => {
+        const minVal = getNumericRent(min, 999999);
+        const currVal = getNumericRent(current, 999999);
+        return currVal < minVal ? current : min;
+      }, definedRents[0]);
+    }
+    return Math.min(...hostel.rooms.map(r => Math.round(r.priceKes / 4)));
+  };
+
+  const monthlyRent = getMinMonthlyRent();
 
   const semesterRent = hostel.rooms && hostel.rooms.length > 0
     ? Math.min(...hostel.rooms.map(r => r.priceKes))
     : 18000;
 
-  const cardImage = getHostelImages(hostel.id, hostel.imageUrl)[0];
+  const cardImage = getHostelImages(hostel.id, hostel.imageUrl, hostel.imageUrls)[0];
 
   return (
     <div 
@@ -101,8 +118,8 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
           <div className="grid grid-cols-2 gap-2 items-center">
             <div>
               <span className="text-[9px] text-slate-500 dark:text-slate-400 block font-medium">Monthly Person</span>
-              <span className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono leading-none">
-                KES {monthlyRent.toLocaleString()}/mo
+              <span className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono leading-none break-all">
+                {formatMonthlyRent(monthlyRent)}
               </span>
             </div>
             <div className="border-l border-emerald-100 dark:border-emerald-950/40 pl-2.5">
@@ -124,6 +141,15 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
             <span>🚶</span>
             <span className="truncate">{hostel.distanceMeters}M to Gate</span>
           </div>
+        </div>
+
+        {/* Room Formats available */}
+        <div className="flex flex-wrap gap-1.5 pt-0.5">
+          {Array.from(new Set(hostel.rooms.map(r => r.roomFormat))).map(format => (
+            <span key={format} className="text-[9px] font-sans font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-lg border border-slate-200/30 dark:border-slate-800">
+              {format}
+            </span>
+          ))}
         </div>
 
         {/* 5. See Details immediate page route button */}

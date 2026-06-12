@@ -45,10 +45,22 @@ const YOUTUBE_VIDEO_IDS = [
  * Returns a static, deterministic set of 4 high-quality image URLs for a hostel based on its ID.
  * Automatically replaces broken/missing URLs.
  */
-export function getHostelImages(hostelId: string, customImageUrl?: string): string[] {
-  // If the hostel already has a valid, non-local illustrative web URL, place it at the front!
-  const hasValidWebUrl = customImageUrl && customImageUrl.startsWith('http');
-  
+export function getHostelImages(hostelId: string, customImageUrl?: string, customImageUrls?: string[]): string[] {
+  // Try to gather custom URLs from both customImageUrls array and customImageUrl (comma-separated list)
+  let urls: string[] = [];
+  if (customImageUrls && customImageUrls.length > 0) {
+    urls = customImageUrls.filter(url => url && (url.startsWith('http') || url.startsWith('/src/')));
+  } else if (customImageUrl) {
+    // Split by commas, filter out empty/invalid URLs
+    urls = customImageUrl
+      .split(',')
+      .map(s => s.trim())
+      .filter(url => url && (url.startsWith('http') || url.startsWith('/src/')));
+  }
+
+  // Remove duplicates
+  urls = urls.filter((url, idx, self) => self.indexOf(url) === idx);
+
   let hash = 0;
   for (let i = 0; i < hostelId.length; i++) {
     hash += hostelId.charCodeAt(i);
@@ -61,9 +73,14 @@ export function getHostelImages(hostelId: string, customImageUrl?: string): stri
 
   const dynamicSet = [fImg, iImg1, iImg2, aImg];
   
-  if (hasValidWebUrl) {
-    // Inject the custom image, and ensure the count stays at 4
-    return [customImageUrl, fImg, iImg1, iImg2];
+  if (urls.length > 0) {
+    // Put custom images first. Pad if fewer than 4.
+    if (urls.length < 4) {
+      const needed = 4 - urls.length;
+      const padding = dynamicSet.filter(img => !urls.includes(img)).slice(0, needed);
+      return [...urls, ...padding];
+    }
+    return urls;
   }
   
   return dynamicSet;
