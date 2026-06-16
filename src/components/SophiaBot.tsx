@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage } from '../types';
 import { Send, Sparkles, User, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { logAnalyticsEvent } from '../lib/firebase';
 
 interface SophiaBotProps {
   userProfile?: {
@@ -82,6 +83,8 @@ export default function SophiaBot({ userProfile }: SophiaBotProps) {
 
   const handleSendMessage = async (textToSend: string) => {
     if (!textToSend.trim() || isLoading) return;
+
+    logAnalyticsEvent('sophia_chat_message_sent', { textLength: textToSend.length });
 
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,

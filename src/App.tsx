@@ -13,7 +13,7 @@ import { getHostelImages, getHostelYoutubeEmbed } from './utils/mediaHelper';
 import { getNumericRent, formatMonthlyRent, formatSemesterRent } from './utils/rentHelper';
 
 // Firebase core logic imports
-import { auth, db, handleFirestoreError, OperationType } from './lib/firebase';
+import { auth, db, handleFirestoreError, OperationType, logAnalyticsEvent } from './lib/firebase';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -324,6 +324,7 @@ export default function App() {
       try {
         if (firebaseUser) {
           setCurrentUser(firebaseUser);
+          logAnalyticsEvent('login', { method: 'firebase_auth', userId: firebaseUser.uid });
           const localKey = `kisii_user_profile_${firebaseUser.uid}`;
           try {
             const userDocRef = doc(db, 'users', firebaseUser.uid);
@@ -752,6 +753,13 @@ export default function App() {
     }
   }, [userProfile?.displayName]);
 
+  // Log screen/page views to Analytics
+  useEffect(() => {
+    logAnalyticsEvent('screen_view', {
+      screen_name: currentPage === 'home' ? 'Home' : `Details_${activeTab}`
+    });
+  }, [currentPage, activeTab]);
+
   // Feedback notifications
   const [alertBanner, setAlertBanner] = useState<{ text: string; type: 'success' | 'info' | 'warning' } | null>(null);
 
@@ -894,6 +902,7 @@ export default function App() {
       await signInWithEmailAndPassword(auth, emailInput, passwordInput);
       setIsAuthModalOpen(false);
       showFeedback('✓ Welcome back, Comrade! You are now signed in.', 'success');
+      logAnalyticsEvent('sign_in_success', { email: emailInput });
     } catch (error: any) {
       console.error(error);
       const code = error?.code || '';
@@ -944,6 +953,7 @@ export default function App() {
       setRegisteredUsers(prev => [profilePayload, ...prev.filter(u => u.uid !== profilePayload.uid)]);
       setIsAuthModalOpen(false);
       showFeedback(`✓ Welcome, ${displayNameInput}! Your account is active.`, 'success');
+      logAnalyticsEvent('sign_up_success', { category: categoryInput, email: emailInput });
 
       // 4. Try Firestore write — silent failure if permissions not set
       try {
@@ -1041,6 +1051,12 @@ export default function App() {
 
     setRoomToBook(null);
     showFeedback(`Awesome, Spot for Room ${roomToBook.room.roomNumber} is reserved! Standard leasing invoice created.`, 'success');
+    logAnalyticsEvent('room_booking', {
+      hostelId: roomToBook.hostel.id,
+      hostelName: roomToBook.hostel.name,
+      roomNumber: roomToBook.room.roomNumber,
+      rentSemesterKes: roomToBook.room.priceKes
+    });
     setActiveTab('bookings');
     setCurrentPage('details');
   };
@@ -1099,6 +1115,11 @@ export default function App() {
 
     setBookings([newBooking, ...bookings]);
     showFeedback(`Virtual Video Tour with ${hostel.name} Caretaker scheduled successfully! Redirecting to your bookings hub...`, 'success');
+    logAnalyticsEvent('request_virtual_tour', {
+      hostelId: hostel.id,
+      hostelName: hostel.name,
+      platform: chosenPlatform
+    });
     setActiveTab('bookings');
     setCurrentPage('details');
   };

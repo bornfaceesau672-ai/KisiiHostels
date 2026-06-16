@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { getAnalytics, isSupported, logEvent } from 'firebase/analytics';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 // Initialize Firebase
@@ -11,6 +12,33 @@ export const auth = getAuth(app);
 export const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
   ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
   : getFirestore(app);
+
+// Initialize Analytics safely
+export let analytics: any = null;
+
+isSupported().then((supported) => {
+  if (supported) {
+    analytics = getAnalytics(app);
+    console.log('Firebase Analytics initialized successfully.');
+  } else {
+    console.log('Firebase Analytics is not supported in this environment.');
+  }
+}).catch((err) => {
+  console.warn('Failed to check if Firebase Analytics is supported:', err);
+});
+
+/**
+ * Log a custom event to Firebase Analytics (safely guards if not supported/initialized)
+ */
+export function logAnalyticsEvent(eventName: string, eventParams?: Record<string, any>) {
+  if (analytics) {
+    try {
+      logEvent(analytics, eventName, eventParams);
+    } catch (error) {
+      console.warn(`Failed to log analytics event "${eventName}":`, error);
+    }
+  }
+}
 
 // Firestore operation mapping types
 export enum OperationType {
