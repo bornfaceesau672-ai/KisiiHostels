@@ -20,7 +20,7 @@ import {
   signOut, 
   onAuthStateChanged
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { 
   Building, 
   MapPin, 
@@ -437,6 +437,37 @@ export default function App() {
     };
   }, [currentUser, userProfile?.synced]);
 
+  // Report active presence to Firestore (for admin dashboard monitoring)
+  useEffect(() => {
+    let sessionId = sessionStorage.getItem('kisii_session_id');
+    if (!sessionId) {
+      sessionId = `sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      sessionStorage.setItem('kisii_session_id', sessionId);
+    }
+    const presenceDocId = currentUser ? currentUser.uid : sessionId;
+
+    const updatePresence = async () => {
+      try {
+        const presenceRef = doc(db, 'presence', presenceDocId);
+        await setDoc(presenceRef, {
+          uid: presenceDocId,
+          email: currentUser?.email || 'guest@kisii.portal',
+          name: userProfile?.displayName || (currentUser ? currentUser.email.split('@')[0] : 'Guest Comrade'),
+          category: userProfile?.category || (currentUser ? 'Student' : 'Guest'),
+          lastActive: Date.now(),
+          currentPage,
+          activeTab,
+        }, { merge: true });
+      } catch (err) {
+        console.warn('Failed to write presence to Firestore:', err);
+      }
+    };
+
+    updatePresence();
+    const interval = setInterval(updatePresence, 120000); // Keep alive every 2 minutes
+    return () => clearInterval(interval);
+  }, [currentUser?.uid, userProfile?.displayName, currentPage, activeTab]);
+
   // Cross-tab logout: listen for logout signal from other tabs
   useEffect(() => {
     const handleStorageEvent = (e: StorageEvent) => {
@@ -629,6 +660,7 @@ export default function App() {
   const [isDeletingHostel, setIsDeletingHostel] = useState<boolean>(false);
   const [userSearchQuery, setUserSearchQuery] = useState<string>('');
   const [userRoleFilter, setUserRoleFilter] = useState<'All' | 'Student' | 'Property Owner' | 'Guest'>('All');
+  const [presenceList, setPresenceList] = useState<any[]>([]);
 
   const handleToggleCompare = (hostel: Hostel, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -720,6 +752,28 @@ export default function App() {
         }
       };
       fetchUsersFromFirestore();
+    }
+  }, [isAdminUser]);
+
+  // Listen for real-time presence/activity updates (Admin only)
+  useEffect(() => {
+    if (isAdminUser) {
+      const presenceRef = collection(db, 'presence');
+      const unsubscribe = onSnapshot(presenceRef, (querySnapshot) => {
+        const loadedPresence: any[] = [];
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data && data.lastActive) {
+            loadedPresence.push(data);
+          }
+        });
+        // Sort: most recently active first
+        loadedPresence.sort((a, b) => (b.lastActive || 0) - (a.lastActive || 0));
+        setPresenceList(loadedPresence);
+      }, (err) => {
+        console.warn('Real-time presence listener failed:', err);
+      });
+      return () => unsubscribe();
     }
   }, [isAdminUser]);
 
@@ -4147,6 +4201,171 @@ export default function App() {
               </div>
             ) : (
                 <div className="space-y-6">
+                  {/* Real-time Visitor & Active Session Activity Tracker */}
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="relative flex h-2.5 w-2.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                          </span>
+                          <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">Live Website Activity Monitor</h3>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">Real-time status of users currently active on the Kisii Student Portal.</p>
+                      </div>
+                      
+                      <div className="text-[10px] bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-350 font-bold px-3 py-1 rounded-xl flex items-center gap-1.5 self-start sm:self-auto">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        {presenceList.filter(p => Date.now() - (p.lastActive || 0) <= 5 * 60 * 1000).length} Comrade(s) Online
+                      </div>
+                    </div>
+
+                    {/* Timeline Activity Statistics Cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-100 dark:border-slate-850 flex flex-col justify-between animate-in fade-in duration-200">
+                        <span className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight">Active Now</span>
+                        <div className="mt-2 flex items-baseline gap-1">
+                          <span className="text-lg font-black text-slate-850 dark:text-slate-100">
+                            {presenceList.filter(p => Date.now() - (p.lastActive || 0) <= 5 * 60 * 1000).length}
+                          </span>
+                          <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider font-mono">Live</span>
+                        </div>
+                        <span className="text-[9px] text-slate-450 dark:text-slate-500 mt-1 leading-none">Last 5 minutes</span>
+                      </div>
+
+                      <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-100 dark:border-slate-850 flex flex-col justify-between animate-in fade-in duration-200">
+                        <span className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight">30 Mins Ago</span>
+                        <div className="mt-2 flex items-baseline gap-1">
+                          <span className="text-lg font-black text-slate-850 dark:text-slate-100">
+                            {presenceList.filter(p => {
+                              const diff = Date.now() - (p.lastActive || 0);
+                              return diff > 5 * 60 * 1000 && diff <= 30 * 60 * 1000;
+                            }).length}
+                          </span>
+                          <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider font-mono">Idle</span>
+                        </div>
+                        <span className="text-[9px] text-slate-450 dark:text-slate-500 mt-1 leading-none font-sans">5m to 30m ago</span>
+                      </div>
+
+                      <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-100 dark:border-slate-850 flex flex-col justify-between animate-in fade-in duration-200">
+                        <span className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight font-sans">1 Hour Ago</span>
+                        <div className="mt-2 flex items-baseline gap-1">
+                          <span className="text-lg font-black text-slate-850 dark:text-slate-100">
+                            {presenceList.filter(p => {
+                              const diff = Date.now() - (p.lastActive || 0);
+                              return diff > 30 * 60 * 1000 && diff <= 60 * 60 * 1000;
+                            }).length}
+                          </span>
+                          <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider font-mono">Recent</span>
+                        </div>
+                        <span className="text-[9px] text-slate-450 dark:text-slate-500 mt-1 leading-none font-sans">30m to 1h ago</span>
+                      </div>
+
+                      <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-100 dark:border-slate-850 flex flex-col justify-between animate-in fade-in duration-200">
+                        <span className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight font-sans">Active Today</span>
+                        <div className="mt-2 flex items-baseline gap-1">
+                          <span className="text-lg font-black text-slate-850 dark:text-slate-100">
+                            {presenceList.filter(p => Date.now() - (p.lastActive || 0) <= 24 * 60 * 60 * 1000).length}
+                          </span>
+                          <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-mono">24h</span>
+                        </div>
+                        <span className="text-[9px] text-slate-450 dark:text-slate-500 mt-1 leading-none font-sans">Unique visitors today</span>
+                      </div>
+                    </div>
+
+                    {/* Active Sessions List */}
+                    <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-slate-800">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-150 dark:border-slate-800 font-mono font-bold text-slate-500 uppercase tracking-wider text-[10px]">
+                            <th className="p-3">Session Visitor</th>
+                            <th className="p-3">Current Location / Activity</th>
+                            <th className="p-3">Role / category</th>
+                            <th className="p-3">Last Active Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {presenceList.map((p) => {
+                            const isOnline = Date.now() - (p.lastActive || 0) <= 5 * 60 * 1000;
+                            const isIdle = !isOnline && Date.now() - (p.lastActive || 0) <= 30 * 60 * 1000;
+                            
+                            const roleColor = p.category === 'Student'
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                              : p.category === 'Property Owner'
+                                ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                                : 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300';
+                            
+                            const displayName = p.name;
+                            const displayEmail = p.email;
+                            
+                            const getFormattedLocation = (loc: any) => {
+                              if (loc.currentPage === 'home') return 'Home Landing Page';
+                              switch (loc.activeTab) {
+                                case 'explore': return 'Exploring Hostel Listings';
+                                case 'bookings': return 'My Bookings Portal';
+                                case 'maintenance': return 'Maintenance Logs';
+                                case 'sophia': return 'Chatting with Sophia AI';
+                                case 'admin': return 'Admin Control Center';
+                                default: return 'Browsing Portal';
+                              }
+                            };
+
+                            const getFormattedTime = (lastActive: number) => {
+                              const diffMs = Date.now() - lastActive;
+                              const diffMins = Math.floor(diffMs / (60 * 1000));
+                              const diffHours = Math.floor(diffMins / 60);
+
+                              if (diffMins < 1) return 'Active now';
+                              if (diffMins < 5) return 'Active just now';
+                              if (diffMins < 60) return `${diffMins} min${diffMins === 1 ? '' : 's'} ago`;
+                              if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+                              return `${Math.floor(diffHours / 24)} day${Math.floor(diffHours / 24) === 1 ? '' : 's'} ago`;
+                            };
+
+                            return (
+                              <tr key={p.uid} className="border-b border-slate-150/40 dark:border-slate-800/40 hover:bg-slate-50/50 dark:hover:bg-slate-950/20 font-sans">
+                                <td className="p-3 flex items-center gap-2.5">
+                                  <div className="relative">
+                                    <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border dark:border-slate-700 text-slate-700 dark:text-slate-350 font-bold text-[10px] flex items-center justify-center shadow-sm">
+                                      {displayName.split(' ').map((n: string) => n ? n[0] : '').filter(Boolean).join('').substring(0, 2).toUpperCase() || 'GC'}
+                                    </div>
+                                    <span className={`absolute bottom-0 right-0 w-2 h-2 rounded-full border border-white dark:border-slate-900 ${isOnline ? 'bg-emerald-500 animate-pulse' : isIdle ? 'bg-amber-500' : 'bg-slate-400'}`} />
+                                  </div>
+                                  <div>
+                                    <span className="block font-extrabold text-slate-850 dark:text-slate-100">{displayName}</span>
+                                    <span className="text-[10px] text-slate-400 font-mono">{displayEmail}</span>
+                                  </div>
+                                </td>
+                                <td className="p-3 font-semibold text-slate-705 dark:text-slate-300">
+                                  {getFormattedLocation(p)}
+                                </td>
+                                <td className="p-3">
+                                  <span className={`text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded-md ${roleColor}`}>
+                                    {p.category}
+                                  </span>
+                                </td>
+                                <td className="p-3 font-mono text-[10px] font-bold">
+                                  <span className={isOnline ? 'text-emerald-600 dark:text-emerald-400' : isIdle ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500'}>
+                                    {getFormattedTime(p.lastActive)}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+
+                          {presenceList.length === 0 && (
+                            <tr>
+                              <td colSpan={4} className="p-8 text-center text-slate-400 italic">
+                                No activity recorded. Live visitor session records are offline.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
                   {/* 1. Snapshot Recorder & History Logs */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Left: Take snapshot */}
