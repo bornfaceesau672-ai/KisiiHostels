@@ -224,17 +224,34 @@ export default function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as Hostel[];
-        // Filter out any duplicate IDs that might be stored from previous sessions
+        // Filter out any duplicate IDs and hostels with missing/invalid rooms arrays
         const seenIds = new Set<string>();
         const uniqueParsed: Hostel[] = [];
         for (const h of parsed) {
           if (h && h.id && h.id !== 'hostel-kisii-internal-chancellors' && !seenIds.has(h.id)) {
+            // Ensure rooms is a valid array
+            if (!Array.isArray(h.rooms) || h.rooms.length === 0) {
+              // Try to recover rooms from INITIAL_HOSTELS
+              const fallback = INITIAL_HOSTELS.find(ih => ih.id === h.id);
+              if (fallback && Array.isArray(fallback.rooms) && fallback.rooms.length > 0) {
+                h.rooms = fallback.rooms;
+              } else {
+                continue; // Skip hostels with no rooms and no fallback
+              }
+            }
             seenIds.add(h.id);
             uniqueParsed.push(h);
           }
         }
+        // If localStorage yielded no valid hostels, fall back to INITIAL_HOSTELS
+        if (uniqueParsed.length === 0) {
+          console.warn('LocalStorage had no valid hostels — falling back to INITIAL_HOSTELS.');
+          localStorage.removeItem('kisii_hostels');
+          return [...INITIAL_HOSTELS].sort(sortHostelsByEstate);
+        }
         return uniqueParsed.sort(sortHostelsByEstate);
       } catch (e) {
+        localStorage.removeItem('kisii_hostels');
         return [...INITIAL_HOSTELS].sort(sortHostelsByEstate);
       }
     }
@@ -463,26 +480,53 @@ export default function App() {
         const querySnapshot = await getDocs(collection(db, 'hostels'));
         if (!querySnapshot.empty) {
           const loadedHostels: Hostel[] = [];
-          querySnapshot.forEach((doc) => {
-            loadedHostels.push(doc.data() as Hostel);
-          });
-          
-          // Sort hostels by estate/area to maintain layout alignment consistency
-          const estateOrderLocal = [
-            'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Safariland', 'Nyaura', 'Canaan'
-          ];
-          const sorted = loadedHostels.sort((a, b) => {
-            const indexA = estateOrderLocal.indexOf(a.area);
-            const indexB = estateOrderLocal.indexOf(b.area);
-            const orderA = indexA === -1 ? 999 : indexA;
-            const orderB = indexB === -1 ? 999 : indexB;
-            if (orderA !== orderB) return orderA - orderB;
-            return a.name.localeCompare(b.name);
+          // Build a lookup map from INITIAL_HOSTELS for fallback room data
+          const initialHostelMap = new Map<string, Hostel>();
+          for (const ih of INITIAL_HOSTELS) {
+            initialHostelMap.set(ih.id, ih);
+          }
+
+          querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data() as Hostel;
+            // Validate that the hostel has required fields and a valid rooms array
+            if (data && data.id && data.name && data.area) {
+              // Ensure rooms is a valid non-empty array; if missing/empty, try to recover from INITIAL_HOSTELS
+              if (!Array.isArray(data.rooms) || data.rooms.length === 0) {
+                const fallback = initialHostelMap.get(data.id);
+                if (fallback && Array.isArray(fallback.rooms) && fallback.rooms.length > 0) {
+                  data.rooms = fallback.rooms;
+                  console.warn(`Hostel "${data.name}" had missing/empty rooms — recovered from INITIAL_HOSTELS.`);
+                } else {
+                  console.warn(`Hostel "${data.name}" has no rooms and no fallback — skipping.`);
+                  return; // Skip hostels with no rooms and no fallback
+                }
+              }
+              loadedHostels.push(data);
+            } else {
+              console.warn('Skipping invalid hostel document from Firestore:', docSnap.id);
+            }
           });
 
-          setHostels(sorted);
-          localStorage.setItem('kisii_hostels', JSON.stringify(sorted));
-          console.log(`Successfully fetched and synced ${sorted.length} hostels from Firestore.`);
+          if (loadedHostels.length > 0) {
+            // Sort hostels by estate/area to maintain layout alignment consistency
+            const estateOrderLocal = [
+              'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Safariland', 'Nyaura', 'Canaan'
+            ];
+            const sorted = loadedHostels.sort((a, b) => {
+              const indexA = estateOrderLocal.indexOf(a.area);
+              const indexB = estateOrderLocal.indexOf(b.area);
+              const orderA = indexA === -1 ? 999 : indexA;
+              const orderB = indexB === -1 ? 999 : indexB;
+              if (orderA !== orderB) return orderA - orderB;
+              return a.name.localeCompare(b.name);
+            });
+
+            setHostels(sorted);
+            localStorage.setItem('kisii_hostels', JSON.stringify(sorted));
+            console.log(`Successfully fetched and synced ${sorted.length} hostels from Firestore.`);
+          } else {
+            console.warn('All Firestore hostels were invalid — keeping local/initial data.');
+          }
         } else {
           // If Firestore is empty, seed it with INITIAL_HOSTELS
           console.log('Firestore is empty. Auto-seeding default INITIAL_HOSTELS to database.');
@@ -754,6 +798,9 @@ export default function App() {
 
   // Filtered Hostels mapping
   const filteredHostels = hostels.filter((hostel) => {
+    // Defensive: skip hostels with missing/empty rooms arrays
+    if (!hostel || !Array.isArray(hostel.rooms) || hostel.rooms.length === 0) return false;
+
     if (filterArea !== 'All' && hostel.area !== filterArea) return false;
     if (filterWifi && !hostel.hasWifi) return false;
     if (filterBorehole && !hostel.hasBorehole) return false;
@@ -763,13 +810,13 @@ export default function App() {
     // Text search query filtering
     if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase().trim();
-      const matchesName = hostel.name.toLowerCase().includes(query);
-      const matchesArea = hostel.area.toLowerCase().includes(query);
-      const matchesDescription = hostel.description.toLowerCase().includes(query);
+      const matchesName = (hostel.name || '').toLowerCase().includes(query);
+      const matchesArea = (hostel.area || '').toLowerCase().includes(query);
+      const matchesDescription = (hostel.description || '').toLowerCase().includes(query);
       const matchesRooms = hostel.rooms.some((room) => 
-        room.roomType.toLowerCase().includes(query) || 
-        room.roomNumber.toLowerCase().includes(query) ||
-        room.amenities.some((amenity) => amenity.toLowerCase().includes(query))
+        (room.roomType || '').toLowerCase().includes(query) || 
+        (room.roomNumber || '').toLowerCase().includes(query) ||
+        (Array.isArray(room.amenities) ? room.amenities : []).some((amenity) => (amenity || '').toLowerCase().includes(query))
       );
       if (!matchesName && !matchesArea && !matchesDescription && !matchesRooms) {
         return false;
@@ -1530,27 +1577,6 @@ export default function App() {
     };
   }).sort((a, b) => b.occupancy - a.occupancy);
 
-  if (isAuthLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
-        <main id="main-content" tabIndex={-1} aria-label="Loading Portal Session" className="flex flex-col items-center gap-4 text-center">
-          <div className="relative w-14 h-14 bg-gradient-to-tr from-indigo-700 via-indigo-650 to-violet-500 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20 border border-indigo-400/20 animate-pulse">
-            <Home className="w-7 h-7 text-white stroke-[2.25] drop-shadow-sm" />
-          </div>
-          <div className="space-y-1 mt-2">
-            <h2 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 tracking-tight leading-none uppercase font-sans">
-              Nyumbani<span className="text-indigo-600 dark:text-indigo-400">Kisii</span>
-            </h2>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tracking-widest font-bold mt-1">
-              Synchronizing Session...
-            </p>
-          </div>
-          <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mt-2"></div>
-        </main>
-      </div>
-    );
-  }
-
   const filteredUsers = useMemo(() => {
     if (!Array.isArray(registeredUsers)) return [];
     return registeredUsers.filter((user) => {
@@ -1571,6 +1597,27 @@ export default function App() {
       return matchesSearch && matchesRole;
     });
   }, [registeredUsers, userSearchQuery, userRoleFilter]);
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
+        <main id="main-content" tabIndex={-1} aria-label="Loading Portal Session" className="flex flex-col items-center gap-4 text-center">
+          <div className="relative w-14 h-14 bg-gradient-to-tr from-indigo-700 via-indigo-650 to-violet-500 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20 border border-indigo-400/20 animate-pulse">
+            <Home className="w-7 h-7 text-white stroke-[2.25] drop-shadow-sm" />
+          </div>
+          <div className="space-y-1 mt-2">
+            <h2 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 tracking-tight leading-none uppercase font-sans">
+              Nyumbani<span className="text-indigo-600 dark:text-indigo-400">Kisii</span>
+            </h2>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tracking-widest font-bold mt-1">
+              Synchronizing Session...
+            </p>
+          </div>
+          <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mt-2"></div>
+        </main>
+      </div>
+    );
+  }
 
   const totalUsersCount = Array.isArray(registeredUsers) ? registeredUsers.length : 0;
   const studentsCount = Array.isArray(registeredUsers) ? registeredUsers.filter(u => u && u.category === 'Student').length : 0;

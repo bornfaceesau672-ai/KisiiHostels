@@ -19,7 +19,8 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
   const depositRefundablePolicy = hostel.depositRefundable || "Fully Refundable at semester close";
 
   // Calculate total beds available
-  const totalBedsAvailable = hostel.rooms.reduce((acc, room) => {
+  const rooms = Array.isArray(hostel.rooms) ? hostel.rooms : [];
+  const totalBedsAvailable = rooms.reduce((acc, room) => {
     return acc + (room.maxOccupants - room.currentOccupants);
   }, 0);
 
@@ -31,7 +32,7 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
     if (!hostel.rooms || hostel.rooms.length === 0) {
       return 4500;
     }
-    const definedRents = hostel.rooms.map(r => r.rentMonthlyKes).filter(Boolean);
+    const definedRents = rooms.map(r => r.rentMonthlyKes).filter(Boolean);
     if (definedRents.length > 0) {
       return definedRents.reduce((min, current) => {
         const minVal = getNumericRent(min, 999999);
@@ -39,7 +40,7 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
         return currVal < minVal ? current : min;
       }, definedRents[0]);
     }
-    return Math.min(...hostel.rooms.map(r => Math.round(r.priceKes / 4)));
+    return rooms.length > 0 ? Math.min(...rooms.map(r => Math.round(r.priceKes / 4))) : 4500;
   };
 
   const monthlyRent = getMinMonthlyRent();
@@ -48,10 +49,10 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
     if (hostel.rentSemesterKes !== undefined && hostel.rentSemesterKes !== null && hostel.rentSemesterKes !== '') {
       return hostel.rentSemesterKes;
     }
-    if (!hostel.rooms || hostel.rooms.length === 0) {
+    if (rooms.length === 0) {
       return 18000;
     }
-    return Math.min(...hostel.rooms.map(r => r.priceKes));
+    return Math.min(...rooms.map(r => r.priceKes));
   };
 
   const semesterRent = getMinSemesterRent();
@@ -154,7 +155,7 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
 
         {/* Room Formats available */}
         <div className="flex flex-wrap gap-1.5 pt-0.5">
-          {Array.from(new Set(hostel.rooms.map(r => r.roomFormat))).map(format => (
+          {Array.from(new Set(rooms.map(r => r.roomFormat))).map(format => (
             <span key={format} className="text-[9px] font-sans font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-lg border border-slate-200/30 dark:border-slate-800">
               {format}
             </span>
