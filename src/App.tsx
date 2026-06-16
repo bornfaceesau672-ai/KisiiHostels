@@ -328,14 +328,14 @@ export default function App() {
           const localKey = `kisii_user_profile_${firebaseUser.uid}`;
           
           // 1. Instantly load local cache if available (Non-blocking)
-          const cached = localStorage.getItem(localKey);
           let parsedCached = null;
-          if (cached) {
-            try {
+          try {
+            const cached = localStorage.getItem(localKey);
+            if (cached) {
               parsedCached = JSON.parse(cached);
-            } catch (e) {
-              console.warn('Failed to parse cached profile:', e);
             }
+          } catch (e) {
+            console.warn('Failed to parse cached profile from localStorage:', e);
           }
 
           if (parsedCached && typeof parsedCached === 'object' && parsedCached.uid === firebaseUser.uid) {
@@ -351,7 +351,11 @@ export default function App() {
               synced: false
             };
             setUserProfile(fallback);
-            localStorage.setItem(localKey, JSON.stringify(fallback));
+            try {
+              localStorage.setItem(localKey, JSON.stringify(fallback));
+            } catch (e) {
+              console.warn('Failed to save default profile fallback to localStorage:', e);
+            }
           }
 
           // 2. INSTANTLY end loading screen so the application renders right away
@@ -366,7 +370,11 @@ export default function App() {
                 const data = userDocSnap.data() as any;
                 const syncedData = { ...data, synced: true };
                 setUserProfile(syncedData);
-                localStorage.setItem(localKey, JSON.stringify(syncedData));
+                try {
+                  localStorage.setItem(localKey, JSON.stringify(syncedData));
+                } catch (e) {
+                  console.warn('Failed to save synced profile to localStorage:', e);
+                }
               }
             } catch (error) {
               console.warn('Background Firestore profile read failed, using cached profile:', error);
@@ -424,10 +432,16 @@ export default function App() {
 
   // Report active presence to Firestore (for admin dashboard monitoring)
   useEffect(() => {
-    let sessionId = sessionStorage.getItem('kisii_session_id');
-    if (!sessionId) {
+    let sessionId = '';
+    try {
+      sessionId = sessionStorage.getItem('kisii_session_id') || '';
+      if (!sessionId) {
+        sessionId = `sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        sessionStorage.setItem('kisii_session_id', sessionId);
+      }
+    } catch (e) {
+      // Memory fallback if sessionStorage is blocked/inaccessible
       sessionId = `sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      sessionStorage.setItem('kisii_session_id', sessionId);
     }
     const presenceDocId = currentUser ? currentUser.uid : sessionId;
 
@@ -437,7 +451,7 @@ export default function App() {
         await setDoc(presenceRef, {
           uid: presenceDocId,
           email: currentUser?.email || 'guest@kisii.portal',
-          name: userProfile?.displayName || (currentUser ? currentUser.email.split('@')[0] : 'Guest Comrade'),
+          name: userProfile?.displayName || (currentUser ? (currentUser.email?.split('@')[0] || 'Comrade Resident') : 'Guest Comrade'),
           category: userProfile?.category || (currentUser ? 'Student' : 'Guest'),
           lastActive: Date.now(),
           currentPage,
