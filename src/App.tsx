@@ -326,74 +326,59 @@ export default function App() {
           setCurrentUser(firebaseUser);
           logAnalyticsEvent('login', { method: 'firebase_auth', userId: firebaseUser.uid });
           const localKey = `kisii_user_profile_${firebaseUser.uid}`;
-          try {
-            const userDocRef = doc(db, 'users', firebaseUser.uid);
-            const userDocSnap = await getDoc(userDocRef);
-            if (userDocSnap.exists()) {
-              const data = userDocSnap.data() as any;
-              const syncedData = { ...data, synced: true };
-              setUserProfile(syncedData);
-              localStorage.setItem(localKey, JSON.stringify(syncedData));
-            } else {
-              // Try local cache first
-              const cached = localStorage.getItem(localKey);
-              let parsedCached = null;
-              if (cached) {
-                try {
-                  parsedCached = JSON.parse(cached);
-                } catch (e) {
-                  console.warn('Failed to parse cached profile:', e);
-                }
-              }
-              if (parsedCached && typeof parsedCached === 'object' && parsedCached.uid === firebaseUser.uid) {
-                setUserProfile(parsedCached);
-              } else {
-                setUserProfile(prev => {
-                  if (prev && prev.uid === firebaseUser.uid) return prev;
-                  const fallback = {
-                    uid: firebaseUser.uid,
-                    email: firebaseUser.email || '',
-                    displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Comrade Resident',
-                    category: 'Student' as const,
-                    createdAt: new Date().toISOString(),
-                    synced: false
-                  };
-                  localStorage.setItem(localKey, JSON.stringify(fallback));
-                  return fallback;
-                });
-              }
-            }
-          } catch (error) {
-            console.warn('Firestore profile read failed, using local cache:', error);
-            const cached = localStorage.getItem(localKey);
-            let parsedCached = null;
-            if (cached) {
-              try {
-                parsedCached = JSON.parse(cached);
-              } catch (e) {
-                console.warn('Failed to parse cached profile in fallback:', e);
-              }
-            }
-            if (parsedCached && typeof parsedCached === 'object' && parsedCached.uid === firebaseUser.uid) {
-              setUserProfile(parsedCached);
-            } else {
-              const fallback = {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email || '',
-                displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Comrade Resident',
-                category: 'Student' as const,
-                createdAt: new Date().toISOString(),
-                synced: false
-              };
-              localStorage.setItem(localKey, JSON.stringify(fallback));
-              setUserProfile(fallback);
+          
+          // 1. Instantly load local cache if available (Non-blocking)
+          const cached = localStorage.getItem(localKey);
+          let parsedCached = null;
+          if (cached) {
+            try {
+              parsedCached = JSON.parse(cached);
+            } catch (e) {
+              console.warn('Failed to parse cached profile:', e);
             }
           }
+
+          if (parsedCached && typeof parsedCached === 'object' && parsedCached.uid === firebaseUser.uid) {
+            setUserProfile(parsedCached);
+          } else {
+            // Instant default profile fallback
+            const fallback = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Comrade Resident',
+              category: 'Student' as const,
+              createdAt: new Date().toISOString(),
+              synced: false
+            };
+            setUserProfile(fallback);
+            localStorage.setItem(localKey, JSON.stringify(fallback));
+          }
+
+          // 2. INSTANTLY end loading screen so the application renders right away
+          setIsAuthLoading(false);
+
+          // 3. Asynchronously fetch the latest profile from Firestore in the background
+          (async () => {
+            try {
+              const userDocRef = doc(db, 'users', firebaseUser.uid);
+              const userDocSnap = await getDoc(userDocRef);
+              if (userDocSnap.exists()) {
+                const data = userDocSnap.data() as any;
+                const syncedData = { ...data, synced: true };
+                setUserProfile(syncedData);
+                localStorage.setItem(localKey, JSON.stringify(syncedData));
+              }
+            } catch (error) {
+              console.warn('Background Firestore profile read failed, using cached profile:', error);
+            }
+          })();
         } else {
           setCurrentUser(null);
           setUserProfile(null);
+          setIsAuthLoading(false);
         }
-      } finally {
+      } catch (e) {
+        console.error('Error during auth state change:', e);
         setIsAuthLoading(false);
       }
     });
