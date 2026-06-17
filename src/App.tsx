@@ -1324,7 +1324,7 @@ export default function App() {
       hasBorehole: true,
       hasHotShower: true,
       description: 'A beautiful newly listed student hostel lodging option situated close to Kisii University gate.',
-      landlordPhone: '0712345678',
+      landlordPhone: '0795858929',
       rentMonthlyKes: 4500,
       rentSemesterKes: 18000,
       rooms: [
