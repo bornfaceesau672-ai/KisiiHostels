@@ -14,6 +14,43 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
+// API: Verify reCAPTCHA token
+app.post('/api/verify-recaptcha', async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ error: 'reCAPTCHA token is required.' });
+    }
+
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY || '6LfWPyUtAAAAADgIgI5DOe79B0vuGweIlHPLPErm';
+    const verificationUrl = 'https://www.google.com/recaptcha/api/siteverify';
+    
+    const response = await fetch(verificationUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        secret: secretKey,
+        response: token
+      })
+    });
+
+    const data = await response.json() as any;
+    if (data && data.success) {
+      const score = data.score !== undefined ? data.score : 1.0;
+      if (score < 0.5) {
+        return res.status(400).json({ error: 'reCAPTCHA verification failed: score too low. Bot activity suspected.' });
+      }
+      res.json({ success: true, score });
+    } else {
+      const errorCodes = data['error-codes'] ? data['error-codes'].join(', ') : 'unknown error';
+      res.status(400).json({ error: `reCAPTCHA verification failed: ${errorCodes}` });
+    }
+  } catch (error: any) {
+    console.error('reCAPTCHA verification error:', error);
+    res.status(500).json({ error: 'Failed to verify reCAPTCHA token due to server error.' });
+  }
+});
+
 // API: PostImage upload proxy
 app.post('/api/postimage-upload', async (req, res) => {
   try {

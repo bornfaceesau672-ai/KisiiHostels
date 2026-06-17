@@ -2,10 +2,36 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import { getAnalytics, isSupported, logEvent } from 'firebase/analytics';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+
+// Initialize Firebase App Check safely in browser
+if (typeof window !== 'undefined') {
+  try {
+    // If in development mode, use debug token to prevent blocking local development
+    try {
+      if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
+        (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+      } else if ((import.meta as any).env?.DEV) {
+        (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider('6LfWPyUtAAAAAEfb8VGKkmcnPrrXzj3mGQvWtnD7'),
+      isTokenAutoRefreshEnabled: true,
+    });
+    console.log('Firebase App Check initialized successfully.');
+  } catch (error) {
+    console.warn('Failed to initialize Firebase App Check:', error);
+  }
+}
+
 
 // Initialize Auth & Firestore
 export const auth = getAuth(app);

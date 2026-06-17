@@ -23,11 +23,11 @@ async function startServer() {
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
     res.setHeader('Content-Security-Policy-Report-Only', [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",
+      "script-src 'self' 'unsafe-inline' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://images.unsplash.com https://i.postimg.cc https://postimg.cc https://*.postimg.cc",
-      "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebase.googleapis.com https://api.postimage.org",
-      "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://meet.google.com https://zoom.us",
+      "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebase.googleapis.com https://api.postimage.org https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/",
+      "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://meet.google.com https://zoom.us https://www.google.com/recaptcha/ https://recaptcha.google.com/",
       "font-src 'self' data:",
       "object-src 'none'",
       "base-uri 'self'",
@@ -44,6 +44,44 @@ async function startServer() {
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
   });
+
+  // API: Verify reCAPTCHA token
+  app.post('/api/verify-recaptcha', async (req, res) => {
+    try {
+      const { token } = req.body;
+      if (!token) {
+        return res.status(400).json({ error: 'reCAPTCHA token is required.' });
+      }
+
+      const secretKey = process.env.RECAPTCHA_SECRET_KEY || '6LfWPyUtAAAAADgIgI5DOe79B0vuGweIlHPLPErm';
+      const verificationUrl = 'https://www.google.com/recaptcha/api/siteverify';
+      
+      const response = await fetch(verificationUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          secret: secretKey,
+          response: token
+        })
+      });
+
+      const data = await response.json() as any;
+      if (data && data.success) {
+        const score = data.score !== undefined ? data.score : 1.0;
+        if (score < 0.5) {
+          return res.status(400).json({ error: 'reCAPTCHA verification failed: score too low. Bot activity suspected.' });
+        }
+        res.json({ success: true, score });
+      } else {
+        const errorCodes = data['error-codes'] ? data['error-codes'].join(', ') : 'unknown error';
+        res.status(400).json({ error: `reCAPTCHA verification failed: ${errorCodes}` });
+      }
+    } catch (error: any) {
+      console.error('reCAPTCHA verification error:', error);
+      res.status(500).json({ error: 'Failed to verify reCAPTCHA token due to server error.' });
+    }
+  });
+
 
   app.post('/api/postimage-upload', async (req, res) => {
     try {
