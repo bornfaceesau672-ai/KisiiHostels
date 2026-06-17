@@ -68,13 +68,17 @@ export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = '
     return new Promise((resolve, reject) => {
       const windowObj = window as any;
       if (!windowObj.grecaptcha) {
-        reject(new Error('reCAPTCHA security library is still loading. Please wait a moment and try again.'));
+        reject(new Error('reCAPTCHA security library is blocked or failed to load. If you are using Opera or Brave, please disable your Ad Blocker / Tracker Blocker for this site and refresh.'));
         return;
       }
       windowObj.grecaptcha.ready(() => {
         windowObj.grecaptcha.execute('6LfWPyUtAAAAAEfb8VGKkmcnPrrXzj3mGQvWtnD7', { action: 'auth' })
           .then((token: string) => {
-            resolve(token);
+            if (token === 'browser-error') {
+              reject(new Error('reCAPTCHA execution failed (browser-error). This is usually caused by browser privacy shields or tracker blockers (e.g. Opera/Brave blockers). Please disable them for this site.'));
+            } else {
+              resolve(token);
+            }
           })
           .catch((err: any) => {
             reject(err);
@@ -156,7 +160,7 @@ export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = '
         token = await executeRecaptcha();
       } catch (recaptchaErr: any) {
         console.warn('reCAPTCHA error:', recaptchaErr);
-        throw new Error('Could not execute security check. Please check your internet connection.');
+        throw new Error(recaptchaErr.message || 'Could not execute security check. Please check your internet connection.');
       }
 
       // Verify reCAPTCHA token on the backend API

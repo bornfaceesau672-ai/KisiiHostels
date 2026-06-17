@@ -43,7 +43,11 @@ app.post('/api/verify-recaptcha', async (req, res) => {
       res.json({ success: true, score });
     } else {
       const errorCodes = data['error-codes'] ? data['error-codes'].join(', ') : 'unknown error';
-      res.status(400).json({ error: `reCAPTCHA verification failed: ${errorCodes}` });
+      let friendlyError = `reCAPTCHA verification failed: ${errorCodes}`;
+      if (errorCodes.includes('browser-error')) {
+        friendlyError = 'Security check blocked by your browser settings (e.g. Opera/Brave Ad Blocker or Tracker Blocker). Please disable blocking for this site.';
+      }
+      res.status(400).json({ error: friendlyError });
     }
   } catch (error: any) {
     console.error('reCAPTCHA verification error:', error);

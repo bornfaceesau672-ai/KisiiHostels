@@ -1179,7 +1179,7 @@ export default function App() {
     // Custom links
     const mockLinks: Record<string, string> = {
       'Google Meet': 'https://meet.google.com/abc-defg-hij',
-      'WhatsApp Video Call': `https://wa.me/254795858929?text=Hi%2C%20I%20scheduled%20a%20Hostel%20Virtual%20Tour%20online%2520for%2520${encodeURIComponent(hostel.name)}.%20Let's%2520connect%2520via%2520video%2520call!`,
+      'WhatsApp Video Call': `https://wa.me/254795858929?text=Hi%2C%20I%20scheduled%20a%20Hostel%20Virtual%20Tour%20online%20for%20${encodeURIComponent(hostel.name)}.%20Let's%20connect%20via%20video%20call!`,
       'Zoom Meeting': `https://zoom.us/j/${Math.floor(1000000000 + Math.random() * 9000000000)}`
     };
 
@@ -1823,29 +1823,7 @@ export default function App() {
 
           {/* Theme toggle + Search + Student profile on the SAME row right after the title */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* Support Contact Helpline Pill */}
-            <div className="flex items-center rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-850 p-1 shadow-sm shrink-0">
-              <span className="text-[10px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 px-2 hidden lg:inline">Support:</span>
-              <a
-                href="tel:0795858929"
-                className="flex items-center justify-center w-8 h-8 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-750 dark:text-slate-200 transition active:scale-95 cursor-pointer"
-                title="Call Support: 0795858929"
-              >
-                <Phone className="w-3.5 h-3.5 text-indigo-650 dark:text-indigo-400" />
-              </a>
-              <a
-                href="https://wa.me/254795858929?text=Hi%2C%20I%20need%20support%20on%20the%20Kisii%20Hostel%20Portal."
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center justify-center w-8 h-8 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-750 dark:text-slate-200 transition active:scale-95 cursor-pointer"
-                title="Chat with Support on WhatsApp"
-              >
-                <svg className="w-3.5 h-3.5 fill-emerald-600 dark:fill-emerald-400" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12.031 6.172c-2.386 0-4.321 1.934-4.321 4.32 0 .768.201 1.517.583 2.179l-.621 2.268 2.321-.609c.638.349 1.353.533 2.083.533l.001-.001c2.386 0 4.32-1.933 4.32-4.32 0-2.386-1.934-4.32-4.32-4.32zm2.531 6.13c-.104.174-.614.7-1.139.756-.376.04-.798-.057-1.391-.301-.892-.367-1.468-.962-1.884-1.378-.415-.415-1.01-1.026-1.378-1.918-.244-.593-.341-1.015-.3-1.391.056-.525.582-1.035.756-1.139.068-.041.13-.062.18-.062.115 0 .216.012.284.144l.432 1.041c.046.109.026.234-.049.317l-.234.258c-.067.074-.083.178-.04.264.205.415.524.78.932 1.188.408.408.773.727 1.188.932.086.043.19.027.264-.04l.258-.234c.083-.075.208-.095.317-.049l1.041.432c.132.068.144.169.144.284 0 .05-.021.112-.062.18zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm.019 21.997c-1.805 0-3.573-.485-5.124-1.4l-.367-.217-3.804.997 1.015-3.712-.239-.381c-1.006-1.605-1.539-3.468-1.537-5.38.004-5.509 4.49-9.992 10.002-9.992 2.668 0 5.176 1.039 7.062 2.927 1.886 1.888 2.924 4.397 2.923 7.067-.004 5.511-4.49 9.991-9.998 9.991z" />
-                </svg>
-              </a>
-              <span className="text-[10px] sm:text-xs font-mono font-bold text-slate-700 dark:text-slate-350 pr-2 pl-1 hidden md:inline">0795858929</span>
-            </div>
+
             {/* Search toggler button */}
             {currentPage === 'details' && (
               <button
@@ -3851,10 +3829,10 @@ export default function App() {
                       </button>
                       <button
                         onClick={handleSaveAdminHostel}
-                        disabled={isSavingHostel || isDeletingHostel}
+                        disabled={isSavingHostel || isDeletingHostel || isUploadingHostelImage}
                         className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition active:scale-95 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
                       >
-                        {isSavingHostel ? 'Saving...' : 'Save Hostel'}
+                        {isUploadingHostelImage ? 'Waiting for Image...' : isSavingHostel ? 'Saving...' : 'Save Hostel'}
                       </button>
                       <button
                         onClick={handleAdminDeleteHostel}
@@ -4705,10 +4683,29 @@ export default function App() {
         </p>
       </footer>
 
+      {/* Global Support FAB */}
+      <a
+        href="https://wa.me/254795858929?text=Hi%2C%20I%20need%20support%20on%20the%20Kisii%20Hostel%20Portal."
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Contact Support on WhatsApp"
+        className="fixed bottom-6 left-4 z-40 flex h-12 w-12 items-center justify-center gap-2 rounded-full border border-indigo-400 bg-indigo-500 text-white shadow-xl shadow-indigo-900/20 transition-all duration-200 hover:bg-indigo-600 hover:border-white active:scale-95 sm:h-auto sm:w-auto sm:px-4 sm:py-3"
+        id="global-support-floating-cta"
+      >
+        <span className="relative hidden h-2 w-2 sm:flex" aria-hidden="true">
+          <span className="absolute inline-flex h-full w-full rounded-full bg-white opacity-60"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+        </span>
+        <svg className="w-5 h-5 fill-white sm:w-4 sm:h-4" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12.031 6.172c-2.386 0-4.321 1.934-4.321 4.32 0 .768.201 1.517.583 2.179l-.621 2.268 2.321-.609c.638.349 1.353.533 2.083.533l.001-.001c2.386 0 4.32-1.933 4.32-4.32 0-2.386-1.934-4.32-4.32-4.32zm2.531 6.13c-.104.174-.614.7-1.139.756-.376.04-.798-.057-1.391-.301-.892-.367-1.468-.962-1.884-1.378-.415-.415-1.01-1.026-1.378-1.918-.244-.593-.341-1.015-.3-1.391.056-.525.582-1.035.756-1.139.068-.041.13-.062.18-.062.115 0 .216.012.284.144l.432 1.041c.046.109.026.234-.049.317l-.234.258c-.067.074-.083.178-.04.264.205.415.524.78.932 1.188.408.408.773.727 1.188.932.086.043.19.027.264-.04l.258-.234c.083-.075.208-.095.317-.049l1.041.432c.132.068.144.169.144.284 0 .05-.021.112-.062.18zM12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm.019 21.997c-1.805 0-3.573-.485-5.124-1.4l-.367-.217-3.804.997 1.015-3.712-.239-.381c-1.006-1.605-1.539-3.468-1.537-5.38.004-5.509 4.49-9.992 10.002-9.992 2.668 0 5.176 1.039 7.062 2.927 1.886 1.888 2.924 4.397 2.923 7.067-.004 5.511-4.49 9.991-9.998 9.991z" />
+        </svg>
+        <span className="hidden font-mono uppercase font-bold text-[11px] tracking-wider sm:inline">Support</span>
+      </a>
+
       {/* Floating WhatsApp button pointing to landlord / caretaker */}
       {exploreView === 'rooms' && selectedHostel && (
         <a
-          href={`https://wa.me/254795858929?text=Hi%2C%20Comrade%20Caretaker.%20I%20am%20viewing%20rooms%20online%2520at%2520${encodeURIComponent(selectedHostel.name)}%252520and%2520would%2520love%2520to%2520verify%2520booking%252520allotments%252520checks.`}
+          href={`https://wa.me/254795858929?text=Hi%2C%20Comrade%20Caretaker.%20I%20am%20viewing%20rooms%20online%20at%20${encodeURIComponent(selectedHostel.name)}%20and%20would%20love%20to%20verify%20booking%20allotments%20checks.`}
           target="_blank"
           rel="noreferrer"
           aria-label={`Contact caretaker for ${selectedHostel.name} on WhatsApp`}
