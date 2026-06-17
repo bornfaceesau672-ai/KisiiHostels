@@ -430,42 +430,6 @@ export default function App() {
     };
   }, [currentUser, userProfile?.synced]);
 
-  // Report active presence to Firestore (for admin dashboard monitoring)
-  useEffect(() => {
-    let sessionId = '';
-    try {
-      sessionId = sessionStorage.getItem('kisii_session_id') || '';
-      if (!sessionId) {
-        sessionId = `sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-        sessionStorage.setItem('kisii_session_id', sessionId);
-      }
-    } catch (e) {
-      // Memory fallback if sessionStorage is blocked/inaccessible
-      sessionId = `sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    }
-    const presenceDocId = currentUser ? currentUser.uid : sessionId;
-
-    const updatePresence = async () => {
-      try {
-        const presenceRef = doc(db, 'presence', presenceDocId);
-        await setDoc(presenceRef, {
-          uid: presenceDocId,
-          email: currentUser?.email || 'guest@kisii.portal',
-          name: userProfile?.displayName || (currentUser ? (currentUser.email?.split('@')[0] || 'Comrade Resident') : 'Guest Comrade'),
-          category: userProfile?.category || (currentUser ? 'Student' : 'Guest'),
-          lastActive: Date.now(),
-          currentPage,
-          activeTab,
-        }, { merge: true });
-      } catch (err) {
-        console.warn('Failed to write presence to Firestore:', err);
-      }
-    };
-
-    updatePresence();
-    const interval = setInterval(updatePresence, 120000); // Keep alive every 2 minutes
-    return () => clearInterval(interval);
-  }, [currentUser?.uid, userProfile?.displayName, currentPage, activeTab]);
 
   // Cross-tab logout: listen for logout signal from other tabs
   useEffect(() => {
@@ -613,6 +577,44 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'explore' | 'bookings' | 'maintenance' | 'sophia' | 'admin'>('explore');
   const [adminSubTab, setAdminSubTab] = useState<'listings' | 'clients'>('listings');
   const [currentPage, setCurrentPage] = useState<'home' | 'details'>('details');
+
+  // Report active presence to Firestore (for admin dashboard monitoring)
+  useEffect(() => {
+    let sessionId = '';
+    try {
+      sessionId = sessionStorage.getItem('kisii_session_id') || '';
+      if (!sessionId) {
+        sessionId = `sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        sessionStorage.setItem('kisii_session_id', sessionId);
+      }
+    } catch (e) {
+      // Memory fallback if sessionStorage is blocked/inaccessible
+      sessionId = `sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    }
+    const presenceDocId = currentUser ? currentUser.uid : sessionId;
+
+    const updatePresence = async () => {
+      try {
+        const presenceRef = doc(db, 'presence', presenceDocId);
+        await setDoc(presenceRef, {
+          uid: presenceDocId,
+          email: currentUser?.email || 'guest@kisii.portal',
+          name: userProfile?.displayName || (currentUser ? (currentUser.email?.split('@')[0] || 'Comrade Resident') : 'Guest Comrade'),
+          category: userProfile?.category || (currentUser ? 'Student' : 'Guest'),
+          lastActive: Date.now(),
+          currentPage,
+          activeTab,
+        }, { merge: true });
+      } catch (err) {
+        console.warn('Failed to write presence to Firestore:', err);
+      }
+    };
+
+    updatePresence();
+    const interval = setInterval(updatePresence, 120000); // Keep alive every 2 minutes
+    return () => clearInterval(interval);
+  }, [currentUser?.uid, userProfile?.displayName, currentPage, activeTab]);
+
   const [showHeader, setShowHeader] = useState<boolean>(true);
   const [showBottomBar, setShowBottomBar] = useState<boolean>(true);
   const [showProfileDropdown, setShowProfileDropdown] = useState<boolean>(false);
