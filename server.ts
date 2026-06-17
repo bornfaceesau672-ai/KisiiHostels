@@ -3,6 +3,7 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
+import fs from 'fs';
 
 // Load environment variables
 dotenv.config();
@@ -110,6 +111,31 @@ async function startServer() {
       const normalizedType = String(type || 'jpg').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
       if (!['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(normalizedType)) {
         return res.status(400).json({ error: 'Unsupported image type.' });
+      }
+
+      // Try to save image locally first (to public/hostel-images) so they get committed to Git
+      try {
+        const publicDir = path.join(process.cwd(), 'public');
+        const hostelImagesDir = path.join(publicDir, 'hostel-images');
+        
+        if (fs.existsSync(publicDir)) {
+          if (!fs.existsSync(hostelImagesDir)) {
+            fs.mkdirSync(hostelImagesDir, { recursive: true });
+          }
+          
+          const cleanName = String(name || 'hostel-image')
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '-')
+            .slice(0, 50);
+          const filename = `${Date.now()}-${cleanName}.${normalizedType}`;
+          const filePath = path.join(hostelImagesDir, filename);
+          
+          fs.writeFileSync(filePath, Buffer.from(image, 'base64'));
+          console.log(`Saved image locally: /hostel-images/${filename}`);
+          return res.json({ url: `/hostel-images/${filename}` });
+        }
+      } catch (localWriteErr) {
+        console.warn('Failed to save image locally, falling back to PostImage:', localWriteErr);
       }
 
       const body = new URLSearchParams({

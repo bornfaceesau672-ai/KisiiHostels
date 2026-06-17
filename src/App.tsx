@@ -661,6 +661,7 @@ export default function App() {
   const [compareHostels, setCompareHostels] = useState<Hostel[]>([]);
   const [showCompareModal, setShowCompareModal] = useState<boolean>(false);
   const [adminSelectedHostelId, setAdminSelectedHostelId] = useState<string>('');
+  const [adminHostelSearchQuery, setAdminHostelSearchQuery] = useState<string>('');
   const [adminDraftHostel, setAdminDraftHostel] = useState<Hostel | null>(null);
   const [isUploadingHostelImage, setIsUploadingHostelImage] = useState(false);
 
@@ -1476,96 +1477,109 @@ export default function App() {
     setAdminDraftHostel((prev) => prev ? { ...prev, rooms: prev.rooms.filter((room) => room.id !== roomId) } : prev);
   };
 
-  const uploadHostelImageToPostImage = async (file: File) => {
+  const uploadHostelImagesToPostImage = async (files: FileList | File[]) => {
     if (!adminDraftHostel || !isAdminUser) return;
     setIsUploadingHostelImage(true);
-    try {
-      // Compress the image client-side before uploading (prevents Payload Too Large errors and speeds up upload)
-      const compressed: { base64: string; type: string } = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const img = new Image();
-          img.onload = () => {
-            const MAX_WIDTH = 1200;
-            const MAX_HEIGHT = 900;
-            let width = img.width;
-            let height = img.height;
+    const uploadedUrls: string[] = [];
+    let successCount = 0;
+    let failCount = 0;
 
-            if (width > height) {
-              if (width > MAX_WIDTH) {
-                height = Math.round((height * MAX_WIDTH) / width);
-                width = MAX_WIDTH;
-              }
-            } else {
-              if (height > MAX_HEIGHT) {
-                width = Math.round((width * MAX_HEIGHT) / height);
-                height = MAX_HEIGHT;
-              }
-            }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-              reject(new Error('Failed to get canvas 2D context for compression.'));
-              return;
-            }
-
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            // Export as compressed JPEG at 0.7 quality
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-            const base64 = dataUrl.split(',')[1] || '';
-            resolve({ base64, type: 'jpeg' });
-          };
-          img.onerror = () => reject(new Error('Failed to load image element for compression.'));
-          img.src = event.target?.result as string;
-        };
-        reader.onerror = () => reject(new Error('Could not read selected image file.'));
-        reader.readAsDataURL(file);
-      });
-
-      const response = await fetch('/api/postimage-upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image: compressed.base64,
-          name: file.name.replace(/\.[^.]+$/, '') || adminDraftHostel.name,
-          type: compressed.type
-        })
-      });
-
-      // Safely read response as text first, then parse to avoid cryptic parser crashes
-      const responseText = await response.text();
-      let data;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
       try {
-        data = JSON.parse(responseText);
-      } catch (jsonErr) {
-        throw new Error(responseText.slice(0, 150) || `Server error: Status code ${response.status}`);
-      }
+        // Compress the image client-side before uploading (prevents Payload Too Large errors and speeds up upload)
+        const compressed: { base64: string; type: string } = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+              const MAX_WIDTH = 1200;
+              const MAX_HEIGHT = 900;
+              let width = img.width;
+              let height = img.height;
 
-      const hostedUrl = data?.url;
-      if (!response.ok || !hostedUrl) {
-        throw new Error(data?.error || data?.message || 'PostImage did not return a hosted image URL.');
+              if (width > height) {
+                if (width > MAX_WIDTH) {
+                  height = Math.round((height * MAX_WIDTH) / width);
+                  width = MAX_WIDTH;
+                }
+              } else {
+                if (height > MAX_HEIGHT) {
+                  width = Math.round((width * MAX_HEIGHT) / height);
+                  height = MAX_HEIGHT;
+                }
+              }
+
+              const canvas = document.createElement('canvas');
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              if (!ctx) {
+                reject(new Error('Failed to get canvas 2D context for compression.'));
+                return;
+              }
+
+              ctx.drawImage(img, 0, 0, width, height);
+              
+              // Export as compressed JPEG at 0.7 quality
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+              const base64 = dataUrl.split(',')[1] || '';
+              resolve({ base64, type: 'jpeg' });
+            };
+            img.onerror = () => reject(new Error('Failed to load image element for compression.'));
+            img.src = event.target?.result as string;
+          };
+          reader.onerror = () => reject(new Error('Could not read selected image file.'));
+          reader.readAsDataURL(file);
+        });
+
+        const response = await fetch('/api/postimage-upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image: compressed.base64,
+            name: file.name.replace(/\.[^.]+$/, '') || adminDraftHostel.name,
+            type: compressed.type
+          })
+        });
+
+        // Safely read response as text first, then parse to avoid cryptic parser crashes
+        const responseText = await response.text();
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (jsonErr) {
+          throw new Error(responseText.slice(0, 150) || `Server error: Status code ${response.status}`);
+        }
+
+        const hostedUrl = data?.url;
+        if (!response.ok || !hostedUrl) {
+          throw new Error(data?.error || data?.message || 'PostImage did not return a hosted image URL.');
+        }
+        uploadedUrls.push(hostedUrl);
+        successCount++;
+      } catch (error: any) {
+        console.error(`PostImage upload failed for ${file.name}:`, error);
+        failCount++;
       }
+    }
+
+    if (successCount > 0) {
       setAdminDraftHostel((prev) => {
         if (!prev) return prev;
         const currentUrls = prev.imageUrls || [];
-        const updatedUrls = [...currentUrls, hostedUrl];
+        const updatedUrls = [...currentUrls, ...uploadedUrls];
         return {
           ...prev,
           imageUrls: updatedUrls,
-          imageUrl: prev.imageUrl ? prev.imageUrl : hostedUrl
+          imageUrl: prev.imageUrl ? prev.imageUrl : uploadedUrls[0]
         };
       });
-      showFeedback('Hostel image uploaded to PostImage. Save the hostel to keep it.', 'success');
-    } catch (error: any) {
-      console.error('PostImage upload failed:', error);
-      showFeedback(error?.message || 'Image upload failed. Paste an image URL instead.', 'warning');
-    } finally {
-      setIsUploadingHostelImage(false);
+      showFeedback(`Successfully uploaded ${successCount} image(s).${failCount > 0 ? ` Failed to upload ${failCount} image(s).` : ''} Save changes to keep them.`, 'success');
+    } else if (failCount > 0) {
+      showFeedback(`Failed to upload ${failCount} image(s). Please check your connection or file format.`, 'warning');
     }
+    setIsUploadingHostelImage(false);
   };
 
   // Submit Maintenance Task
@@ -3807,15 +3821,24 @@ export default function App() {
                       <p className="text-[11px] text-slate-500 dark:text-slate-400">Select any hostel, update its public details, rooms, pricing, contacts, rules, and hosted image.</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="🔍 Search hostel..."
+                        value={adminHostelSearchQuery}
+                        onChange={(e) => setAdminHostelSearchQuery(e.target.value)}
+                        className="min-h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-bold text-slate-700 dark:text-slate-200 px-3 py-1 focus:outline-none focus:border-indigo-500 w-36 lg:w-44"
+                      />
                       <select
                         value={adminSelectedHostelId}
                         onChange={(e) => setAdminSelectedHostelId(e.target.value)}
                         className="min-h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-bold text-slate-700 dark:text-slate-200 px-3"
                         aria-label="Select hostel to edit"
                       >
-                        {hostels.map((hostel) => (
-                          <option key={hostel.id} value={hostel.id}>{hostel.name}</option>
-                        ))}
+                        {hostels
+                          .filter((hostel) => hostel.id === adminSelectedHostelId || hostel.name.toLowerCase().includes(adminHostelSearchQuery.toLowerCase()))
+                          .map((hostel) => (
+                            <option key={hostel.id} value={hostel.id}>{hostel.name}</option>
+                          ))}
                         {adminDraftHostel && !hostels.some(h => h.id === adminDraftHostel.id) && (
                           <option value={adminDraftHostel.id}>{adminDraftHostel.name} (Draft/New)</option>
                         )}
@@ -3832,7 +3855,13 @@ export default function App() {
                         disabled={isSavingHostel || isDeletingHostel || isUploadingHostelImage}
                         className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition active:scale-95 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
                       >
-                        {isUploadingHostelImage ? 'Waiting for Image...' : isSavingHostel ? 'Saving...' : 'Save Hostel'}
+                        {isUploadingHostelImage 
+                          ? 'Waiting for Image...' 
+                          : isSavingHostel 
+                            ? 'Saving...' 
+                            : adminDraftHostel && hostels.some(h => h.id === adminDraftHostel.id)
+                              ? 'Save Changes' 
+                              : 'Save Hostel'}
                       </button>
                       <button
                         onClick={handleAdminDeleteHostel}
@@ -3930,22 +3959,23 @@ export default function App() {
 
                       {/* Image Source Inputs */}
                       <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-                        {/* Upload to PostImage */}
+                        {/* Upload to Project Assets / GitHub */}
                         <div className="space-y-1">
-                          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">Upload to PostImage (Adds to Gallery)</span>
+                          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 block">Upload Images (Saved to Project & Git)</span>
                           <input
                             type="file"
                             accept="image/*"
+                            multiple
                             disabled={isUploadingHostelImage}
                             onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) uploadHostelImageToPostImage(file);
+                              const files = e.target.files;
+                              if (files && files.length > 0) uploadHostelImagesToPostImage(files);
                               e.currentTarget.value = '';
                             }}
                             className="w-full text-xs text-slate-600 dark:text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white disabled:opacity-60 cursor-pointer"
                           />
                           {isUploadingHostelImage && (
-                            <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold mt-1">Uploading image...</p>
+                            <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold mt-1">Uploading image(s)...</p>
                           )}
                         </div>
 
