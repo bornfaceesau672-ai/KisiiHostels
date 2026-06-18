@@ -62,6 +62,7 @@ export interface MaintenanceRequest {
   hostelName: string;
   roomNumber: string;
   studentName: string;
+  userEmail?: string; // Links to the logged-in user who created this request
   contactNumber: string;
   category: 'Plumbing' | 'Electrical' | 'Carpentry' | 'Wi-Fi/Network' | 'Water Supply' | 'Pest Control' | 'Other';
   description: string;

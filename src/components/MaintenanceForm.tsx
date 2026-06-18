@@ -58,6 +58,7 @@ export default function MaintenanceForm({ hostels, onSubmitRequest, userEmail }:
       hostelName,
       roomNumber: sanitizedRoom,
       studentName: sanitizedName,
+      userEmail,
       contactNumber: sanitizedContact,
       category,
       priority,

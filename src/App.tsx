@@ -1677,7 +1677,12 @@ export default function App() {
     return acc + hostel.rooms.reduce((rAcc, r) => rAcc + r.currentOccupants, 0);
   }, 0);
   const occupancyRate = totalBedsCount > 0 ? Math.round((occupiedBedsCount / totalBedsCount) * 100) : 0;
-  const openMaintenanceCount = maintenance.filter((m) => m.status !== 'Completed').length;
+  const visibleMaintenance = isAdminUser 
+    ? maintenance 
+    : currentUser 
+      ? maintenance.filter((m) => m.userEmail === currentUser.email || m.studentName === currentUser.name)
+      : [];
+  const openMaintenanceCount = visibleMaintenance.filter((m) => m.status !== 'Completed').length;
   const pendingBookingCount = bookings.filter((b) => b.status === 'Pending Approval').length;
   const confirmedBookingCount = bookings.filter((b) => b.status === 'Fully Confirmed').length;
   const adminHostelRows = hostels.map((hostel) => {
@@ -2108,7 +2113,7 @@ export default function App() {
                   <Hammer className="w-5.5 h-5.5 text-indigo-600 dark:text-indigo-400 group-hover:text-white dark:group-hover:text-white transition-colors duration-200" />
                 </div>
                 <span className="text-[10px] bg-amber-50 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-mono font-bold px-2.5 py-0.5 rounded-full">
-                  {maintenance.filter(m => m.status !== 'Completed').length} Pending Issues
+                  {openMaintenanceCount} Pending Issues
                 </span>
               </div>
               <div className="space-y-1">
@@ -3605,16 +3610,16 @@ export default function App() {
                 <div className="xl:col-span-2 space-y-6">
                   <h3 className="text-sm font-mono tracking-wider text-slate-500 uppercase font-bold text-slate-400 flex items-center gap-1.5">
                     <CheckCircle className="w-4 h-4" />
-                    Student Issues Log ({maintenance.length} reported)
+                    Student Issues Log ({visibleMaintenance.length} reported)
                   </h3>
 
-                  {maintenance.length === 0 ? (
+                  {visibleMaintenance.length === 0 ? (
                     <div className="bg-white rounded-3xl p-12 text-center text-slate-500 border border-slate-200 py-16">
                       No problems logged yet. Good security, Comrade!
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {maintenance.map((m) => {
+                      {visibleMaintenance.map((m) => {
                         const isHigh = m.priority === 'High';
                         const isMedium = m.priority === 'Medium';
 
@@ -3679,7 +3684,7 @@ export default function App() {
                               </span>
 
                               <div className="flex gap-2.5">
-                                {m.status === 'Reported' && (
+                                {isAdminUser && m.status === 'Reported' && (
                                   <button
                                     id={`assign-progress-btn-${m.id}`}
                                     onClick={() => handleSimulateMaintenanceTransition(m.id, 'In Progress')}
@@ -3688,7 +3693,7 @@ export default function App() {
                                     Assign Technician
                                   </button>
                                 )}
-                                {m.status === 'In Progress' && (
+                                {isAdminUser && m.status === 'In Progress' && (
                                   <button
                                     id={`complete-task-btn-${m.id}`}
                                     onClick={() => handleSimulateMaintenanceTransition(m.id, 'Completed')}
@@ -4208,7 +4213,7 @@ export default function App() {
                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
                     <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">Repair Queue</h3>
                     <div className="mt-4 space-y-3">
-                      {maintenance.filter((m) => m.status !== 'Completed').slice(0, 5).map((ticket) => (
+                      {visibleMaintenance.filter((m) => m.status !== 'Completed').slice(0, 5).map((ticket) => (
                         <div key={ticket.id} className="border border-slate-100 dark:border-slate-800 rounded-xl p-3">
                           <div className="flex items-start justify-between gap-2">
                             <div>
