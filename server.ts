@@ -4,9 +4,27 @@ import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import fs from 'fs';
+import { exec } from 'child_process';
 
 // Load environment variables
 dotenv.config();
+
+let gitPushTimeout: NodeJS.Timeout | null = null;
+const triggerGitPush = () => {
+  if (gitPushTimeout) {
+    clearTimeout(gitPushTimeout);
+  }
+  gitPushTimeout = setTimeout(() => {
+    console.log('[Git Auto-sync] Running git add, commit, and push for newly uploaded hostel images...');
+    exec('git add public/hostel-images && git commit -m "Upload hostel images via admin dashboard" && git push', (error, stdout, stderr) => {
+      if (error) {
+        console.error('[Git Auto-sync] Failed auto git push:', error);
+      } else {
+        console.log('[Git Auto-sync] Auto git push completed successfully:\n', stdout);
+      }
+    });
+  }, 5000); // Debounce to allow multiple uploads to finish before committing
+};
 
 const postImageUploadAttempts = new Map<string, { count: number; resetAt: number }>();
 
@@ -132,6 +150,7 @@ async function startServer() {
           
           fs.writeFileSync(filePath, Buffer.from(image, 'base64'));
           console.log(`Saved image locally: /hostel-images/${filename}`);
+          triggerGitPush();
           return res.json({ url: `/hostel-images/${filename}` });
         }
       } catch (localWriteErr) {

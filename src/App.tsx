@@ -664,6 +664,7 @@ export default function App() {
   const [adminHostelSearchQuery, setAdminHostelSearchQuery] = useState<string>('');
   const [adminDraftHostel, setAdminDraftHostel] = useState<Hostel | null>(null);
   const [isUploadingHostelImage, setIsUploadingHostelImage] = useState(false);
+  const [isAdminDropdownOpen, setIsAdminDropdownOpen] = useState(false);
 
   // Admin Firestore Action States
   const [isSavingHostel, setIsSavingHostel] = useState<boolean>(false);
@@ -816,6 +817,18 @@ export default function App() {
       setReviewName(userProfile.displayName);
     }
   }, [userProfile?.displayName]);
+
+  // Close searchable dropdown on click outside
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      const container = document.getElementById('admin-hostel-dropdown-container');
+      if (container && !container.contains(e.target as Node)) {
+        setIsAdminDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
 
   // Log screen/page views to Analytics
   useEffect(() => {
@@ -3826,28 +3839,93 @@ export default function App() {
                       <p className="text-[11px] text-slate-500 dark:text-slate-400">Select any hostel, update its public details, rooms, pricing, contacts, rules, and hosted image.</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <input
-                        type="text"
-                        placeholder="🔍 Search hostel..."
-                        value={adminHostelSearchQuery}
-                        onChange={(e) => setAdminHostelSearchQuery(e.target.value)}
-                        className="min-h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-bold text-slate-700 dark:text-slate-200 px-3 py-1 focus:outline-none focus:border-indigo-500 w-36 lg:w-44"
-                      />
-                      <select
-                        value={adminSelectedHostelId}
-                        onChange={(e) => setAdminSelectedHostelId(e.target.value)}
-                        className="min-h-11 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-bold text-slate-700 dark:text-slate-200 px-3"
-                        aria-label="Select hostel to edit"
-                      >
-                        {hostels
-                          .filter((hostel) => hostel.id === adminSelectedHostelId || hostel.name.toLowerCase().includes(adminHostelSearchQuery.toLowerCase()))
-                          .map((hostel) => (
-                            <option key={hostel.id} value={hostel.id}>{hostel.name}</option>
-                          ))}
-                        {adminDraftHostel && !hostels.some(h => h.id === adminDraftHostel.id) && (
-                          <option value={adminDraftHostel.id}>{adminDraftHostel.name} (Draft/New)</option>
+                      <div className="relative inline-block text-left" id="admin-hostel-dropdown-container">
+                        <button
+                          type="button"
+                          onClick={() => setIsAdminDropdownOpen(!isAdminDropdownOpen)}
+                          className="min-h-11 inline-flex items-center justify-between gap-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-bold text-slate-700 dark:text-slate-200 px-3 py-2 cursor-pointer w-48 md:w-56"
+                        >
+                          <span className="truncate">
+                            {(() => {
+                              const selectedHostel = hostels.find(h => h.id === adminSelectedHostelId);
+                              if (selectedHostel) return selectedHostel.name;
+                              if (adminDraftHostel && adminDraftHostel.id === adminSelectedHostelId) return `${adminDraftHostel.name} (Draft/New)`;
+                              return 'Select Hostel...';
+                            })()}
+                          </span>
+                          <span className="text-slate-400">▼</span>
+                        </button>
+                        
+                        {isAdminDropdownOpen && (
+                          <div className="absolute right-0 mt-1.5 w-64 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl z-[999] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 p-2.5 space-y-2">
+                            <input
+                              type="text"
+                              autoFocus
+                              placeholder="🔍 Search hostel..."
+                              value={adminHostelSearchQuery}
+                              onChange={(e) => setAdminHostelSearchQuery(e.target.value)}
+                              className="w-full min-h-9 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-bold text-slate-700 dark:text-slate-200 px-2.5 py-1 focus:outline-none focus:border-indigo-500"
+                            />
+                            
+                            <div className="max-h-60 overflow-y-auto space-y-0.5">
+                              {(() => {
+                                const filteredHostels = hostels.filter((hostel) => 
+                                  hostel.name.toLowerCase().includes(adminHostelSearchQuery.toLowerCase())
+                                );
+                                
+                                return (
+                                  <>
+                                    {filteredHostels.map((hostel) => (
+                                      <button
+                                        type="button"
+                                        key={hostel.id}
+                                        onClick={() => {
+                                          setAdminSelectedHostelId(hostel.id);
+                                          setIsAdminDropdownOpen(false);
+                                          setAdminHostelSearchQuery('');
+                                        }}
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-colors duration-100 flex items-center justify-between cursor-pointer ${
+                                          hostel.id === adminSelectedHostelId 
+                                            ? 'bg-indigo-500 text-white' 
+                                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                        }`}
+                                      >
+                                        <span className="truncate">{hostel.name}</span>
+                                        {hostel.id === adminSelectedHostelId && <span>✓</span>}
+                                      </button>
+                                    ))}
+                                    
+                                    {adminDraftHostel && !hostels.some(h => h.id === adminDraftHostel.id) && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setAdminSelectedHostelId(adminDraftHostel.id);
+                                          setIsAdminDropdownOpen(false);
+                                          setAdminHostelSearchQuery('');
+                                        }}
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-colors duration-100 flex items-center justify-between cursor-pointer ${
+                                          adminDraftHostel.id === adminSelectedHostelId 
+                                            ? 'bg-indigo-500 text-white' 
+                                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                        }`}
+                                      >
+                                        <span className="truncate">{adminDraftHostel.name} (Draft/New)</span>
+                                        {adminDraftHostel.id === adminSelectedHostelId && <span>✓</span>}
+                                      </button>
+                                    )}
+                                    
+                                    {filteredHostels.length === 0 && (!adminDraftHostel || hostels.some(h => h.id === adminDraftHostel.id)) && (
+                                      <div className="text-center py-4 text-xs text-slate-400 font-medium">
+                                        No hostels found
+                                      </div>
+                                    )}
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          </div>
                         )}
-                      </select>
+                      </div>
                       <button
                         onClick={handleAdminAddNewHostel}
                         disabled={isSavingHostel || isDeletingHostel}
