@@ -59,7 +59,9 @@ import {
   Lock,
   Key,
   Shield,
-  Trash2
+  Trash2,
+  Wrench,
+  AlertTriangle
 } from 'lucide-react';
 
 
@@ -583,7 +585,7 @@ export default function App() {
 
   // UI Navigation / Viewing States
   const [activeTab, setActiveTab] = useState<'explore' | 'bookings' | 'maintenance' | 'sophia' | 'admin'>('explore');
-  const [adminSubTab, setAdminSubTab] = useState<'listings' | 'clients'>('listings');
+  const [adminSubTab, setAdminSubTab] = useState<'listings' | 'clients' | 'repairs'>('listings');
   const [currentPage, setCurrentPage] = useState<'home' | 'details'>('details');
 
   // Report active presence to Firestore (for admin dashboard monitoring)
@@ -665,6 +667,15 @@ export default function App() {
   const [adminDraftHostel, setAdminDraftHostel] = useState<Hostel | null>(null);
   const [isUploadingHostelImage, setIsUploadingHostelImage] = useState(false);
   const [isAdminDropdownOpen, setIsAdminDropdownOpen] = useState(false);
+
+  // Admin Maintenance Dispatch Panel States
+  const [activeAssignIssueId, setActiveAssignIssueId] = useState<string | null>(null);
+  const [assignFundiName, setAssignFundiName] = useState<string>('Fundi Joseph (Plumber)');
+  const [assignCustomFundiName, setAssignCustomFundiName] = useState<string>('');
+  const [assignNotes, setAssignNotes] = useState<string>('');
+  const [activeCompleteIssueId, setActiveCompleteIssueId] = useState<string | null>(null);
+  const [completionNotes, setCompletionNotes] = useState<string>('');
+  const [repairsFilter, setRepairsFilter] = useState<'All' | 'Reported' | 'In Progress' | 'Completed'>('All');
 
   // Admin Firestore Action States
   const [isSavingHostel, setIsSavingHostel] = useState<boolean>(false);
@@ -1633,6 +1644,44 @@ export default function App() {
       return m;
     }));
     showFeedback(`Warden technician logged status update: ${action}`, 'info');
+  };
+
+  // Dispatch maintenance request to custom fundi
+  const handleDispatchMaintenance = (maintId: string, fundi: string, notes: string) => {
+    setMaintenance((prev) => prev.map((m) => {
+      if (m.id === maintId) {
+        return {
+          ...m,
+          status: 'In Progress',
+          allocatedAgent: fundi,
+          notes: notes || 'Technician dispatched for diagnostics.',
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return m;
+    }));
+    showFeedback(`Successfully dispatched ${fundi} to address the issue.`, 'success');
+    setActiveAssignIssueId(null);
+    setAssignNotes('');
+    setAssignCustomFundiName('');
+  };
+
+  // Mark maintenance request as completed/cleared
+  const handleClearMaintenance = (maintId: string, notes: string) => {
+    setMaintenance((prev) => prev.map((m) => {
+      if (m.id === maintId) {
+        return {
+          ...m,
+          status: 'Completed',
+          notes: notes || 'Issue resolved successfully and cleared.',
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return m;
+    }));
+    showFeedback(`Maintenance request marked as resolved and cleared.`, 'success');
+    setActiveCompleteIssueId(null);
+    setCompletionNotes('');
   };
 
   // Helper to render responsive grid of hostel cards for each estate
@@ -3669,6 +3718,12 @@ export default function App() {
                     >
                       Client Statistics
                     </button>
+                    <button
+                      onClick={() => setAdminSubTab('repairs')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${adminSubTab === 'repairs' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-350'}`}
+                    >
+                      Repairs & Dispatch
+                    </button>
                   </div>
 
                   <button
@@ -3691,11 +3746,16 @@ export default function App() {
                   { label: 'Available Beds', value: totalBedsAvailableCount.toLocaleString(), detail: `${occupancyRate}% occupancy`, icon: TrendingUp, tone: 'emerald' },
                   { label: 'Pending Bookings', value: pendingBookingCount.toLocaleString(), detail: `${confirmedBookingCount} fully confirmed`, icon: Receipt, tone: 'amber' },
                   { label: 'Open Repairs', value: openMaintenanceCount.toLocaleString(), detail: `${maintenance.length} total tickets`, icon: AlertCircle, tone: 'rose' }
-                ] : [
+                ] : adminSubTab === 'clients' ? [
                   { label: 'Total Registered', value: totalUsersCount.toLocaleString(), detail: 'All active roles', icon: User, tone: 'indigo' },
                   { label: 'Students', value: studentsCount.toLocaleString(), detail: `${Math.round(totalUsersCount > 0 ? (studentsCount/totalUsersCount)*100 : 0)}% of clients`, icon: GraduationCap, tone: 'emerald' },
                   { label: 'Property Owners', value: ownersCount.toLocaleString(), detail: `${Math.round(totalUsersCount > 0 ? (ownersCount/totalUsersCount)*100 : 0)}% of clients`, icon: Building, tone: 'amber' },
                   { label: 'Guests', value: guestsCount.toLocaleString(), detail: `${Math.round(totalUsersCount > 0 ? (guestsCount/totalUsersCount)*100 : 0)}% of clients`, icon: UserPlus, tone: 'rose' }
+                ] : [
+                  { label: 'Total Logs', value: maintenance.length.toLocaleString(), detail: 'All logged repairs', icon: Hammer, tone: 'indigo' },
+                  { label: 'Reported Issues', value: maintenance.filter(m => m.status === 'Reported').length.toLocaleString(), detail: 'Needs dispatcher action', icon: AlertTriangle, tone: 'rose' },
+                  { label: 'In Progress', value: maintenance.filter(m => m.status === 'In Progress').length.toLocaleString(), detail: 'Technicians on site', icon: Wrench, tone: 'amber' },
+                  { label: 'Resolved & Cleared', value: maintenance.filter(m => m.status === 'Completed').length.toLocaleString(), detail: 'Fixed and verified', icon: CheckCircle, tone: 'emerald' }
                 ]).map((metric) => {
                   const Icon = metric.icon;
                   const toneClass = metric.tone === 'emerald'
@@ -4112,7 +4172,7 @@ export default function App() {
                 </div>
               )}
 
-              {adminSubTab === 'listings' ? (
+              {adminSubTab === 'listings' && (
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
                 <div className="xl:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
                   <div className="flex items-center justify-between gap-3 mb-4">
@@ -4218,8 +4278,10 @@ export default function App() {
                   </div>
                 </div>
               </div>
-            ) : (
-                <div className="space-y-6">
+            )}
+
+            {adminSubTab === 'clients' && (
+              <div className="space-y-6">
                   {/* Real-time Visitor & Active Session Activity Tracker */}
                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -4604,6 +4666,265 @@ export default function App() {
                           )}
                         </tbody>
                       </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4.3: Repairs & Dispatch Panel */}
+              {adminSubTab === 'repairs' && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">Maintenance & Dispatch Center</h3>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">Review reported issues, assign certified wardens/fundis, and clear resolved requests.</p>
+                      </div>
+                      
+                      {/* Filter Controls */}
+                      <div className="flex flex-wrap gap-1.5 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-150 dark:border-slate-850">
+                        {(['All', 'Reported', 'In Progress', 'Completed'] as const).map((filter) => {
+                          const count = filter === 'All' 
+                            ? maintenance.length 
+                            : maintenance.filter(m => m.status === filter).length;
+                          return (
+                            <button
+                              type="button"
+                              key={filter}
+                              onClick={() => setRepairsFilter(filter)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                repairsFilter === filter 
+                                  ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-350'
+                              }`}
+                            >
+                              {filter} ({count})
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {maintenance
+                        .filter(m => repairsFilter === 'All' || m.status === repairsFilter)
+                        .map((ticket) => {
+                          const isHigh = ticket.priority === 'High';
+                          const isMedium = ticket.priority === 'Medium';
+                          const isAssigning = activeAssignIssueId === ticket.id;
+                          const isCompleting = activeCompleteIssueId === ticket.id;
+
+                          return (
+                            <div 
+                              key={ticket.id}
+                              className="bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 p-5 space-y-4 hover:border-slate-300 dark:hover:border-slate-700 transition"
+                            >
+                              {/* Header info */}
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-1.5">
+                                  <span className={`w-2 h-2 rounded-full ${
+                                    ticket.status === 'Completed'
+                                      ? 'bg-emerald-500'
+                                      : ticket.status === 'In Progress'
+                                        ? 'bg-amber-500 animate-pulse'
+                                        : 'bg-rose-500 animate-ping'
+                                  }`} />
+                                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200">{ticket.status}</span>
+                                </div>
+                                <span className={`text-[9px] font-bold uppercase tracking-wider py-0.5 px-2 rounded-md ${
+                                  isHigh 
+                                    ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 font-black' 
+                                    : isMedium
+                                      ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400'
+                                      : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                                }`}>
+                                  {ticket.priority}
+                                </span>
+                              </div>
+
+                              {/* Complainant details */}
+                              <div className="space-y-1">
+                                <h4 className="text-xs font-black text-slate-900 dark:text-slate-100">{ticket.hostelName} • Room {ticket.roomNumber}</h4>
+                                <div className="flex flex-wrap gap-x-2 text-[10px] text-slate-400 font-mono">
+                                  <span>Reporter: <b>{ticket.studentName}</b></span>
+                                  <span>•</span>
+                                  <span>Phone: <b>{ticket.contactNumber}</b></span>
+                                </div>
+                                <p className="text-[11px] bg-white dark:bg-slate-900/60 border border-slate-150 dark:border-slate-850 rounded-xl p-3 text-slate-600 dark:text-slate-350 leading-relaxed max-h-24 overflow-y-auto mt-2">
+                                  {ticket.description}
+                                </p>
+                              </div>
+
+                              {/* Technician dispatch status */}
+                              {ticket.allocatedAgent && (
+                                <div className="text-[10px] bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100/30 dark:border-indigo-900/30 p-2.5 rounded-xl space-y-1">
+                                  <div className="flex justify-between text-indigo-700 dark:text-indigo-400">
+                                    <span>Fundi: <b>{ticket.allocatedAgent}</b></span>
+                                  </div>
+                                  {ticket.notes && <p className="text-slate-500 dark:text-slate-400 italic font-medium">&quot;{ticket.notes}&quot;</p>}
+                                </div>
+                              )}
+
+                              {/* Interactive assignment drawer inline */}
+                              {isAssigning && (
+                                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-3">
+                                  <div>
+                                    <label className="block text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Select Technician</label>
+                                    <select
+                                      value={assignFundiName}
+                                      onChange={(e) => setAssignFundiName(e.target.value)}
+                                      className="w-full text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-lg p-2 focus:outline-none"
+                                    >
+                                      <option value="Fundi Joseph (Plumber)">Fundi Joseph (Plumber)</option>
+                                      <option value="Electrician Mike">Electrician Mike</option>
+                                      <option value="Technician Charles (Carpenter)">Technician Charles (Carpenter)</option>
+                                      <option value="Internet Support Caleb">Internet Support Caleb</option>
+                                      <option value="Custom">Custom Fundi...</option>
+                                    </select>
+                                  </div>
+
+                                  {assignFundiName === 'Custom' && (
+                                    <div>
+                                      <label className="block text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Enter Fundi Name & Skill</label>
+                                      <input
+                                        type="text"
+                                        placeholder="e.g. Fundi John (Painter)"
+                                        value={assignCustomFundiName}
+                                        onChange={(e) => setAssignCustomFundiName(e.target.value)}
+                                        className="w-full text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-lg p-2 focus:outline-none"
+                                      />
+                                    </div>
+                                  )}
+
+                                  <div>
+                                    <label className="block text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Dispatch Instruction Notes</label>
+                                    <textarea
+                                      rows={2}
+                                      placeholder="e.g. Bring extra 3/4 inch washers..."
+                                      value={assignNotes}
+                                      onChange={(e) => setAssignNotes(e.target.value)}
+                                      className="w-full text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-lg p-2 focus:outline-none"
+                                    />
+                                  </div>
+
+                                  <div className="flex gap-2 justify-end">
+                                    <button
+                                      type="button"
+                                      onClick={() => setActiveAssignIssueId(null)}
+                                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-[10px] font-bold cursor-pointer"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const finalFundi = assignFundiName === 'Custom' ? assignCustomFundiName : assignFundiName;
+                                        handleDispatchMaintenance(ticket.id, finalFundi || 'Assigned Fundi', assignNotes);
+                                      }}
+                                      className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold cursor-pointer"
+                                    >
+                                      Confirm Dispatch
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Interactive clearance notes drawer inline */}
+                              {isCompleting && (
+                                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-3">
+                                  <div>
+                                    <label className="block text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400 mb-1">Resolution Clearance Details</label>
+                                    <textarea
+                                      rows={2}
+                                      placeholder="e.g. Cracked pipe threads sealed and pressure tested. No leaks..."
+                                      value={completionNotes}
+                                      onChange={(e) => setCompletionNotes(e.target.value)}
+                                      className="w-full text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 rounded-lg p-2 focus:outline-none"
+                                    />
+                                  </div>
+
+                                  <div className="flex gap-2 justify-end">
+                                    <button
+                                      type="button"
+                                      onClick={() => setActiveCompleteIssueId(null)}
+                                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-[10px] font-bold cursor-pointer"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleClearMaintenance(ticket.id, completionNotes)}
+                                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold cursor-pointer"
+                                    >
+                                      Mark Cleared
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Card Actions */}
+                              {!isAssigning && !isCompleting && (
+                                <div className="border-t border-slate-100 dark:border-slate-800 pt-3.5 flex flex-col gap-2.5">
+                                  <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono">
+                                    <span>Filed: {new Date(ticket.createdAt).toLocaleDateString()}</span>
+                                    <span>ID: {ticket.id}</span>
+                                  </div>
+                                  
+                                  {ticket.status !== 'Completed' && (
+                                    <div className="flex gap-2">
+                                      {ticket.status === 'Reported' && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setActiveAssignIssueId(ticket.id);
+                                            setAssignFundiName('Fundi Joseph (Plumber)');
+                                          }}
+                                          className="flex-1 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/20 dark:hover:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                                        >
+                                          <Wrench className="w-3.5 h-3.5" />
+                                          Dispatch Fundi
+                                        </button>
+                                      )}
+                                      {ticket.status === 'In Progress' && (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveAssignIssueId(ticket.id);
+                                              setAssignFundiName(ticket.allocatedAgent || 'Fundi Joseph (Plumber)');
+                                            }}
+                                            className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                                            title="Reassign Fundi"
+                                          >
+                                            <Wrench className="w-3.5 h-3.5" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveCompleteIssueId(ticket.id);
+                                            }}
+                                            className="flex-1 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                                          >
+                                            <CheckCircle className="w-3.5 h-3.5" />
+                                            Mark Cleared
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      
+                      {maintenance.filter(m => repairsFilter === 'All' || m.status === repairsFilter).length === 0 && (
+                        <div className="md:col-span-2 xl:col-span-3 text-center py-12 bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                          <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto stroke-[1.5] mb-2" />
+                          <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">No Tickets Found</h4>
+                          <p className="text-xs text-slate-400 mt-1">All maintenance requests matching this category are cleared!</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
