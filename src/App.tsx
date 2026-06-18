@@ -555,6 +555,86 @@ export default function App() {
     fetchHostelsFromFirestore();
   }, []);
 
+  // Real-time Firestore sync for Bookings
+  useEffect(() => {
+    if (!currentUser) return;
+    const unsubscribe = onSnapshot(collection(db, 'bookings'), async (snapshot) => {
+      if (snapshot.empty) {
+        console.log('Bookings is empty in Firestore. Seeding default bookings...');
+        for (const b of INITIAL_BOOKINGS) {
+          try {
+            await setDoc(doc(db, 'bookings', b.id), b);
+          } catch (e) {
+            console.error('Error seeding booking:', e);
+          }
+        }
+      } else {
+        const loaded: Booking[] = [];
+        snapshot.forEach((docSnap) => {
+          loaded.push(docSnap.data() as Booking);
+        });
+        setBookings(loaded);
+      }
+    }, (error) => {
+      console.warn('Real-time bookings sync failed:', error);
+    });
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  // Real-time Firestore sync for Maintenance
+  useEffect(() => {
+    if (!currentUser) return;
+    const unsubscribe = onSnapshot(collection(db, 'maintenance'), async (snapshot) => {
+      if (snapshot.empty) {
+        console.log('Maintenance is empty in Firestore. Seeding default requests...');
+        for (const m of INITIAL_MAINTENANCE) {
+          try {
+            await setDoc(doc(db, 'maintenance', m.id), m);
+          } catch (e) {
+            console.error('Error seeding maintenance:', e);
+          }
+        }
+      } else {
+        const loaded: MaintenanceRequest[] = [];
+        snapshot.forEach((docSnap) => {
+          loaded.push(docSnap.data() as MaintenanceRequest);
+        });
+        const sorted = loaded.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setMaintenance(sorted);
+      }
+    }, (error) => {
+      console.warn('Real-time maintenance sync failed:', error);
+    });
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  // Real-time Firestore sync for Relocations
+  useEffect(() => {
+    if (!currentUser) return;
+    const unsubscribe = onSnapshot(collection(db, 'relocations'), async (snapshot) => {
+      if (snapshot.empty) {
+        console.log('Relocations is empty in Firestore. Seeding default relocations...');
+        for (const r of INITIAL_RELOCATIONS) {
+          try {
+            await setDoc(doc(db, 'relocations', r.id), r);
+          } catch (e) {
+            console.error('Error seeding relocation:', e);
+          }
+        }
+      } else {
+        const loaded: RelocationRequest[] = [];
+        snapshot.forEach((docSnap) => {
+          loaded.push(docSnap.data() as RelocationRequest);
+        });
+        const sorted = loaded.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setRelocations(sorted);
+      }
+    }, (error) => {
+      console.warn('Real-time relocations sync failed:', error);
+    });
+    return () => unsubscribe();
+  }, [currentUser]);
+
   useEffect(() => {
     localStorage.setItem('kisii_bookings', JSON.stringify(bookings));
   }, [bookings]);
@@ -1180,6 +1260,18 @@ export default function App() {
 
     setHostels(updatedHostels);
     setBookings([newBooking, ...bookings]);
+
+    (async () => {
+      try {
+        await setDoc(doc(db, 'bookings', newBooking.id), newBooking);
+        const updatedHostel = updatedHostels.find(h => h.id === roomToBook.hostel.id);
+        if (updatedHostel) {
+          await setDoc(doc(db, 'hostels', roomToBook.hostel.id), updatedHostel);
+        }
+      } catch (err) {
+        console.warn('Failed to sync booking or hostel to Firestore:', err);
+      }
+    })();
     
     // Automatically select the newly selected hostel in the listing for refresh
     const synchronizedHostel = updatedHostels.find(h => h.id === roomToBook.hostel.id);
@@ -1252,6 +1344,13 @@ export default function App() {
     };
 
     setBookings([newBooking, ...bookings]);
+    (async () => {
+      try {
+        await setDoc(doc(db, 'bookings', newBooking.id), newBooking);
+      } catch (err) {
+        console.warn('Failed to save virtual tour booking to Firestore:', err);
+      }
+    })();
     showFeedback(`Virtual Video Tour with ${hostel.name} Caretaker scheduled successfully! Redirecting to your bookings hub...`, 'success');
     logAnalyticsEvent('request_virtual_tour', {
       hostelId: hostel.id,
@@ -1294,7 +1393,23 @@ export default function App() {
     setHostels(updatedHostels);
 
     // Filter out or toggle status to Checked Out
-    setBookings(bookings.map(b => b.id === bookingId ? { ...b, status: 'Checked Out' } : b));
+    const nextBookings = bookings.map(b => b.id === bookingId ? { ...b, status: 'Checked Out' as const } : b);
+    setBookings(nextBookings);
+
+    (async () => {
+      try {
+        const updatedBk = nextBookings.find(b => b.id === bookingId);
+        if (updatedBk) {
+          await setDoc(doc(db, 'bookings', bookingId), updatedBk);
+        }
+        const updatedHostel = updatedHostels.find(h => h.id === bookingToRelease.hostelId);
+        if (updatedHostel) {
+          await setDoc(doc(db, 'hostels', bookingToRelease.hostelId), updatedHostel);
+        }
+      } catch (err) {
+        console.warn('Failed to sync checkout updates to Firestore:', err);
+      }
+    })();
 
     // Update viewing references
     const synchronizedHostel = updatedHostels.find(h => h.id === bookingToRelease.hostelId);
@@ -1307,18 +1422,41 @@ export default function App() {
 
   // Fast trigger payment transition simulation
   const handleSimulatePayment = (bookingId: string) => {
-    setBookings(bookings.map((b) => {
+    let updatedBooking: Booking | null = null;
+    const nextBookings = bookings.map((b) => {
       if (b.id === bookingId) {
         const nextStatus = b.status === 'Pending Approval' ? 'Deposit Paid' : 'Fully Confirmed';
         showFeedback(`Transaction verified! M-PESA statement matched. Tenant status updated to ${nextStatus}.`, 'success');
-        return { ...b, status: nextStatus };
+        updatedBooking = { ...b, status: nextStatus };
+        return updatedBooking;
       }
       return b;
-    }));
+    });
+    setBookings(nextBookings);
+    if (updatedBooking) {
+      (async () => {
+        try {
+          await setDoc(doc(db, 'bookings', bookingId), updatedBooking!);
+        } catch (err) {
+          console.warn('Failed to update booking status in Firestore:', err);
+        }
+      })();
+    }
   };
 
   const handleAdminBookingStatusChange = (bookingId: string, status: Booking['status']) => {
-    setBookings(bookings.map((b) => b.id === bookingId ? { ...b, status } : b));
+    const nextBookings = bookings.map((b) => b.id === bookingId ? { ...b, status } : b);
+    setBookings(nextBookings);
+    const updated = nextBookings.find(b => b.id === bookingId);
+    if (updated) {
+      (async () => {
+        try {
+          await setDoc(doc(db, 'bookings', bookingId), updated);
+        } catch (err) {
+          console.warn('Failed to update booking status in Firestore:', err);
+        }
+      })();
+    }
     showFeedback(`Admin updated booking status to ${status}.`, 'info');
   };
 
@@ -1646,6 +1784,13 @@ export default function App() {
     };
 
     setMaintenance([newRequest, ...maintenance]);
+    (async () => {
+      try {
+        await setDoc(doc(db, 'maintenance', newRequest.id), newRequest);
+      } catch (err) {
+        console.warn('Failed to save maintenance request to Firestore:', err);
+      }
+    })();
     showFeedback(`Maintenance task logged! Handover scheduled with estate technicians.`, 'success');
   };
 
@@ -1654,35 +1799,61 @@ export default function App() {
     const agents = ['Fundi Joseph (Plumber)', 'Electrician Mike', 'Technician Charles', 'Internet Support Caleb'];
     const chosenAgent = agents[Math.floor(Math.random() * agents.length)];
 
-    setMaintenance(maintenance.map((m) => {
+    let updatedMaint: MaintenanceRequest | null = null;
+    const nextMaintenance = maintenance.map((m) => {
       if (m.id === maintId) {
-        return {
+        updatedMaint = {
           ...m,
           status: action,
           allocatedAgent: m.allocatedAgent || chosenAgent,
           notes: action === 'Completed' ? 'Screws tightened, hardware aligned and tested successfully.' : 'Diagnostic on back-piping underway.',
           updatedAt: new Date().toISOString()
         };
+        return updatedMaint;
       }
       return m;
-    }));
+    });
+
+    setMaintenance(nextMaintenance);
+    if (updatedMaint) {
+      (async () => {
+        try {
+          await setDoc(doc(db, 'maintenance', maintId), updatedMaint!);
+        } catch (err) {
+          console.warn('Failed to update maintenance status in Firestore:', err);
+        }
+      })();
+    }
     showFeedback(`Warden technician logged status update: ${action}`, 'info');
   };
 
   // Dispatch maintenance request to custom fundi
   const handleDispatchMaintenance = (maintId: string, fundi: string, notes: string) => {
-    setMaintenance((prev) => prev.map((m) => {
+    let updatedMaint: MaintenanceRequest | null = null;
+    const nextMaintenance = maintenance.map((m) => {
       if (m.id === maintId) {
-        return {
+        updatedMaint = {
           ...m,
           status: 'In Progress',
           allocatedAgent: fundi,
           notes: notes || 'Technician dispatched for diagnostics.',
           updatedAt: new Date().toISOString()
         };
+        return updatedMaint;
       }
       return m;
-    }));
+    });
+
+    setMaintenance(nextMaintenance);
+    if (updatedMaint) {
+      (async () => {
+        try {
+          await setDoc(doc(db, 'maintenance', maintId), updatedMaint!);
+        } catch (err) {
+          console.warn('Failed to update maintenance dispatch in Firestore:', err);
+        }
+      })();
+    }
     showFeedback(`Successfully dispatched ${fundi} to address the issue.`, 'success');
     setActiveAssignIssueId(null);
     setAssignNotes('');
@@ -1691,17 +1862,30 @@ export default function App() {
 
   // Mark maintenance request as completed/cleared
   const handleClearMaintenance = (maintId: string, notes: string) => {
-    setMaintenance((prev) => prev.map((m) => {
+    let updatedMaint: MaintenanceRequest | null = null;
+    const nextMaintenance = maintenance.map((m) => {
       if (m.id === maintId) {
-        return {
+        updatedMaint = {
           ...m,
           status: 'Completed',
           notes: notes || 'Issue resolved successfully and cleared.',
           updatedAt: new Date().toISOString()
         };
+        return updatedMaint;
       }
       return m;
-    }));
+    });
+
+    setMaintenance(nextMaintenance);
+    if (updatedMaint) {
+      (async () => {
+        try {
+          await setDoc(doc(db, 'maintenance', maintId), updatedMaint!);
+        } catch (err) {
+          console.warn('Failed to resolve maintenance request in Firestore:', err);
+        }
+      })();
+    }
     showFeedback(`Maintenance request marked as resolved and cleared.`, 'success');
     setActiveCompleteIssueId(null);
     setCompletionNotes('');
@@ -1723,22 +1907,42 @@ export default function App() {
     };
 
     setRelocations([newRequest, ...relocations]);
+    (async () => {
+      try {
+        await setDoc(doc(db, 'relocations', newRequest.id), newRequest);
+      } catch (err) {
+        console.warn('Failed to save relocation request to Firestore:', err);
+      }
+    })();
     showFeedback(`Relocation booking submitted! Check dispatch updates below Comrade.`, 'success');
   };
 
   // Dispatch relocation booking to driver/mover
   const handleDispatchRelocation = (relocId: string, mover: string, notes: string) => {
-    setRelocations((prev) => prev.map((r) => {
+    let updatedReloc: RelocationRequest | null = null;
+    const nextRelocations = relocations.map((r) => {
       if (r.id === relocId) {
-        return {
+        updatedReloc = {
           ...r,
           status: 'Scheduled',
           allocatedMover: mover,
           notes: notes || 'Mover scheduled and dispatched.'
         };
+        return updatedReloc;
       }
       return r;
-    }));
+    });
+
+    setRelocations(nextRelocations);
+    if (updatedReloc) {
+      (async () => {
+        try {
+          await setDoc(doc(db, 'relocations', relocId), updatedReloc!);
+        } catch (err) {
+          console.warn('Failed to update relocation dispatch in Firestore:', err);
+        }
+      })();
+    }
     showFeedback(`Successfully scheduled ${mover} for the relocation.`, 'success');
     setActiveAssignRelocId(null);
     setAssignRelocNotes('');
@@ -1747,15 +1951,28 @@ export default function App() {
 
   // Transition relocation status (In Transit / Completed)
   const handleUpdateRelocationStatus = (relocId: string, nextStatus: RelocationRequest['status']) => {
-    setRelocations((prev) => prev.map((r) => {
+    let updatedReloc: RelocationRequest | null = null;
+    const nextRelocations = relocations.map((r) => {
       if (r.id === relocId) {
-        return {
+        updatedReloc = {
           ...r,
           status: nextStatus
         };
+        return updatedReloc;
       }
       return r;
-    }));
+    });
+
+    setRelocations(nextRelocations);
+    if (updatedReloc) {
+      (async () => {
+        try {
+          await setDoc(doc(db, 'relocations', relocId), updatedReloc!);
+        } catch (err) {
+          console.warn('Failed to update relocation status in Firestore:', err);
+        }
+      })();
+    }
     showFeedback(`Relocation status updated to: ${nextStatus}`, 'success');
   };
 
@@ -3567,7 +3784,15 @@ export default function App() {
                               <div className="space-y-2">
                                 <button
                                   onClick={() => {
-                                    setBookings(bookings.map(book => book.id === b.id ? { ...book, status: 'Virtual Tour Completed' } : book));
+                                    const updatedBk = { ...b, status: 'Virtual Tour Completed' as const };
+                                    setBookings(bookings.map(book => book.id === b.id ? updatedBk : book));
+                                    (async () => {
+                                      try {
+                                        await setDoc(doc(db, 'bookings', b.id), updatedBk);
+                                      } catch (err) {
+                                        console.warn('Failed to update virtual tour booking in Firestore:', err);
+                                      }
+                                    })();
                                     showFeedback(`Awesome! Virtual walkthrough marked as completed for ${b.hostelName}.`, 'success');
                                   }}
                                   className="w-full text-center text-[11px] font-bold py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition active:scale-95 cursor-pointer"
@@ -3579,6 +3804,13 @@ export default function App() {
                                   onClick={() => {
                                     if(confirm("Comrade, are you sure you want to cancel this scheduled virtual tour?")) {
                                       setBookings(bookings.filter(book => book.id !== b.id));
+                                      (async () => {
+                                        try {
+                                          await deleteDoc(doc(db, 'bookings', b.id));
+                                        } catch (err) {
+                                          console.warn('Failed to delete virtual tour booking in Firestore:', err);
+                                        }
+                                      })();
                                       showFeedback("Virtual walkthrough tour cancelled.", "info");
                                     }
                                   }}
