@@ -3618,124 +3618,15 @@ export default function App() {
               </div>
 
               {/* Maintenance reporting form widget combo */}
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
-                
-                <div className="xl:col-span-2 space-y-6">
-                  <h3 className="text-sm font-mono tracking-wider text-slate-500 uppercase font-bold text-slate-400 flex items-center gap-1.5">
-                    <CheckCircle className="w-4 h-4" />
-                    Student Issues Log ({visibleMaintenance.length} reported)
-                  </h3>
-
-                  {visibleMaintenance.length === 0 ? (
-                    <div className="bg-white rounded-3xl p-12 text-center text-slate-500 border border-slate-200 py-16">
-                      No problems logged yet. Good security, Comrade!
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {visibleMaintenance.map((m) => {
-                        const isHigh = m.priority === 'High';
-                        const isMedium = m.priority === 'Medium';
-
-                        return (
-                          <div 
-                            key={m.id}
-                            id={`maint-task-${m.id}`}
-                            className="bg-white rounded-2xl border border-slate-205 p-5 shadow-sm space-y-4 hover:border-slate-400 transition-colors border-slate-200"
-                          >
-                            {/* Urgent status header alignment details */}
-                            <div className="flex flex-wrap items-center justify-between gap-2.5">
-                              <div className="flex items-center gap-2">
-                                <span className={`w-2.5 h-2.5 rounded-full inline-block ${
-                                  m.status === 'Completed' 
-                                    ? 'bg-emerald-500' 
-                                    : m.status === 'In Progress'
-                                      ? 'bg-amber-500 animate-pulse'
-                                      : 'bg-rose-500 animate-ping'
-                                }`} />
-                                <span className="text-xs font-bold text-slate-800 font-sans capitalize">{m.status}</span>
-                                
-                                <span className="text-[10px] text-slate-400 font-mono">ID: {m.id}</span>
-                              </div>
-
-                              <div className="flex items-center gap-1.5">
-                                <span className={`text-[10px] font-bold uppercase tracking-wider py-0.5 px-2 rounded-md ${
-                                  isHigh 
-                                    ? 'bg-rose-50 text-rose-700 font-black' 
-                                    : isMedium
-                                      ? 'bg-amber-50 text-amber-700'
-                                      : 'bg-slate-100 text-slate-600'
-                                }`}>
-                                  {m.priority} Priority
-                                </span>
-                                <span className="text-[10px] bg-slate-100 text-slate-700 py-0.5 px-2 rounded font-mono font-bold">
-                                  {m.category}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Core Issue description content */}
-                            <div className="space-y-1.5">
-                              <h4 className="font-extrabold text-sm text-slate-900">
-                                {m.hostelName} — Room {m.roomNumber}
-                              </h4>
-                              <p className="text-xs text-slate-600 leading-relaxed bg-slate-50/50 rounded-xl p-3 border border-slate-100 max-h-24 overflow-y-auto">
-                                {m.description}
-                              </p>
-                              
-                              {m.allocatedAgent && (
-                                <div className="text-[11px] text-indigo-700 bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-100/30 flex justify-between items-center sm:flex-row flex-col gap-1.5">
-                                  <span>Allocated Technician: <b>{m.allocatedAgent}</b></span>
-                                  {m.notes && <span className="italic block sm:text-right text-slate-500 text-[10px]">&quot;{m.notes}&quot;</span>}
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Dynamic administration simulator controls (for simulation) */}
-                            <div className="border-t border-slate-100 pt-3 flex flex-wrap gap-2 items-center justify-between text-[11px]">
-                              <span className="text-slate-500 font-mono font-semibold text-slate-400">
-                                Filed: {new Date(m.createdAt).toLocaleDateString()} @ {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-
-                              <div className="flex gap-2.5">
-                                {isAdminUser && m.status === 'Reported' && (
-                                  <button
-                                    id={`assign-progress-btn-${m.id}`}
-                                    onClick={() => handleSimulateMaintenanceTransition(m.id, 'In Progress')}
-                                    className="px-3 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded font-bold transition"
-                                  >
-                                    Assign Technician
-                                  </button>
-                                )}
-                                {isAdminUser && m.status === 'In Progress' && (
-                                  <button
-                                    id={`complete-task-btn-${m.id}`}
-                                    onClick={() => handleSimulateMaintenanceTransition(m.id, 'Completed')}
-                                    className="px-3 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded font-bold transition"
-                                  >
-                                    Mark Solved
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                <div className="xl:col-span-1">
-                  <MaintenanceForm 
-                    hostels={hostels}
-                    onSubmitRequest={handleMaintenanceSubmit}
-                    userEmail={loggedStudent.email}
-                  />
-                </div>
-
+              <div className="max-w-3xl mx-auto">
+                <MaintenanceForm 
+                  hostels={hostels}
+                  onSubmitRequest={handleMaintenanceSubmit}
+                  userEmail={loggedStudent.email}
+                />
               </div>
 
-            </div>
+              </div>
             )
           )}
 
@@ -4289,9 +4180,9 @@ export default function App() {
                   </div>
 
                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-                    <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">Repair Queue</h3>
-                    <div className="mt-4 space-y-3">
-                      {visibleMaintenance.filter((m) => m.status !== 'Completed').slice(0, 5).map((ticket) => (
+                    <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">Repair Queue ({visibleMaintenance.filter((m) => m.status !== 'Completed').length} active)</h3>
+                    <div className="mt-4 space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                      {visibleMaintenance.filter((m) => m.status !== 'Completed').map((ticket) => (
                         <div key={ticket.id} className="border border-slate-100 dark:border-slate-800 rounded-xl p-3">
                           <div className="flex items-start justify-between gap-2">
                             <div>
