@@ -1,4 +1,4 @@
-import { Hostel, Booking, MaintenanceRequest } from './types';
+import { Hostel, Booking, MaintenanceRequest, RelocationRequest } from './types';
 
 export const INITIAL_HOSTELS: Hostel[] = [
   {
@@ -1032,5 +1032,38 @@ export const INITIAL_USERS: ClientUser[] = [
   { uid: 'mock-user-6', email: 'caren.chepngetich@student.kisii.ac.ke', displayName: 'Caren Chepngetich', category: 'Student', phone: '0799887766', createdAt: '2026-06-12T08:05:00Z' },
   { uid: 'mock-user-7', email: 'dennis.kiprono@landlord.co.ke', displayName: 'Dennis Kiprono', category: 'Property Owner', phone: '0712334455', createdAt: '2026-05-28T11:00:00Z' },
   { uid: 'mock-user-8', email: 'faith.kerubo@student.kisii.ac.ke', displayName: 'Faith Kerubo', category: 'Student', phone: '0701122334', createdAt: '2026-06-12T12:15:00Z' }
+];
+
+export const INITIAL_RELOCATIONS: RelocationRequest[] = [
+  {
+    id: 'reloc-sample-1',
+    userEmail: 'albert.onyango@student.kisii.ac.ke',
+    studentName: 'Albert Onyango',
+    contactNumber: '0714223344',
+    pickupHostel: 'Mwembe Serene Oasis',
+    destinationHostel: 'Inka Student Plaza',
+    relocationDate: '2026-06-25',
+    relocationTime: '10:00',
+    transportType: 'Pickup Truck',
+    loadSize: 'Medium (Bed + Bags)',
+    status: 'Pending Dispatch',
+    createdAt: '2026-06-18T10:00:00Z'
+  },
+  {
+    id: 'reloc-sample-2',
+    userEmail: 'diana.kemunto@student.kisii.ac.ke',
+    studentName: 'Diana Kemunto',
+    contactNumber: '0722334455',
+    pickupHostel: 'Orange House Residence',
+    destinationHostel: 'Canaan Heights Hostel',
+    relocationDate: '2026-06-26',
+    relocationTime: '14:30',
+    transportType: 'Mkokoteni (Handcart)',
+    loadSize: 'Light (Suitcases/Bags)',
+    status: 'Scheduled',
+    allocatedMover: 'Mkokoteni Express (Handcart)',
+    notes: 'Agreed on KES 800 price. Scheduled for 2:30 PM.',
+    createdAt: '2026-06-18T11:15:00Z'
+  }
 ];
 

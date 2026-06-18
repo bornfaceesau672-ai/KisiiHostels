@@ -93,3 +93,20 @@ export interface HostelReview {
   likes: number;
 }
 
+export interface RelocationRequest {
+  id: string;
+  userEmail: string;
+  studentName: string;
+  contactNumber: string;
+  pickupHostel: string;
+  destinationHostel: string;
+  relocationDate: string;
+  relocationTime: string;
+  transportType: 'Pickup Truck' | 'Mkokoteni (Handcart)' | 'Boda-Boda Mover' | 'Closed Box Van';
+  loadSize: 'Light (Suitcases/Bags)' | 'Medium (Bed + Bags)' | 'Heavy (Full Room Set)';
+  status: 'Pending Dispatch' | 'Scheduled' | 'In Transit' | 'Completed';
+  notes?: string;
+  allocatedMover?: string;
+  createdAt: string;
+}
+
