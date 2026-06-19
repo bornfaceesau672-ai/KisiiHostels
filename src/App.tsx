@@ -64,7 +64,8 @@ import {
   Wrench,
   AlertTriangle,
   Truck,
-  Compass
+  Compass,
+  WashingMachine
 } from 'lucide-react';
 
 
@@ -770,7 +771,7 @@ export default function App() {
   const [repairsFilter, setRepairsFilter] = useState<'All' | 'Reported' | 'In Progress' | 'Completed'>('All');
 
   // Student Services Hub tab selection
-  const [repairHubTab, setRepairHubTab] = useState<'repairs' | 'relocations'>('repairs');
+  const [repairHubTab, setRepairHubTab] = useState<'repairs' | 'relocations' | 'laundry'>('repairs');
 
   // Admin Relocation Dispatch Panel States
   const [activeAssignRelocId, setActiveAssignRelocId] = useState<string | null>(null);
@@ -3986,10 +3987,17 @@ export default function App() {
                     <Truck className="w-3.5 h-3.5" />
                     Transport & Relocation
                   </button>
+                  <button
+                    onClick={() => setRepairHubTab('laundry')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${repairHubTab === 'laundry' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
+                  >
+                    <WashingMachine className="w-3.5 h-3.5" />
+                    Laundry Services
+                  </button>
                 </div>
               </div>
 
-              {repairHubTab === 'repairs' ? (
+              {repairHubTab === 'repairs' && (
                 <div className="max-w-3xl mx-auto">
                   <MaintenanceForm 
                     hostels={hostels}
@@ -3999,7 +4007,8 @@ export default function App() {
                     defaultContactNumber={loggedStudent.phone}
                   />
                 </div>
-              ) : (
+              )}
+              {repairHubTab === 'relocations' && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                   {/* Left Column: Form */}
                   <div className="lg:col-span-7">
@@ -4127,6 +4136,21 @@ export default function App() {
                       </div>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {repairHubTab === 'laundry' && (
+                <div className="max-w-3xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm text-center space-y-4">
+                  <div className="mx-auto w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center mb-6">
+                    <WashingMachine className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Laundry Services</h3>
+                  <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto text-sm leading-relaxed pb-4">
+                    We're partnering with premium local laundromats to bring you seamless pick-up and drop-off laundry services right at your doorstep.
+                  </p>
+                  <button className="px-6 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold text-sm hover:scale-105 transition-transform">
+                    Notify me when live
+                  </button>
                 </div>
               )}
 
