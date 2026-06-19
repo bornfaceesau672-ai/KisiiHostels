@@ -769,7 +769,7 @@ export default function App() {
   const [completionNotes, setCompletionNotes] = useState<string>('');
   const [repairsFilter, setRepairsFilter] = useState<'All' | 'Reported' | 'In Progress' | 'Completed'>('All');
 
-  // Student Repair Hub tab selection
+  // Student Services Hub tab selection
   const [repairHubTab, setRepairHubTab] = useState<'repairs' | 'relocations'>('repairs');
 
   // Admin Relocation Dispatch Panel States
@@ -2378,7 +2378,7 @@ export default function App() {
               SELECT YOUR SERVICE PREFERENCE
             </h3>
             <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed">
-              Choose an option from the menu below to instantly access room directories, file utility repair hub orders, manage invoices, or talk with Sophia active AI.
+              Choose an option from the menu below to instantly access room directories, file utility services hub orders, manage invoices, or talk with Sophia active AI.
             </p>
           </div>
 
@@ -2451,7 +2451,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Preference Item 3: Repair Hub */}
+            {/* Preference Item 3: Services Hub */}
             <div 
               id="pref-maintenance"
               onClick={() => {
@@ -2470,7 +2470,7 @@ export default function App() {
               </div>
               <div className="space-y-1">
                 <h4 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-150">
-                  Caretaker Repair Hub
+                  Caretaker Services Hub
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
                   Log plumbing leaks, socket shorts, or lock malfunctions inside your apartment. Real-time logging coordinates direct tasks to local on-site fundis.
@@ -3958,13 +3958,13 @@ export default function App() {
           {/* TAB 3: Maintenance File & Dispatch Operations */}
           {activeTab === 'maintenance' && (
             !currentUser ? (
-              renderAuthGuard('Repair Hub', 'To submit maintenance repair requests, view resolved warden tickets, and communicate directly with carpenters or plumbers, please log in.')
+              renderAuthGuard('Services Hub', 'To submit maintenance repair requests, view resolved warden tickets, and communicate directly with carpenters or plumbers, please log in.')
             ) : (
               <div className="space-y-8 animate-in fade-in duration-300">
               
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
                 <div>
-                  <h2 className="text-2xl font-bold font-sans text-slate-900 dark:text-white tracking-tight">University Repair Hub</h2>
+                  <h2 className="text-2xl font-bold font-sans text-slate-900 dark:text-white tracking-tight">University Services Hub</h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Direct communication terminal with wardens, repair fundis, and transport movers.
                   </p>
@@ -5952,7 +5952,7 @@ export default function App() {
               <span className="font-sans text-[10px] tracking-tight">Bookings</span>
             </button>
 
-            {/* 3. Repair Hub Tab */}
+            {/* 3. Services Hub Tab */}
             <button
               id="bottom-tab-maintenance"
               onClick={() => {
@@ -5968,7 +5968,7 @@ export default function App() {
               <div className="relative">
                 <Hammer className="w-5 h-5 stroke-[2.25]" />
               </div>
-              <span className="font-sans text-[10px] tracking-tight">Repair Hub</span>
+              <span className="font-sans text-[10px] tracking-tight">Services Hub</span>
             </button>
 
             {/* 4. Admin Tab */}
