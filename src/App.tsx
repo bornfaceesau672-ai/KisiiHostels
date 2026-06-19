@@ -1768,7 +1768,7 @@ export default function App() {
   };
 
   // Submit Maintenance Task
-  const handleMaintenanceSubmit = (maintData: Omit<MaintenanceRequest, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => {
+  const handleMaintenanceSubmit = async (maintData: Omit<MaintenanceRequest, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => {
     if (!currentUser) {
       setAuthModalMode('signin');
       setIsAuthModalOpen(true);
@@ -1783,15 +1783,14 @@ export default function App() {
       updatedAt: new Date().toISOString(),
     };
 
-    setMaintenance([newRequest, ...maintenance]);
-    (async () => {
-      try {
-        await setDoc(doc(db, 'maintenance', newRequest.id), newRequest);
-      } catch (err) {
-        console.warn('Failed to save maintenance request to Firestore:', err);
-      }
-    })();
-    showFeedback(`Maintenance task logged! Handover scheduled with estate technicians.`, 'success');
+    try {
+      await setDoc(doc(db, 'maintenance', newRequest.id), newRequest);
+      setMaintenance([newRequest, ...maintenance]);
+      showFeedback(`Maintenance task logged! Handover scheduled with estate technicians.`, 'success');
+    } catch (err: any) {
+      console.error('Failed to save maintenance request to Firestore:', err);
+      showFeedback(`Failed to sync maintenance request to database: ${err.message || 'Permission Denied'}. Please verify your Firestore rules.`, 'warning');
+    }
   };
 
   // Trigger admin simulated mechanic update action
@@ -1892,7 +1891,7 @@ export default function App() {
   };
 
   // Submit student relocation booking
-  const handleRelocationSubmit = (relocData: Omit<RelocationRequest, 'id' | 'createdAt' | 'status'>) => {
+  const handleRelocationSubmit = async (relocData: Omit<RelocationRequest, 'id' | 'createdAt' | 'status'>) => {
     if (!currentUser) {
       setAuthModalMode('signin');
       setIsAuthModalOpen(true);
@@ -1906,15 +1905,14 @@ export default function App() {
       createdAt: new Date().toISOString()
     };
 
-    setRelocations([newRequest, ...relocations]);
-    (async () => {
-      try {
-        await setDoc(doc(db, 'relocations', newRequest.id), newRequest);
-      } catch (err) {
-        console.warn('Failed to save relocation request to Firestore:', err);
-      }
-    })();
-    showFeedback(`Relocation booking submitted! Check dispatch updates below Comrade.`, 'success');
+    try {
+      await setDoc(doc(db, 'relocations', newRequest.id), newRequest);
+      setRelocations([newRequest, ...relocations]);
+      showFeedback(`Relocation booking submitted! Check dispatch updates below Comrade.`, 'success');
+    } catch (err: any) {
+      console.error('Failed to save relocation request to Firestore:', err);
+      showFeedback(`Failed to submit relocation booking: ${err.message || 'Permission Denied'}. Please verify your Firestore rules.`, 'warning');
+    }
   };
 
   // Dispatch relocation booking to driver/mover
@@ -3997,6 +3995,8 @@ export default function App() {
                     hostels={hostels}
                     onSubmitRequest={handleMaintenanceSubmit}
                     userEmail={loggedStudent.email}
+                    defaultStudentName={loggedStudent.name}
+                    defaultContactNumber={loggedStudent.phone}
                   />
                 </div>
               ) : (

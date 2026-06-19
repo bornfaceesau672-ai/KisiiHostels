@@ -7,13 +7,21 @@ interface MaintenanceFormProps {
   hostels: Hostel[];
   onSubmitRequest: (request: Omit<MaintenanceRequest, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => void;
   userEmail?: string;
+  defaultStudentName?: string;
+  defaultContactNumber?: string;
 }
 
-export default function MaintenanceForm({ hostels, onSubmitRequest, userEmail }: MaintenanceFormProps) {
+export default function MaintenanceForm({
+  hostels,
+  onSubmitRequest,
+  userEmail,
+  defaultStudentName = '',
+  defaultContactNumber = ''
+}: MaintenanceFormProps) {
   const [selectedHostelId, setSelectedHostelId] = useState(hostels[0]?.id || '');
   const [roomNumber, setRoomNumber] = useState('102');
-  const [studentName, setStudentName] = useState('Bonface Esau');
-  const [contactNumber, setContactNumber] = useState('0712345678');
+  const [studentName, setStudentName] = useState(defaultStudentName || 'Bonface Esau');
+  const [contactNumber, setContactNumber] = useState(defaultContactNumber || '0712345678');
   const [category, setCategory] = useState<MaintenanceRequest['category']>('Plumbing');
   const [priority, setPriority] = useState<MaintenanceRequest['priority']>('Medium');
   const [description, setDescription] = useState('');
