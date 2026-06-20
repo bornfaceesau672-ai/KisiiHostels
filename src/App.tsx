@@ -68,7 +68,9 @@ import {
   WashingMachine,
   Newspaper,
   Heart,
-  Send
+  Send,
+  Pin,
+  PinOff
 } from 'lucide-react';
 
 
@@ -683,111 +685,289 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'explore' | 'bookings' | 'maintenance' | 'sophia' | 'admin' | 'news'>('explore');
   const [adminSubTab, setAdminSubTab] = useState<'listings' | 'clients' | 'repairs'>('listings');
   const [currentPage, setCurrentPage] = useState<'home' | 'details'>('details');
-
-  const [newsPosts, setNewsPosts] = useState<NewsPost[]>([
-    { 
-      id: '1', 
-      authorName: 'Admin', 
-      authorInitials: 'AD', 
-      content: 'Please note that the new curfew for all Kisii University internal hostels is now 10:00 PM starting this Friday. Ensure you are within the premises before the gates are locked.', 
-      createdAt: 'June 20, 2026', 
-      likes: 12, 
-      type: 'Alert', 
-      typeColor: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
-      replies: [
-        { id: 'r1', authorName: 'Comrade Kevin', authorInitials: 'CK', content: '10:00 PM is too early! We have group discussions in the library until late.', createdAt: 'June 20, 2026' },
-        { id: 'r2', authorName: 'Warden John', authorInitials: 'WJ', content: 'Arrangements can be made with the hostel warden for students with verified late library assignments.', createdAt: 'June 20, 2026' }
-      ]
-    },
-    { 
-      id: '2', 
-      authorName: 'Water Dept', 
-      authorInitials: 'WD', 
-      content: 'The main borehole pump is undergoing scheduled maintenance. Expect low water pressure on Saturday morning from 8:00 AM to 12:00 PM.', 
-      createdAt: 'June 18, 2026', 
-      likes: 5, 
-      type: 'Info', 
-      typeColor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-      replies: []
-    },
-    { 
-      id: '3', 
-      authorName: 'Admin', 
-      authorInitials: 'AD', 
-      content: 'All students are reminded that the deadline for clearing room allocation balances for the upcoming semester is June 30th. Failure to clear will result in automatic reallocation.', 
-      createdAt: 'June 15, 2026', 
-      likes: 45, 
-      type: 'Important', 
-      typeColor: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-      replies: [
-        { id: 'r3', authorName: 'Faith Mwangi', authorInitials: 'FM', content: 'Can we pay in installments or does it have to be a one-time clear?', createdAt: 'June 16, 2026' }
-      ]
-    }
-  ]);
+  const [newsPosts, setNewsPosts] = useState<NewsPost[]>([]);
   const [newPostContent, setNewPostContent] = useState('');
   const [isPostingNews, setIsPostingNews] = useState(false);
   const [replyInputPostId, setReplyInputPostId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
 
-  const handlePostNews = (e: React.FormEvent) => {
+  // Local storage for liked news IDs to keep the "hasLiked" private to the user's browser
+  const [likedPostIds, setLikedPostIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('kisii_liked_news') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('kisii_liked_news', JSON.stringify(likedPostIds));
+  }, [likedPostIds]);
+
+  // Real-time Firestore sync for News Bulletin
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'news'), async (snapshot) => {
+      if (snapshot.empty) {
+        console.log('News is empty in Firestore. Seeding default news posts...');
+        const initialNews: NewsPost[] = [
+          { 
+            id: '1', 
+            authorName: 'Admin', 
+            authorInitials: 'AD', 
+            content: 'Please note that the new curfew for all Kisii University internal hostels is now 10:00 PM starting this Friday. Ensure you are within the premises before the gates are locked.', 
+            createdAt: 'June 20, 2026', 
+            likes: 12, 
+            type: 'Alert', 
+            typeColor: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+            replies: [
+              { id: 'r1', authorName: 'Comrade Kevin', authorInitials: 'CK', content: '10:00 PM is too early! We have group discussions in the library until late.', createdAt: 'June 20, 2026' },
+              { id: 'r2', authorName: 'Warden John', authorInitials: 'WJ', content: 'Arrangements can be made with the hostel warden for students with verified late library assignments.', createdAt: 'June 20, 2026' }
+            ]
+          },
+          { 
+            id: '2', 
+            authorName: 'Water Dept', 
+            authorInitials: 'WD', 
+            content: 'The main borehole pump is undergoing scheduled maintenance. Expect low water pressure on Saturday morning from 8:00 AM to 12:00 PM.', 
+            createdAt: 'June 18, 2026', 
+            likes: 5, 
+            type: 'Info', 
+            typeColor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+            replies: []
+          },
+          { 
+            id: '3', 
+            authorName: 'Admin', 
+            authorInitials: 'AD', 
+            content: 'All students are reminded that the deadline for clearing room allocation balances for the upcoming semester is June 30th. Failure to clear will result in automatic reallocation.', 
+            createdAt: 'June 15, 2026', 
+            likes: 45, 
+            type: 'Important', 
+            typeColor: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+            replies: [
+              { id: 'r3', authorName: 'Faith Mwangi', authorInitials: 'FM', content: 'Can we pay in installments or does it have to be a one-time clear?', createdAt: 'June 16, 2026' }
+            ]
+          }
+        ];
+        for (const post of initialNews) {
+          try {
+            await setDoc(doc(db, 'news', post.id), post);
+          } catch (e) {
+            console.error('Error seeding news:', e);
+          }
+        }
+      } else {
+        const loaded: NewsPost[] = [];
+        snapshot.forEach((docSnap) => {
+          loaded.push(docSnap.data() as NewsPost);
+        });
+        
+        // Sort: Pinned first, then by date/id descending
+        const sorted = loaded.sort((a, b) => {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          
+          const timeA = new Date(a.createdAt).getTime();
+          const timeB = new Date(b.createdAt).getTime();
+          if (!isNaN(timeA) && !isNaN(timeB)) {
+            return timeB - timeA;
+          }
+          
+          const idA = parseInt(a.id) || 0;
+          const idB = parseInt(b.id) || 0;
+          return idB - idA;
+        });
+        setNewsPosts(sorted);
+      }
+    }, (error) => {
+      console.warn('Real-time news sync failed:', error);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handlePostNews = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPostContent.trim()) return;
-    setIsPostingNews(true);
+    if (!currentUser) {
+      showFeedback('Please log in to post a news bulletin.', 'warning');
+      return;
+    }
     
-    setTimeout(() => {
-      const author = userProfile?.displayName || (currentUser ? currentUser.email?.split('@')[0] : 'Comrade Resident') || 'Comrade Resident';
+    setIsPostingNews(true);
+    try {
+      const author = userProfile?.displayName || currentUser.email?.split('@')[0] || 'Comrade Resident';
+      const isAdmin = (userProfile?.email || currentUser?.email || '').toLowerCase() === ADMIN_EMAIL;
+      const newPostId = Date.now().toString();
+      
       const newPost: NewsPost = {
-        id: Date.now().toString(),
-        authorName: author,
-        authorInitials: author.substring(0, 2).toUpperCase(),
+        id: newPostId,
+        authorName: isAdmin ? 'Admin' : author,
+        authorInitials: isAdmin ? 'AD' : author.substring(0, 2).toUpperCase(),
         content: newPostContent.trim(),
-        createdAt: 'Just now',
+        createdAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
         likes: 0,
-        type: 'General',
-        typeColor: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+        type: isAdmin ? 'Alert' : 'General',
+        typeColor: isAdmin 
+          ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' 
+          : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
         replies: []
       };
-      setNewsPosts([newPost, ...newsPosts]);
+
+      await setDoc(doc(db, 'news', newPostId), newPost);
       setNewPostContent('');
+      showFeedback('✓ News bulletin posted successfully!', 'success');
+    } catch (err) {
+      console.error('Error posting news:', err);
+      showFeedback('Failed to post news bulletin.', 'warning');
+    } finally {
       setIsPostingNews(false);
-    }, 600);
+    }
   };
   
-  const handleLikeNews = (id: string) => {
-    setNewsPosts(posts => posts.map(post => {
-      if (post.id === id) {
-        const isLiking = !post.hasLiked;
-        return { ...post, likes: post.likes + (isLiking ? 1 : -1), hasLiked: isLiking };
+  const handleLikeNews = async (id: string) => {
+    if (!currentUser) {
+      showFeedback('Please log in to like news bulletins.', 'warning');
+      return;
+    }
+
+    try {
+      const postToLike = newsPosts.find(p => p.id === id);
+      if (!postToLike) return;
+
+      const isLiking = !likedPostIds.includes(id);
+      
+      if (isLiking) {
+        setLikedPostIds([...likedPostIds, id]);
+      } else {
+        setLikedPostIds(likedPostIds.filter(pid => pid !== id));
       }
-      return post;
-    }));
+
+      const updatedPost = {
+        ...postToLike,
+        likes: Math.max(0, postToLike.likes + (isLiking ? 1 : -1))
+      };
+      
+      delete updatedPost.hasLiked;
+
+      await setDoc(doc(db, 'news', id), updatedPost);
+    } catch (err) {
+      console.error('Error liking news:', err);
+    }
   };
 
-  const handlePostReply = (postId: string) => {
+  const handlePostReply = async (postId: string) => {
     if (!replyContent.trim()) return;
+    if (!currentUser) {
+      showFeedback('Please log in to reply.', 'warning');
+      return;
+    }
     
-    const author = userProfile?.displayName || (currentUser ? currentUser.email?.split('@')[0] : 'Comrade Resident') || 'Comrade Resident';
-    const newReply = {
-      id: Date.now().toString(),
-      authorName: author,
-      authorInitials: author.substring(0, 2).toUpperCase(),
-      content: replyContent.trim(),
-      createdAt: 'Just now'
-    };
+    try {
+      const postToReply = newsPosts.find(p => p.id === postId);
+      if (!postToReply) return;
 
-    setNewsPosts(posts => posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          replies: [...(post.replies || []), newReply]
-        };
-      }
-      return post;
-    }));
+      const author = userProfile?.displayName || currentUser.email?.split('@')[0] || 'Comrade Resident';
+      const isAdmin = (userProfile?.email || currentUser?.email || '').toLowerCase() === ADMIN_EMAIL;
+      
+      const newReply = {
+        id: Date.now().toString(),
+        authorName: isAdmin ? 'Admin' : author,
+        authorInitials: isAdmin ? 'AD' : author.substring(0, 2).toUpperCase(),
+        content: replyContent.trim(),
+        createdAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      };
 
-    setReplyContent('');
-    setReplyInputPostId(null);
-    showFeedback('✓ Reply posted successfully!', 'success');
+      const updatedPost = {
+        ...postToReply,
+        replies: [...(postToReply.replies || []), newReply]
+      };
+
+      delete updatedPost.hasLiked;
+
+      await setDoc(doc(db, 'news', postId), updatedPost);
+      setReplyContent('');
+      setReplyInputPostId(null);
+      showFeedback('✓ Reply posted successfully!', 'success');
+    } catch (err) {
+      console.error('Error posting reply:', err);
+      showFeedback('Failed to post reply.', 'warning');
+    }
+  };
+
+  const handlePinComment = async (postId: string, replyId: string) => {
+    try {
+      const post = newsPosts.find(p => p.id === postId);
+      if (!post || !post.replies) return;
+
+      const updatedReplies = post.replies.map(reply => {
+        if (reply.id === replyId) {
+          return { ...reply, isPinned: !reply.isPinned };
+        }
+        return reply;
+      });
+
+      const updatedPost = {
+        ...post,
+        replies: updatedReplies
+      };
+      delete updatedPost.hasLiked;
+
+      await setDoc(doc(db, 'news', postId), updatedPost);
+      showFeedback('✓ Comment pin status updated!', 'success');
+    } catch (err) {
+      console.error('Error pinning comment:', err);
+    }
+  };
+
+  const handleDeleteComment = async (postId: string, replyId: string) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+
+    try {
+      const post = newsPosts.find(p => p.id === postId);
+      if (!post || !post.replies) return;
+
+      const updatedReplies = post.replies.filter(reply => reply.id !== replyId);
+
+      const updatedPost = {
+        ...post,
+        replies: updatedReplies
+      };
+      delete updatedPost.hasLiked;
+
+      await setDoc(doc(db, 'news', postId), updatedPost);
+      showFeedback('✓ Comment deleted successfully.', 'success');
+    } catch (err) {
+      console.error('Error deleting comment:', err);
+    }
+  };
+
+  const handlePinPost = async (postId: string) => {
+    try {
+      const post = newsPosts.find(p => p.id === postId);
+      if (!post) return;
+
+      const updatedPost = {
+        ...post,
+        isPinned: !post.isPinned
+      };
+      delete updatedPost.hasLiked;
+
+      await setDoc(doc(db, 'news', postId), updatedPost);
+      showFeedback(updatedPost.isPinned ? '✓ Post pinned to top!' : '✓ Post unpinned.', 'success');
+    } catch (err) {
+      console.error('Error pinning post:', err);
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    if (!window.confirm('Are you sure you want to delete this news post?')) return;
+
+    try {
+      await deleteDoc(doc(db, 'news', postId));
+      showFeedback('✓ News bulletin deleted successfully.', 'success');
+    } catch (err) {
+      console.error('Error deleting post:', err);
+    }
   };
 
   const handleShareNews = (news: NewsPost) => {
@@ -5862,7 +6042,7 @@ export default function App() {
                 </form>
 
                 {newsPosts.map((news) => (
-                  <div key={news.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition duration-200">
+                  <div key={news.id} className={`bg-white dark:bg-slate-900 border rounded-2xl p-5 shadow-sm hover:shadow-md transition duration-200 ${news.isPinned ? 'border-indigo-300 dark:border-indigo-850/80 ring-1 ring-indigo-50/50 dark:ring-indigo-950/20' : 'border-slate-200 dark:border-slate-800'}`}>
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400">
@@ -5876,10 +6056,35 @@ export default function App() {
                                 {news.type}
                               </span>
                             )}
+                            {news.isPinned && (
+                              <span className="flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 uppercase tracking-wider">
+                                <Pin className="w-2.5 h-2.5 fill-current" /> Pinned
+                              </span>
+                            )}
                           </h3>
                           <span className="text-[11px] font-medium text-slate-400 font-mono">{news.createdAt}</span>
                         </div>
                       </div>
+
+                      {/* Admin post moderation buttons */}
+                      {isAdminUser && (
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => handlePinPost(news.id)}
+                            title={news.isPinned ? "Unpin Post" : "Pin Post"}
+                            className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${news.isPinned ? 'bg-indigo-50 border-indigo-200 text-indigo-600 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-slate-600 dark:bg-slate-800 dark:border-slate-700'}`}
+                          >
+                            {news.isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+                          </button>
+                          <button 
+                            onClick={() => handleDeletePost(news.id)}
+                            title="Delete Post"
+                            className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-100 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-rose-950/20 dark:hover:border-rose-900/55 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                     
                     <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4 ml-[52px]">
@@ -5889,9 +6094,9 @@ export default function App() {
                     <div className="flex items-center gap-4 ml-[52px] border-t border-slate-100 dark:border-slate-800/50 pt-3">
                       <button 
                         onClick={() => handleLikeNews(news.id)}
-                        className={`flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer ${news.hasLiked ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'}`}
+                        className={`flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer ${likedPostIds.includes(news.id) ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'}`}
                       >
-                        <Heart className={`w-4 h-4 ${news.hasLiked ? 'fill-current' : ''}`} />
+                        <Heart className={`w-4 h-4 ${likedPostIds.includes(news.id) ? 'fill-current' : ''}`} />
                         {news.likes > 0 && <span>{news.likes}</span>}
                       </button>
                       <button 
@@ -5927,30 +6132,68 @@ export default function App() {
                     {(replyInputPostId === news.id || (news.replies && news.replies.length > 0)) && (
                       <div className="ml-[52px] mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/50 space-y-3">
                         {/* List existing replies */}
-                        {news.replies && news.replies.length > 0 && (
-                          <div className="space-y-2">
-                            {news.replies.map((reply) => (
-                              <div key={reply.id} className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-800/40 animate-in fade-in duration-200">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <div className="w-6 h-6 rounded-full bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center font-bold text-[10px] text-indigo-600 dark:text-indigo-400">
-                                    {reply.authorInitials}
+                        {news.replies && news.replies.length > 0 && (() => {
+                          const sortedReplies = [...news.replies].sort((a, b) => {
+                            if (a.isPinned && !b.isPinned) return -1;
+                            if (!a.isPinned && b.isPinned) return 1;
+                            const valA = parseInt(a.id) || 0;
+                            const valB = parseInt(b.id) || 0;
+                            return valA - valB;
+                          });
+                          return (
+                            <div className="space-y-2">
+                              {sortedReplies.map((reply) => (
+                                <div key={reply.id} className={`rounded-xl p-3 border transition-all duration-200 animate-in fade-in duration-200 ${reply.isPinned ? 'border-indigo-150 bg-indigo-50/20 dark:border-indigo-900/35 dark:bg-indigo-950/15' : 'bg-slate-50 border-slate-100 dark:bg-slate-900/50 dark:border-slate-800/40'}`}>
+                                  <div className="flex items-start justify-between mb-1">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-6 h-6 rounded-full bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center font-bold text-[10px] text-indigo-600 dark:text-indigo-400">
+                                        {reply.authorInitials}
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-xs font-bold text-slate-850 dark:text-slate-200">
+                                            {reply.authorName}
+                                          </span>
+                                          {reply.isPinned && (
+                                            <span className="flex items-center gap-0.5 text-[8px] font-bold px-1.5 py-0.2 bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 rounded">
+                                              <Pin className="w-2 h-2 fill-current" /> Pinned
+                                            </span>
+                                          )}
+                                        </div>
+                                        <span className="text-[8px] text-slate-450 dark:text-slate-400 font-mono">
+                                          {reply.createdAt}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Admin comment moderation actions */}
+                                    {isAdminUser && (
+                                      <div className="flex items-center gap-1">
+                                        <button 
+                                          onClick={() => handlePinComment(news.id, reply.id)}
+                                          title={reply.isPinned ? "Unpin Comment" : "Pin Comment"}
+                                          className={`p-1 rounded transition-colors cursor-pointer ${reply.isPinned ? 'text-indigo-600 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-900/20' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                        >
+                                          {reply.isPinned ? <PinOff className="w-3 h-3" /> : <Pin className="w-3 h-3" />}
+                                        </button>
+                                        <button 
+                                          onClick={() => handleDeleteComment(news.id, reply.id)}
+                                          title="Delete Comment"
+                                          className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors cursor-pointer"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </button>
+                                      </div>
+                                    )}
                                   </div>
-                                  <div>
-                                    <span className="text-xs font-bold text-slate-850 dark:text-slate-200">
-                                      {reply.authorName}
-                                    </span>
-                                    <span className="text-[9px] text-slate-450 dark:text-slate-400 font-mono ml-2">
-                                      {reply.createdAt}
-                                    </span>
-                                  </div>
+                                  <p className="text-xs text-slate-600 dark:text-slate-400 pl-8 leading-relaxed">
+                                    {reply.content}
+                                  </p>
                                 </div>
-                                <p className="text-xs text-slate-600 dark:text-slate-400 pl-8 leading-relaxed">
-                                  {reply.content}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                              ))}
+                            </div>
+                          );
+                        })()}
 
                         {/* Reply Form */}
                         {replyInputPostId === news.id && (

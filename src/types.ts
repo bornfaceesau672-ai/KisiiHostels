@@ -116,6 +116,7 @@ export interface NewsReply {
   authorInitials: string;
   content: string;
   createdAt: string;
+  isPinned?: boolean;
 }
 
 export interface NewsPost {
@@ -129,6 +130,7 @@ export interface NewsPost {
   typeColor?: string;
   hasLiked?: boolean;
   replies?: NewsReply[];
+  isPinned?: boolean;
 }
 
 
