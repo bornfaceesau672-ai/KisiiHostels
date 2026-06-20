@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Hostel, Room, Booking, MaintenanceRequest, HostelReview, RelocationRequest } from './types';
+import { Hostel, Room, Booking, MaintenanceRequest, HostelReview, RelocationRequest, NewsPost } from './types';
 import { INITIAL_HOSTELS, INITIAL_BOOKINGS, INITIAL_MAINTENANCE, ClientUser, INITIAL_USERS, INITIAL_RELOCATIONS } from './initialData';
 import { INITIAL_REVIEWS } from './initialReviews';
 import HostelCard from './components/HostelCard';
@@ -65,7 +65,10 @@ import {
   AlertTriangle,
   Truck,
   Compass,
-  WashingMachine
+  WashingMachine,
+  Newspaper,
+  Heart,
+  Send
 } from 'lucide-react';
 
 
@@ -677,9 +680,132 @@ export default function App() {
   }, [theme]);
 
   // UI Navigation / Viewing States
-  const [activeTab, setActiveTab] = useState<'explore' | 'bookings' | 'maintenance' | 'sophia' | 'admin'>('explore');
+  const [activeTab, setActiveTab] = useState<'explore' | 'bookings' | 'maintenance' | 'sophia' | 'admin' | 'news'>('explore');
   const [adminSubTab, setAdminSubTab] = useState<'listings' | 'clients' | 'repairs'>('listings');
   const [currentPage, setCurrentPage] = useState<'home' | 'details'>('details');
+
+  const [newsPosts, setNewsPosts] = useState<NewsPost[]>([
+    { 
+      id: '1', 
+      authorName: 'Admin', 
+      authorInitials: 'AD', 
+      content: 'Please note that the new curfew for all Kisii University internal hostels is now 10:00 PM starting this Friday. Ensure you are within the premises before the gates are locked.', 
+      createdAt: 'June 20, 2026', 
+      likes: 12, 
+      type: 'Alert', 
+      typeColor: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+      replies: [
+        { id: 'r1', authorName: 'Comrade Kevin', authorInitials: 'CK', content: '10:00 PM is too early! We have group discussions in the library until late.', createdAt: 'June 20, 2026' },
+        { id: 'r2', authorName: 'Warden John', authorInitials: 'WJ', content: 'Arrangements can be made with the hostel warden for students with verified late library assignments.', createdAt: 'June 20, 2026' }
+      ]
+    },
+    { 
+      id: '2', 
+      authorName: 'Water Dept', 
+      authorInitials: 'WD', 
+      content: 'The main borehole pump is undergoing scheduled maintenance. Expect low water pressure on Saturday morning from 8:00 AM to 12:00 PM.', 
+      createdAt: 'June 18, 2026', 
+      likes: 5, 
+      type: 'Info', 
+      typeColor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+      replies: []
+    },
+    { 
+      id: '3', 
+      authorName: 'Admin', 
+      authorInitials: 'AD', 
+      content: 'All students are reminded that the deadline for clearing room allocation balances for the upcoming semester is June 30th. Failure to clear will result in automatic reallocation.', 
+      createdAt: 'June 15, 2026', 
+      likes: 45, 
+      type: 'Important', 
+      typeColor: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+      replies: [
+        { id: 'r3', authorName: 'Faith Mwangi', authorInitials: 'FM', content: 'Can we pay in installments or does it have to be a one-time clear?', createdAt: 'June 16, 2026' }
+      ]
+    }
+  ]);
+  const [newPostContent, setNewPostContent] = useState('');
+  const [isPostingNews, setIsPostingNews] = useState(false);
+  const [replyInputPostId, setReplyInputPostId] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState('');
+
+  const handlePostNews = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPostContent.trim()) return;
+    setIsPostingNews(true);
+    
+    setTimeout(() => {
+      const author = userProfile?.displayName || (currentUser ? currentUser.email?.split('@')[0] : 'Comrade Resident') || 'Comrade Resident';
+      const newPost: NewsPost = {
+        id: Date.now().toString(),
+        authorName: author,
+        authorInitials: author.substring(0, 2).toUpperCase(),
+        content: newPostContent.trim(),
+        createdAt: 'Just now',
+        likes: 0,
+        type: 'General',
+        typeColor: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+        replies: []
+      };
+      setNewsPosts([newPost, ...newsPosts]);
+      setNewPostContent('');
+      setIsPostingNews(false);
+    }, 600);
+  };
+  
+  const handleLikeNews = (id: string) => {
+    setNewsPosts(posts => posts.map(post => {
+      if (post.id === id) {
+        const isLiking = !post.hasLiked;
+        return { ...post, likes: post.likes + (isLiking ? 1 : -1), hasLiked: isLiking };
+      }
+      return post;
+    }));
+  };
+
+  const handlePostReply = (postId: string) => {
+    if (!replyContent.trim()) return;
+    
+    const author = userProfile?.displayName || (currentUser ? currentUser.email?.split('@')[0] : 'Comrade Resident') || 'Comrade Resident';
+    const newReply = {
+      id: Date.now().toString(),
+      authorName: author,
+      authorInitials: author.substring(0, 2).toUpperCase(),
+      content: replyContent.trim(),
+      createdAt: 'Just now'
+    };
+
+    setNewsPosts(posts => posts.map(post => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          replies: [...(post.replies || []), newReply]
+        };
+      }
+      return post;
+    }));
+
+    setReplyContent('');
+    setReplyInputPostId(null);
+    showFeedback('✓ Reply posted successfully!', 'success');
+  };
+
+  const handleShareNews = (news: NewsPost) => {
+    const shareUrl = `${window.location.origin}${window.location.pathname}?newsId=${news.id}`;
+    const shareText = `[News Bulletin] ${news.authorName}: "${news.content}"\nRead more at: ${shareUrl}`;
+    
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(shareText)
+        .then(() => {
+          showFeedback('✓ News bulletin link and text copied to clipboard!', 'success');
+        })
+        .catch(() => {
+          showFeedback(`Link: ${shareUrl}`, 'info');
+        });
+    } else {
+      showFeedback(`Link: ${shareUrl}`, 'info');
+    }
+  };
 
   // Report active presence to Firestore (for admin dashboard monitoring)
   useEffect(() => {
@@ -5689,6 +5815,194 @@ export default function App() {
             </div>
           )}
 
+          {/* TAB 6: News Bulletin */}
+          {activeTab === 'news' && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+                <div>
+                  <h2 className="text-2xl font-bold font-sans text-slate-900 dark:text-slate-100 tracking-tight">Campus News Bulletin</h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Stay updated with the latest news, announcements, and events happening around Kisii University hostels.
+                  </p>
+                </div>
+              </div>
+
+              <div className="max-w-4xl mx-auto space-y-4">
+                {/* Input Form */}
+                <form onSubmit={handlePostNews} className="bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl p-4 shadow-sm mb-6">
+                  <div className="flex gap-3">
+                    <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex-shrink-0 flex items-center justify-center font-bold text-indigo-700 dark:text-indigo-400">
+                      {(userProfile?.displayName || (currentUser ? currentUser.email?.split('@')[0] : 'CR') || 'CR').substring(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1">
+                      <textarea
+                        value={newPostContent}
+                        onChange={(e) => setNewPostContent(e.target.value)}
+                        placeholder="What's happening on campus?"
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+                        rows={3}
+                      />
+                      <div className="flex justify-end mt-2">
+                        <button
+                          type="submit"
+                          disabled={!newPostContent.trim() || isPostingNews}
+                          className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 text-white text-sm font-bold rounded-xl transition-all cursor-pointer"
+                        >
+                          {isPostingNews ? (
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            <Send className="w-4 h-4" />
+                          )}
+                          Post
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+
+                {newsPosts.map((news) => (
+                  <div key={news.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition duration-200">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400">
+                          {news.authorInitials}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                            {news.authorName}
+                            {news.type && news.type !== 'General' && (
+                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${news.typeColor}`}>
+                                {news.type}
+                              </span>
+                            )}
+                          </h3>
+                          <span className="text-[11px] font-medium text-slate-400 font-mono">{news.createdAt}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4 ml-[52px]">
+                      {news.content}
+                    </p>
+
+                    <div className="flex items-center gap-4 ml-[52px] border-t border-slate-100 dark:border-slate-800/50 pt-3">
+                      <button 
+                        onClick={() => handleLikeNews(news.id)}
+                        className={`flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer ${news.hasLiked ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'}`}
+                      >
+                        <Heart className={`w-4 h-4 ${news.hasLiked ? 'fill-current' : ''}`} />
+                        {news.likes > 0 && <span>{news.likes}</span>}
+                      </button>
+                      <button 
+                        onClick={() => {
+                          if (replyInputPostId === news.id) {
+                            setReplyInputPostId(null);
+                            setReplyContent('');
+                          } else {
+                            setReplyInputPostId(news.id);
+                            setReplyContent('');
+                          }
+                        }}
+                        className={`flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer ${replyInputPostId === news.id ? 'text-indigo-500' : 'text-slate-400 hover:text-indigo-500'}`}
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        <span>Reply</span>
+                        {news.replies && news.replies.length > 0 && (
+                          <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded-full text-[10px]">
+                            {news.replies.length}
+                          </span>
+                        )}
+                      </button>
+                      <button 
+                        onClick={() => handleShareNews(news)}
+                        className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-emerald-500 transition-colors ml-auto cursor-pointer"
+                      >
+                        <Share2 className="w-4 h-4" />
+                        Share
+                      </button>
+                    </div>
+
+                    {/* Nested Replies Section */}
+                    {(replyInputPostId === news.id || (news.replies && news.replies.length > 0)) && (
+                      <div className="ml-[52px] mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/50 space-y-3">
+                        {/* List existing replies */}
+                        {news.replies && news.replies.length > 0 && (
+                          <div className="space-y-2">
+                            {news.replies.map((reply) => (
+                              <div key={reply.id} className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-800/40 animate-in fade-in duration-200">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <div className="w-6 h-6 rounded-full bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center font-bold text-[10px] text-indigo-600 dark:text-indigo-400">
+                                    {reply.authorInitials}
+                                  </div>
+                                  <div>
+                                    <span className="text-xs font-bold text-slate-850 dark:text-slate-200">
+                                      {reply.authorName}
+                                    </span>
+                                    <span className="text-[9px] text-slate-450 dark:text-slate-400 font-mono ml-2">
+                                      {reply.createdAt}
+                                    </span>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-slate-600 dark:text-slate-400 pl-8 leading-relaxed">
+                                  {reply.content}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Reply Form */}
+                        {replyInputPostId === news.id && (
+                          <form 
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              handlePostReply(news.id);
+                            }}
+                            className="flex gap-3 items-start mt-2"
+                          >
+                            <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-[11px] text-slate-600 dark:text-slate-400 shrink-0">
+                              {(userProfile?.displayName || (currentUser ? currentUser.email?.split('@')[0] : 'CR') || 'CR').substring(0, 2).toUpperCase()}
+                            </div>
+                            <div className="flex-1 space-y-2">
+                              <textarea
+                                value={replyContent}
+                                onChange={(e) => setReplyContent(e.target.value)}
+                                placeholder="Write a reply..."
+                                rows={2}
+                                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none text-slate-800 dark:text-slate-100"
+                              />
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setReplyInputPostId(null);
+                                    setReplyContent('');
+                                  }}
+                                  className="px-3 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 text-xs font-bold rounded-lg transition-all cursor-pointer"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="submit"
+                                  disabled={!replyContent.trim()}
+                                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 text-white text-xs font-bold rounded-lg transition-all cursor-pointer"
+                                >
+                                  Reply
+                                </button>
+                              </div>
+                            </div>
+                          </form>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+            </div>
+          )}
+
         </section>
 
       </main>
@@ -6043,6 +6357,27 @@ export default function App() {
                 </span>
               </div>
               <span className="font-sans text-[10px] tracking-tight">Sophia</span>
+            </button>
+
+            {/* 6. News Tab */}
+            <button
+              id="bottom-tab-news"
+              onClick={() => {
+                setActiveTab('news');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              aria-current={activeTab === 'news' ? 'page' : undefined}
+              aria-label="News Bulletin"
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl text-[10px] font-bold transition-all duration-250 cursor-pointer ${
+                activeTab === 'news'
+                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 border border-indigo-100/30 dark:border-indigo-900/30 shadow-sm scale-110 -translate-y-1'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300'
+              }`}
+            >
+              <div className="relative">
+                <Newspaper className="w-5 h-5 stroke-[2.25]" />
+              </div>
+              <span className="font-sans text-[10px] tracking-tight">News</span>
             </button>
 
           </nav>

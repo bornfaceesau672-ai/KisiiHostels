@@ -110,3 +110,25 @@ export interface RelocationRequest {
   createdAt: string;
 }
 
+export interface NewsReply {
+  id: string;
+  authorName: string;
+  authorInitials: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface NewsPost {
+  id: string;
+  authorName: string;
+  authorInitials: string;
+  content: string;
+  createdAt: string;
+  likes: number;
+  type?: 'Alert' | 'Info' | 'Important' | 'General';
+  typeColor?: string;
+  hasLiked?: boolean;
+  replies?: NewsReply[];
+}
+
+
