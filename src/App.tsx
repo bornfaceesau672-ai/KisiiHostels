@@ -776,11 +776,11 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPage]);
 
-  // Real-time Firestore sync for News Bulletin
+  // Real-time Firestore sync for KSH Gossip
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'news'), async (snapshot) => {
       if (snapshot.empty) {
-        console.log('News is empty in Firestore. Seeding default news posts...');
+        console.log('KSH Gossip is empty in Firestore. Seeding default gossip posts...');
         const initialNews: NewsPost[] = [
           { 
             id: '1', 
@@ -858,7 +858,7 @@ export default function App() {
     e.preventDefault();
     if (!newPostContent.trim()) return;
     if (!currentUser) {
-      showFeedback('Please log in to post a news bulletin.', 'warning');
+      showFeedback('Please log in to post to KSH Gossip.', 'warning');
       return;
     }
     
@@ -885,10 +885,10 @@ export default function App() {
 
       await setDoc(doc(db, 'news', newPostId), newPost);
       setNewPostContent('');
-      showFeedback('✓ News bulletin posted successfully!', 'success');
+      showFeedback('✓ Gossip posted successfully!', 'success');
     } catch (err) {
       console.error('Error posting news:', err);
-      showFeedback('Failed to post news bulletin.', 'warning');
+      showFeedback('Failed to post gossip.', 'warning');
     } finally {
       setIsPostingNews(false);
     }
@@ -896,7 +896,7 @@ export default function App() {
   
   const handleLikeNews = async (id: string) => {
     if (!currentUser) {
-      showFeedback('Please log in to like news bulletins.', 'warning');
+      showFeedback('Please log in to like KSH Gossip posts.', 'warning');
       return;
     }
 
@@ -1030,11 +1030,11 @@ export default function App() {
   };
 
   const handleDeletePost = async (postId: string) => {
-    if (!window.confirm('Are you sure you want to delete this news post?')) return;
+    if (!window.confirm('Are you sure you want to delete this gossip post?')) return;
 
     try {
       await deleteDoc(doc(db, 'news', postId));
-      showFeedback('✓ News bulletin deleted successfully.', 'success');
+      showFeedback('✓ Gossip post deleted successfully.', 'success');
     } catch (err) {
       console.error('Error deleting post:', err);
     }
@@ -1042,12 +1042,12 @@ export default function App() {
 
   const handleShareNews = (news: NewsPost) => {
     const shareUrl = `${window.location.origin}${window.location.pathname}?newsId=${news.id}`;
-    const shareText = `[News Bulletin] ${news.authorName}: "${news.content}"\nRead more at: ${shareUrl}`;
+    const shareText = `[KSH Gossip] ${news.authorName}: "${news.content}"\nRead more at: ${shareUrl}`;
     
     if (navigator.clipboard) {
       navigator.clipboard.writeText(shareText)
         .then(() => {
-          showFeedback('✓ News bulletin link and text copied to clipboard!', 'success');
+          showFeedback('✓ Gossip post link and text copied to clipboard!', 'success');
         })
         .catch(() => {
           showFeedback(`Link: ${shareUrl}`, 'info');
@@ -6131,15 +6131,15 @@ export default function App() {
             </div>
           )}
 
-          {/* TAB 6: News Bulletin */}
+          {/* TAB 6: KSH Gossip */}
           {activeTab === 'news' && (
             <div className="space-y-6 animate-in fade-in duration-300">
               
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
                 <div>
-                  <h2 className="text-2xl font-bold font-sans text-slate-900 dark:text-slate-100 tracking-tight">Campus News Bulletin</h2>
+                  <h2 className="text-2xl font-bold font-sans text-slate-900 dark:text-slate-100 tracking-tight">KSH Gossip</h2>
                   <p className="text-xs text-slate-500 mt-1">
-                    Stay updated with the latest news, announcements, and events happening around Kisii University hostels.
+                    Stay updated with the latest gossip, announcements, and events happening around Kisii University hostels.
                   </p>
                 </div>
               </div>
@@ -6738,7 +6738,7 @@ export default function App() {
               <span className="font-sans text-[10px] tracking-tight">Sophia</span>
             </button>
 
-            {/* 6. News Tab */}
+            {/* 6. KSH Gossip Tab */}
             <button
               id="bottom-tab-news"
               onClick={() => {
@@ -6746,7 +6746,7 @@ export default function App() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               aria-current={activeTab === 'news' ? 'page' : undefined}
-              aria-label="News Bulletin"
+              aria-label="KSH Gossip"
               className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl text-[10px] font-bold transition-all duration-250 cursor-pointer ${
                 activeTab === 'news'
                   ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 border border-indigo-100/30 dark:border-indigo-900/30 shadow-sm scale-110 -translate-y-1'
@@ -6756,7 +6756,7 @@ export default function App() {
               <div className="relative">
                 <Newspaper className="w-5 h-5 stroke-[2.25]" />
               </div>
-              <span className="font-sans text-[10px] tracking-tight">News</span>
+              <span className="font-sans text-[10px] tracking-tight">KSH Gossip</span>
             </button>
 
           </nav>
