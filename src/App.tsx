@@ -722,7 +722,8 @@ export default function App() {
             replies: [
               { id: 'r1', authorName: 'Comrade Kevin', authorInitials: 'CK', content: '10:00 PM is too early! We have group discussions in the library until late.', createdAt: 'June 20, 2026' },
               { id: 'r2', authorName: 'Warden John', authorInitials: 'WJ', content: 'Arrangements can be made with the hostel warden for students with verified late library assignments.', createdAt: 'June 20, 2026' }
-            ]
+            ],
+            timestamp: 1779321600000
           },
           { 
             id: '2', 
@@ -733,7 +734,8 @@ export default function App() {
             likes: 5, 
             type: 'Info', 
             typeColor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-            replies: []
+            replies: [],
+            timestamp: 1779148800000
           },
           { 
             id: '3', 
@@ -746,7 +748,8 @@ export default function App() {
             typeColor: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
             replies: [
               { id: 'r3', authorName: 'Faith Mwangi', authorInitials: 'FM', content: 'Can we pay in installments or does it have to be a one-time clear?', createdAt: 'June 16, 2026' }
-            ]
+            ],
+            timestamp: 1778889600000
           }
         ];
         for (const post of initialNews) {
@@ -762,20 +765,14 @@ export default function App() {
           loaded.push(docSnap.data() as NewsPost);
         });
         
-        // Sort: Pinned first, then by date/id descending
+        // Sort: Pinned first, then by timestamp descending (newest first)
         const sorted = loaded.sort((a, b) => {
           if (a.isPinned && !b.isPinned) return -1;
           if (!a.isPinned && b.isPinned) return 1;
           
-          const timeA = new Date(a.createdAt).getTime();
-          const timeB = new Date(b.createdAt).getTime();
-          if (!isNaN(timeA) && !isNaN(timeB)) {
-            return timeB - timeA;
-          }
-          
-          const idA = parseInt(a.id) || 0;
-          const idB = parseInt(b.id) || 0;
-          return idB - idA;
+          const timeA = a.timestamp || 0;
+          const timeB = b.timestamp || 0;
+          return timeB - timeA;
         });
         setNewsPosts(sorted);
       }
@@ -810,7 +807,8 @@ export default function App() {
         typeColor: isAdmin 
           ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' 
           : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-        replies: []
+        replies: [],
+        timestamp: Date.now()
       };
 
       await setDoc(doc(db, 'news', newPostId), newPost);

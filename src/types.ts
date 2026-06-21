@@ -131,6 +131,7 @@ export interface NewsPost {
   hasLiked?: boolean;
   replies?: NewsReply[];
   isPinned?: boolean;
+  timestamp?: number;
 }
 
 
