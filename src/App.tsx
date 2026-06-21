@@ -115,6 +115,11 @@ const ESTATE_LABELS: Record<string, { label: string; icon: string; description: 
     label: 'Canaan Estate',
     icon: 'Quiet',
     description: 'Serene, secure, and clean environment popular for student residency.'
+  },
+  'Kisumu ndogo': {
+    label: 'Kisumu Ndogo',
+    icon: 'Quiet',
+    description: 'Vibrant student neighborhood with active local business and close transport access.'
   }
 };
 
@@ -166,6 +171,12 @@ const ESTATE_SCHOOL_INFO: Record<string, { distance: string; walkTime: string; s
     walkTime: '10 - 17 mins walk',
     securityScore: '4.4/5 (Perimeter Walled)',
     alert: 'Modern secure layout. High water consistency with backup local borehole shafts.'
+  },
+  'Kisumu ndogo': {
+    distance: '500 - 850 meters',
+    walkTime: '10 - 18 mins walk',
+    securityScore: '4.3/5 (Caretaker Guarded)',
+    alert: 'Vibrant student neighborhood with active local business and close transport access.'
   }
 };
 
@@ -177,7 +188,8 @@ const estateOrder = [
   'Jogoo',
   'Safariland',
   'Nyaura',
-  'Canaan'
+  'Canaan',
+  'Kisumu ndogo'
 ];
 
 const ADMIN_EMAIL = 'esaubornface73@gmail.com';
@@ -220,7 +232,8 @@ export default function App() {
       'Jogoo',
       'Safariland',
       'Nyaura',
-      'Canaan'
+      'Canaan',
+      'Kisumu ndogo'
     ];
     const sortHostelsByEstate = (a: Hostel, b: Hostel) => {
       const indexA = estateOrderLocal.indexOf(a.area);
@@ -254,6 +267,13 @@ export default function App() {
             }
             seenIds.add(h.id);
             uniqueParsed.push(h);
+          }
+        }
+        // Merge in any initial hostels that are missing from localStorage
+        for (const ih of INITIAL_HOSTELS) {
+          if (!seenIds.has(ih.id)) {
+            seenIds.add(ih.id);
+            uniqueParsed.push(ih);
           }
         }
         // If localStorage yielded no valid hostels, fall back to INITIAL_HOSTELS
@@ -528,9 +548,17 @@ export default function App() {
           });
 
           if (loadedHostels.length > 0) {
+            // Merge in any initial hostels that are missing from Firestore
+            const seenIds = new Set(loadedHostels.map(h => h.id));
+            for (const ih of INITIAL_HOSTELS) {
+              if (!seenIds.has(ih.id)) {
+                loadedHostels.push(ih);
+              }
+            }
+
             // Sort hostels by estate/area to maintain layout alignment consistency
             const estateOrderLocal = [
-              'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Safariland', 'Nyaura', 'Canaan'
+              'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Safariland', 'Nyaura', 'Canaan', 'Kisumu ndogo'
             ];
             const sorted = loadedHostels.sort((a, b) => {
               const indexA = estateOrderLocal.indexOf(a.area);
@@ -3056,6 +3084,7 @@ export default function App() {
                             <option value="Safariland" className="dark:bg-slate-900">Safariland Plaza</option>
                             <option value="Nyaura" className="dark:bg-slate-900">Nyaura Outpost</option>
                             <option value="Canaan" className="dark:bg-slate-900">Canaan Estate</option>
+                            <option value="Kisumu ndogo" className="dark:bg-slate-900">Kisumu Ndogo</option>
                           </select>
                         </div>
 

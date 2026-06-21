@@ -112,9 +112,18 @@ const ESTATE_META: Record<string, {
     badge: 'Most Secure',
     emoji: '🏛️',
   },
+  'Kisumu ndogo': {
+    label: 'Kisumu Ndogo',
+    icon: 'MapPin',
+    gradient: 'from-amber-600 via-orange-600 to-red-700',
+    accentColor: 'bg-amber-500',
+    description: 'Vibrant student neighborhood with active local business and close transport access.',
+    badge: 'Very Vibrant',
+    emoji: '🏡',
+  },
 };
 
-const ESTATE_ORDER = ['On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Safariland', 'Nyaura', 'Canaan'];
+const ESTATE_ORDER = ['On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Safariland', 'Nyaura', 'Canaan', 'Kisumu ndogo'];
 
 const EstateLandingPage: React.FC<EstateLandingPageProps> = ({
   hostels,
@@ -396,6 +405,7 @@ const EstateLandingPage: React.FC<EstateLandingPageProps> = ({
               'Safariland': 'linear-gradient(135deg, #0891b2, #0d9488, #1d4ed8)',
               'Nyaura': 'linear-gradient(135deg, #1d4ed8, #4338ca, #6d28d9)',
               'Canaan': 'linear-gradient(135deg, #0369a1, #1d4ed8, #3730a3)',
+              'Kisumu ndogo': 'linear-gradient(135deg, #d97706, #ea580c, #b91c1c)',
             };
 
             return (

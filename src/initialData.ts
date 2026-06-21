@@ -928,6 +928,23 @@ export const INITIAL_HOSTELS: Hostel[] = [
       { id: 'hw-101', roomNumber: 'HW-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 17000, isAvailable: true, amenities: ['Sunset View Balcony Access', 'Integrated Smart Home Sound', 'Spacious Desk Set'] },
       { id: 'hw-102', roomNumber: 'HW-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 11000, isAvailable: true, amenities: ['Joint Study Tables', 'Soft Bedding Setup'] }
     ]
+  },
+  {
+    id: 'hostel-kisumu-ndogo',
+    name: 'Kisumu Ndogo Comrade Court',
+    area: 'Kisumu ndogo',
+    distanceMeters: 550,
+    description: 'A vibrant and modern student court located in Kisumu Ndogo. Offers high proximity to student food joints, high-speed fiber Wi-Fi, constant borehole water supply, and top-tier security surveillance.',
+    securityRating: 4,
+    hasBorehole: true,
+    hasWifi: true,
+    hasHotShower: true,
+    imageKeyword: 'urban',
+    landlordPhone: '0795858929',
+    rooms: [
+      { id: 'kn-101', roomNumber: 'KN-101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 15500, isAvailable: true, amenities: ['Bespoke Study Station', 'Comfortable Mattress', 'Tiled Floors'] },
+      { id: 'kn-102', roomNumber: 'KN-102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Mixed', priceKes: 9500, isAvailable: true, amenities: ['High-speed Wi-Fi Link', 'Spacious Closet'] }
+    ]
   }
 ];
 
