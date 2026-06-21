@@ -745,9 +745,9 @@ export const INITIAL_HOSTELS: Hostel[] = [
   {
     id: 'hostel-fanta',
     name: 'Fanta Student Residences',
-    area: 'Mwembe',
+    area: 'Fanta',
     distanceMeters: 150,
-    description: 'A popular, student-favorite housing complex located just off the road in Mwembe. Known for secure gated compound, affordable semesters, spacious single and double rooms, and continuous borehole water.',
+    description: 'A popular, student-favorite housing complex located just off the road in Fanta estate. Known for secure gated compound, affordable semesters, spacious single and double rooms, and continuous borehole water.',
     securityRating: 4,
     hasBorehole: true,
     hasWifi: true,

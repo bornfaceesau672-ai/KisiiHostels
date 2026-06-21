@@ -16,7 +16,7 @@ export interface Room {
 export interface Hostel {
   id: string;
   name: string;
-  area: 'Nyanchwa' | 'Mwembe' | 'Milimani' | 'Jogoo' | 'Safariland' | 'Nyaura' | 'On-Campus' | 'Canaan';
+  area: 'Nyanchwa' | 'Mwembe' | 'Milimani' | 'Jogoo' | 'Safariland' | 'Nyaura' | 'On-Campus' | 'Canaan' | 'Kisumu ndogo' | 'Fanta';
   distanceMeters: number; // Distance from Kisii University campus gate
   description: string;
   securityRating: number; // 1-5 stars

@@ -120,6 +120,11 @@ const ESTATE_LABELS: Record<string, { label: string; icon: string; description: 
     label: 'Kisumu Ndogo',
     icon: 'Quiet',
     description: 'Vibrant student neighborhood with active local business and close transport access.'
+  },
+  'Fanta': {
+    label: 'Fanta Estate',
+    icon: 'Quiet',
+    description: 'Popular student area known for affordable housing and community living.'
   }
 };
 
@@ -177,6 +182,12 @@ const ESTATE_SCHOOL_INFO: Record<string, { distance: string; walkTime: string; s
     walkTime: '10 - 18 mins walk',
     securityScore: '4.3/5 (Caretaker Guarded)',
     alert: 'Vibrant student neighborhood with active local business and close transport access.'
+  },
+  'Fanta': {
+    distance: '200 - 450 meters',
+    walkTime: '5 - 10 mins walk',
+    securityScore: '4.1/5 (Caretaker Guarded)',
+    alert: 'Accessible neighborhood with diverse student housing options.'
   }
 };
 
@@ -189,7 +200,8 @@ const estateOrder = [
   'Safariland',
   'Nyaura',
   'Canaan',
-  'Kisumu ndogo'
+  'Kisumu ndogo',
+  'Fanta'
 ];
 
 const ADMIN_EMAIL = 'esaubornface73@gmail.com';
@@ -233,7 +245,8 @@ export default function App() {
       'Safariland',
       'Nyaura',
       'Canaan',
-      'Kisumu ndogo'
+      'Kisumu ndogo',
+      'Fanta'
     ];
     const sortHostelsByEstate = (a: Hostel, b: Hostel) => {
       const indexA = estateOrderLocal.indexOf(a.area);
@@ -558,7 +571,7 @@ export default function App() {
 
             // Sort hostels by estate/area to maintain layout alignment consistency
             const estateOrderLocal = [
-              'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Safariland', 'Nyaura', 'Canaan', 'Kisumu ndogo'
+              'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Safariland', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'
             ];
             const sorted = loadedHostels.sort((a, b) => {
               const indexA = estateOrderLocal.indexOf(a.area);
@@ -3085,6 +3098,7 @@ export default function App() {
                             <option value="Nyaura" className="dark:bg-slate-900">Nyaura Outpost</option>
                             <option value="Canaan" className="dark:bg-slate-900">Canaan Estate</option>
                             <option value="Kisumu ndogo" className="dark:bg-slate-900">Kisumu Ndogo</option>
+                            <option value="Fanta" className="dark:bg-slate-900">Fanta Estate</option>
                           </select>
                         </div>
 

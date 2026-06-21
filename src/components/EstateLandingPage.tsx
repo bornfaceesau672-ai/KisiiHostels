@@ -121,9 +121,18 @@ const ESTATE_META: Record<string, {
     badge: 'Very Vibrant',
     emoji: '🏡',
   },
+  'Fanta': {
+    label: 'Fanta Estate',
+    icon: 'Map',
+    gradient: 'from-orange-500 via-amber-500 to-yellow-600',
+    accentColor: 'bg-orange-500',
+    description: 'Popular student area known for affordable housing and community living.',
+    badge: 'Affordable',
+    emoji: '🏘️',
+  },
 };
 
-const ESTATE_ORDER = ['On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Safariland', 'Nyaura', 'Canaan', 'Kisumu ndogo'];
+const ESTATE_ORDER = ['On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Safariland', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'];
 
 const EstateLandingPage: React.FC<EstateLandingPageProps> = ({
   hostels,
@@ -406,6 +415,7 @@ const EstateLandingPage: React.FC<EstateLandingPageProps> = ({
               'Nyaura': 'linear-gradient(135deg, #1d4ed8, #4338ca, #6d28d9)',
               'Canaan': 'linear-gradient(135deg, #0369a1, #1d4ed8, #3730a3)',
               'Kisumu ndogo': 'linear-gradient(135deg, #d97706, #ea580c, #b91c1c)',
+              'Fanta': 'linear-gradient(135deg, #f59e0b, #d97706, #b45309)',
             };
 
             return (
