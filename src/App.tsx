@@ -1401,10 +1401,24 @@ export default function App() {
 
   // Filtered Hostels mapping
   const filteredHostels = hostels.filter((hostel) => {
-    // Defensive: skip hostels with missing/empty rooms arrays
-    if (!hostel || !Array.isArray(hostel.rooms) || hostel.rooms.length === 0) return false;
+    // Defensive: skip hostels with missing/empty rooms arrays (unless it's an external link on-campus hostel)
+    if (!hostel || !Array.isArray(hostel.rooms) || (hostel.rooms.length === 0 && !hostel.externalLink)) return false;
 
     if (filterArea !== 'All' && hostel.area !== filterArea) return false;
+
+    if (hostel.externalLink) {
+      // For external link hostels, bypass standard amenities/distance checks
+      if (filterWifi || filterBorehole || filterHotShower) return false;
+      if (filterType !== 'All' || filterFormat !== 'All') return false;
+      if (searchQuery.trim() !== '') {
+        const query = searchQuery.toLowerCase().trim();
+        const matchesName = (hostel.name || '').toLowerCase().includes(query);
+        const matchesArea = (hostel.area || '').toLowerCase().includes(query);
+        if (!matchesName && !matchesArea) return false;
+      }
+      return true;
+    }
+
     if (filterWifi && !hostel.hasWifi) return false;
     if (filterBorehole && !hostel.hasBorehole) return false;
     if (filterHotShower && !hostel.hasHotShower) return false;
