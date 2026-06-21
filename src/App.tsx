@@ -10,6 +10,7 @@ import RelocationForm from './components/RelocationForm';
 import SophiaBot from './components/SophiaBot';
 import AuthModal from './components/AuthModal';
 import EditProfileModal from './components/EditProfileModal';
+import EstateLandingPage from './components/EstateLandingPage';
 import { getHostelImages, getHostelYoutubeEmbed } from './utils/mediaHelper';
 import { getNumericRent, formatMonthlyRent, formatSemesterRent } from './utils/rentHelper';
 
@@ -684,7 +685,7 @@ export default function App() {
   // UI Navigation / Viewing States
   const [activeTab, setActiveTab] = useState<'explore' | 'bookings' | 'maintenance' | 'sophia' | 'admin' | 'news'>('explore');
   const [adminSubTab, setAdminSubTab] = useState<'listings' | 'clients' | 'repairs'>('listings');
-  const [currentPage, setCurrentPage] = useState<'home' | 'details'>('details');
+  const [currentPage, setCurrentPage] = useState<'landing' | 'home' | 'details'>('landing');
   const [newsPosts, setNewsPosts] = useState<NewsPost[]>([]);
   const [newPostContent, setNewPostContent] = useState('');
   const [isPostingNews, setIsPostingNews] = useState(false);
@@ -2411,6 +2412,69 @@ export default function App() {
   const ownersCount = Array.isArray(registeredUsers) ? registeredUsers.filter(u => u && u.category === 'Property Owner').length : 0;
   const guestsCount = Array.isArray(registeredUsers) ? registeredUsers.filter(u => u && u.category === 'Guest').length : 0;
 
+  // ── LANDING PAGE (blue estate overview, shown first for all users) ──────────
+  if (currentPage === 'landing') {
+    return (
+      <>
+        <EstateLandingPage
+          hostels={hostels}
+          currentUser={currentUser}
+          onSignInClick={() => {
+            setAuthModalMode('signin');
+            setIsAuthModalOpen(true);
+          }}
+          onEnterPortal={() => {
+            if (!currentUser) {
+              setAuthModalMode('signin');
+              setIsAuthModalOpen(true);
+            } else {
+              setCurrentPage('details');
+              setActiveTab('explore');
+              setExploreView('catalog');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
+          onViewEstate={(estate: string) => {
+            if (!currentUser) {
+              setAuthModalMode('signin');
+              setIsAuthModalOpen(true);
+              return;
+            }
+            setCurrentPage('details');
+            setActiveTab('explore');
+            setExploreView('catalog');
+            setFilterArea(estate);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onViewHostel={(hostel: Hostel) => {
+            if (!currentUser) {
+              setAuthModalMode('signin');
+              setIsAuthModalOpen(true);
+              return;
+            }
+            setCurrentPage('details');
+            setActiveTab('explore');
+            setExploreView('rooms');
+            setSelectedHostel(hostel);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+        {isAuthModalOpen && (
+          <AuthModal
+            onClose={() => setIsAuthModalOpen(false)}
+            onSignIn={async (email, pass) => {
+              await handleEmailSignIn(email, pass);
+              setCurrentPage('details');
+            }}
+            onSignUp={handleEmailSignUp}
+            initialMode={authModalMode}
+            onVerified={handleVerificationSuccess}
+          />
+        )}
+      </>
+    );
+  }
+
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
@@ -2495,6 +2559,19 @@ export default function App() {
                 </p>
               </div>
             </div>
+            {/* Back to Estates landing page link */}
+            <button
+              id="back-to-estates-btn"
+              onClick={() => {
+                setCurrentPage('landing');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              title="Back to Estate Overview"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-800/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all active:scale-95 ml-1"
+            >
+              <MapPin className="w-3 h-3" />
+              <span className="hidden sm:inline">Estates</span>
+            </button>
           </div>
 
           {/* Theme toggle + Search + Student profile on the SAME row right after the title */}
