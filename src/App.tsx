@@ -872,6 +872,7 @@ export default function App() {
         id: newPostId,
         authorName: isAdmin ? 'Admin' : author,
         authorInitials: isAdmin ? 'AD' : author.substring(0, 2).toUpperCase(),
+        authorEmail: currentUser.email || undefined,
         content: newPostContent.trim(),
         createdAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
         likes: 0,
@@ -1030,6 +1031,15 @@ export default function App() {
   };
 
   const handleDeletePost = async (postId: string) => {
+    const post = newsPosts.find(p => p.id === postId);
+    if (!post) return;
+
+    const isAuthor = currentUser && post.authorEmail === currentUser.email;
+    if (!isAdminUser && !isAuthor) {
+      showFeedback('You do not have permission to delete this post.', 'warning');
+      return;
+    }
+
     if (!window.confirm('Are you sure you want to delete this gossip post?')) return;
 
     try {
@@ -6202,16 +6212,18 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* Admin post moderation buttons */}
-                      {isAdminUser && (
+                      {/* Admin or Author post actions */}
+                      {(isAdminUser || (currentUser && news.authorEmail === currentUser.email)) && (
                         <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => handlePinPost(news.id)}
-                            title={news.isPinned ? "Unpin Post" : "Pin Post"}
-                            className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${news.isPinned ? 'bg-indigo-50 border-indigo-200 text-indigo-600 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-slate-600 dark:bg-slate-800 dark:border-slate-700'}`}
-                          >
-                            {news.isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
-                          </button>
+                          {isAdminUser && (
+                            <button 
+                              onClick={() => handlePinPost(news.id)}
+                              title={news.isPinned ? "Unpin Post" : "Pin Post"}
+                              className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${news.isPinned ? 'bg-indigo-50 border-indigo-200 text-indigo-600 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-slate-600 dark:bg-slate-800 dark:border-slate-700'}`}
+                            >
+                              {news.isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
                           <button 
                             onClick={() => handleDeletePost(news.id)}
                             title="Delete Post"

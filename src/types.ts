@@ -123,6 +123,7 @@ export interface NewsPost {
   id: string;
   authorName: string;
   authorInitials: string;
+  authorEmail?: string;
   content: string;
   createdAt: string;
   likes: number;
