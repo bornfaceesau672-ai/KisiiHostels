@@ -269,12 +269,12 @@ export default function App() {
         for (const h of parsed) {
           if (h && h.id && h.id !== 'hostel-kisii-internal-chancellors' && !seenIds.has(h.id)) {
             // Ensure rooms is a valid array
-            if (!Array.isArray(h.rooms) || h.rooms.length === 0) {
+            if (!Array.isArray(h.rooms) || (h.rooms.length === 0 && !h.externalLink)) {
               // Try to recover rooms from INITIAL_HOSTELS
               const fallback = INITIAL_HOSTELS.find(ih => ih.id === h.id);
               if (fallback && Array.isArray(fallback.rooms) && fallback.rooms.length > 0) {
                 h.rooms = fallback.rooms;
-              } else {
+              } else if (!h.externalLink) {
                 continue; // Skip hostels with no rooms and no fallback
               }
             }
@@ -539,26 +539,43 @@ export default function App() {
             initialHostelMap.set(ih.id, ih);
           }
 
-          querySnapshot.forEach((docSnap) => {
-            const data = docSnap.data() as Hostel;
+          for (const docSnap of querySnapshot.docs) {
+            let data = docSnap.data() as Hostel;
+
+            // Force update on-campus hostels if they are outdated in Firestore
+            if (data.id === 'hostel-venus-mars' || data.id === 'hostel-cz-blackhouse') {
+              if (!data.externalLink) {
+                console.log(`Outdated on-campus hostel "${data.name}" detected in Firestore. Syncing...`);
+                const freshHostel = INITIAL_HOSTELS.find(h => h.id === data.id);
+                if (freshHostel) {
+                  try {
+                    await setDoc(doc(db, 'hostels', data.id), freshHostel);
+                    data = freshHostel;
+                  } catch (syncErr) {
+                    console.error('Failed to sync on-campus hostel to Firestore:', syncErr);
+                  }
+                }
+              }
+            }
+
             // Validate that the hostel has required fields and a valid rooms array
             if (data && data.id && data.name && data.area) {
-              // Ensure rooms is a valid non-empty array; if missing/empty, try to recover from INITIAL_HOSTELS
-              if (!Array.isArray(data.rooms) || data.rooms.length === 0) {
+              // Ensure rooms is a valid array; if missing/empty (and not externalLink), try to recover from INITIAL_HOSTELS
+              if (!Array.isArray(data.rooms) || (data.rooms.length === 0 && !data.externalLink)) {
                 const fallback = initialHostelMap.get(data.id);
                 if (fallback && Array.isArray(fallback.rooms) && fallback.rooms.length > 0) {
                   data.rooms = fallback.rooms;
                   console.warn(`Hostel "${data.name}" had missing/empty rooms — recovered from INITIAL_HOSTELS.`);
-                } else {
+                } else if (!data.externalLink) {
                   console.warn(`Hostel "${data.name}" has no rooms and no fallback — skipping.`);
-                  return; // Skip hostels with no rooms and no fallback
+                  continue; // Skip hostels with no rooms and no fallback
                 }
               }
               loadedHostels.push(data);
             } else {
               console.warn('Skipping invalid hostel document from Firestore:', docSnap.id);
             }
-          });
+          }
 
           if (loadedHostels.length > 0) {
             // Merge in any initial hostels that are missing from Firestore
