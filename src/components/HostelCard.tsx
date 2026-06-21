@@ -60,6 +60,56 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
 
   const cardImage = getHostelImages(hostel.id, hostel.imageUrl, hostel.imageUrls)[0];
 
+  if (hostel.externalLink) {
+    return (
+      <div 
+        id={`hostel-card-${hostel.id}`}
+        className="group relative overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-lg bg-white dark:bg-slate-900 cursor-pointer transition-all duration-300"
+        onClick={() => window.open(hostel.externalLink, '_blank', 'noopener,noreferrer')}
+      >
+        {/* 1. Hostel Image Section */}
+        <div className="h-44 bg-slate-100 dark:bg-slate-950 relative overflow-hidden animate-in fade-in duration-300">
+          <img 
+            src={cardImage} 
+            alt={hostel.name} 
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/45 pointer-events-none" />
+          <div className="absolute top-3 left-3">
+            <span className="text-[8px] bg-amber-500 border border-amber-400/20 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider font-mono shadow-sm text-white">
+              🏢 On-Campus Hall
+            </span>
+          </div>
+        </div>
+
+        <div className="p-4 space-y-4">
+          <div>
+            <h3 className="font-sans font-extrabold text-base text-slate-900 dark:text-slate-100 leading-snug tracking-tight">
+              {hostel.name}
+            </h3>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-normal">
+              Official University accommodation details and allocation.
+            </p>
+          </div>
+
+          <div className="pt-1">
+            <a
+              href={hostel.externalLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="w-full flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 px-3.5 rounded-xl border border-indigo-700 bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 transition duration-200 cursor-pointer select-none"
+            >
+              <span>Visit Official Booking Link</span>
+              <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
       id={`hostel-card-${hostel.id}`}

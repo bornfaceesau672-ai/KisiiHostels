@@ -3393,22 +3393,84 @@ export default function App() {
                 </>
               ) : (
                 // DEDICATED ROOM EXPLORER & HOUSE TOUR PAGE FOR SELECTED HOSTEL
-                <div className="space-y-6 animate-in fade-in duration-300">
-                  {/* Action Nav header */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          setExploreView('catalog');
-                          setTimeout(() => {
-                            window.scrollTo({ top: catalogScrollPos, behavior: 'auto' });
-                          }, 10);
-                        }}
-                        className="flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-indigo-600 transition bg-slate-100 hover:bg-slate-200 px-4 py-2.5 rounded-xl border border-slate-200/80 font-mono tracking-wider cursor-pointer"
-                      >
-                        <ArrowLeft className="w-4 h-4 text-slate-600" />
-                        BACK TO ALL HOSTELS
-                      </button>
+                selectedHostel.externalLink ? (
+                  <div className="space-y-6 animate-in fade-in duration-300">
+                    {/* Action Nav header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setExploreView('catalog');
+                            setTimeout(() => {
+                              window.scrollTo({ top: catalogScrollPos, behavior: 'auto' });
+                            }, 10);
+                          }}
+                          className="flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-indigo-600 transition bg-slate-100 hover:bg-slate-200 px-4 py-2.5 rounded-xl border border-slate-200/80 font-mono tracking-wider cursor-pointer"
+                        >
+                          <ArrowLeft className="w-4 h-4 text-slate-600" />
+                          BACK TO ALL HOSTELS
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10.5px] uppercase font-mono tracking-wider font-bold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                        🏢 On-Campus Resident Halls
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm p-6 md:p-8 space-y-6 max-w-2xl mx-auto text-center">
+                      <div className="relative h-64 md:h-80 w-full bg-slate-950 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-850">
+                        <img
+                          src={getHostelImages(selectedHostel.id, selectedHostel.imageUrl, selectedHostel.imageUrls)[0]}
+                          alt={selectedHostel.name}
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10 pointer-events-none" />
+                        <div className="absolute bottom-6 left-6 right-6 text-white text-left">
+                          <h2 className="text-xl md:text-2xl font-black font-sans tracking-tight">
+                            {selectedHostel.name}
+                          </h2>
+                          <span className="text-xs text-indigo-300 font-mono font-bold uppercase tracking-widest mt-1 inline-block">
+                            Official On-Campus Accommodation
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 py-4">
+                        <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+                          All rooms, reservations, and payment details for on-campus student resident halls are managed directly through the official university portal.
+                        </p>
+                        
+                        <div className="pt-2">
+                          <a
+                            href={selectedHostel.externalLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center gap-2 text-sm font-bold py-3 px-6 rounded-2xl border border-indigo-700 bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 transition duration-200 cursor-pointer active:scale-98"
+                          >
+                            <span>Open Official Accommodation Link</span>
+                            <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-6 animate-in fade-in duration-300">
+                    {/* Action Nav header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setExploreView('catalog');
+                            setTimeout(() => {
+                              window.scrollTo({ top: catalogScrollPos, behavior: 'auto' });
+                            }, 10);
+                          }}
+                          className="flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-indigo-600 transition bg-slate-100 hover:bg-slate-200 px-4 py-2.5 rounded-xl border border-slate-200/80 font-mono tracking-wider cursor-pointer"
+                        >
+                          <ArrowLeft className="w-4 h-4 text-slate-600" />
+                          BACK TO ALL HOSTELS
+                        </button>
 
                       {selectedHostel && (
                         <button
@@ -4085,7 +4147,8 @@ export default function App() {
                       );
                     })()}
                 </div>
-              )}
+              )
+            )}
             </div>
           )}
 
@@ -6465,7 +6528,7 @@ export default function App() {
       </a>
 
       {/* Floating WhatsApp button pointing to landlord / caretaker */}
-      {exploreView === 'rooms' && selectedHostel && (
+      {exploreView === 'rooms' && selectedHostel && !selectedHostel.externalLink && (
         <a
           href={`https://wa.me/254795858929?text=Hi%2C%20Comrade%20Caretaker.%20I%20am%20viewing%20rooms%20online%20at%20${encodeURIComponent(selectedHostel.name)}%20and%20would%20love%20to%20verify%20booking%20allotments%20checks.`}
           target="_blank"

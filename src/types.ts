@@ -33,6 +33,7 @@ export interface Hostel {
   rentMonthlyKes?: string | number; // Optional starting monthly rent for the entire hostel
   rentSemesterKes?: string | number; // Optional starting semester rent for the entire hostel
   rooms: Room[];
+  externalLink?: string;
 }
 
 export interface Booking {

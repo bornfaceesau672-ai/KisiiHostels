@@ -441,36 +441,32 @@ export const INITIAL_HOSTELS: Hostel[] = [
     name: "Venus and Mars Halls (On-Campus)",
     area: 'On-Campus',
     distanceMeters: 0,
-    description: "Centrally located on-campus student residences reserved exclusively for female comrades. Comprises adjacent blocks Venus and Mars. Features high-security boundary fences, reliable lighting, serene common learning lounges, instant-access student mess halls, and active security patrol teams.",
-    securityRating: 5,
-    hasBorehole: true,
-    hasWifi: true,
-    hasHotShower: true,
+    description: "",
+    securityRating: 0,
+    hasBorehole: false,
+    hasWifi: false,
+    hasHotShower: false,
     imageKeyword: 'campus',
     imageUrl: '/src/assets/images/kisii_oncampus_hostel_1779545601491.png',
     imageUrls: ['/src/assets/images/kisii_oncampus_hostel_1779545601491.png'],
-    rooms: [
-      { id: 'vm-101', roomNumber: 'Venus Block V-01', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 4, genderPreference: 'Female', priceKes: 3500, isAvailable: true, amenities: ['Comfortable Study Desks', 'University Standard Bunk Beds', 'Private Lockers'] },
-      { id: 'vm-102', roomNumber: 'Mars Block M-03', roomType: 'Double', roomFormat: 'Single Room', floor: 2, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Female', priceKes: 5200, isAvailable: true, amenities: ['Private Study Table Set', 'Fitted Closets', 'Serene Landscape View'] }
-    ]
+    rooms: [],
+    externalLink: 'https://myskuulkenya.com/kisii-university-accomodation/'
   },
   {
     id: 'hostel-cz-blackhouse',
     name: "CZ and Black House (On-Campus)",
     area: 'On-Campus',
     distanceMeters: 0,
-    description: "Renowned, historic on-campus student hostel blocks reserved exclusively for male comrades. Made up of the active academic blocks CZ and Black House. Well-equipped with security card turnstile access, spacious study halls, stable campus Wi-Fi connections, and close proximity to major lecture classrooms.",
-    securityRating: 5,
-    hasBorehole: true,
-    hasWifi: true,
-    hasHotShower: true,
+    description: "",
+    securityRating: 0,
+    hasBorehole: false,
+    hasWifi: false,
+    hasHotShower: false,
     imageKeyword: 'campus',
     imageUrl: '/src/assets/images/kisii_oncampus_hostel_1779545601491.png',
     imageUrls: ['/src/assets/images/kisii_oncampus_hostel_1779545601491.png'],
-    rooms: [
-      { id: 'czb-101', roomNumber: 'CZ Block C-12', roomType: '4-Sharing', roomFormat: 'Single Room', floor: 1, currentOccupants: 2, maxOccupants: 4, genderPreference: 'Male', priceKes: 3500, isAvailable: true, amenities: ['Standard Bunk Beds', 'Under-bed Secure Lockers', 'Comrade Study Bench'] },
-      { id: 'czb-102', roomNumber: 'Black House D-05', roomType: 'Double', roomFormat: 'Single Room', floor: 2, currentOccupants: 0, maxOccupants: 2, genderPreference: 'Male', priceKes: 5000, isAvailable: true, amenities: ['Fitted Study Desk', 'Spacious Personal Wardrobe'] }
-    ]
+    rooms: [],
+    externalLink: 'https://myskuulkenya.com/kisii-university-accomodation/'
   },
   {
     id: 'hostel-kerubo-apartments',
