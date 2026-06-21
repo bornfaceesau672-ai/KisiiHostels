@@ -705,6 +705,36 @@ export default function App() {
     localStorage.setItem('kisii_liked_news', JSON.stringify(likedPostIds));
   }, [likedPostIds]);
 
+  // ── HISTORY ROUTING SYNCHRONIZATION ───────────────────────────────────────
+  useEffect(() => {
+    // Initialize history state on load
+    if (!window.history.state) {
+      window.history.replaceState({ page: currentPage }, '', '');
+    } else if (window.history.state.page) {
+      setCurrentPage(window.history.state.page);
+    }
+
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.page) {
+        setCurrentPage(event.state.page);
+      } else {
+        setCurrentPage('landing');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    // Only push if the current history state is different from the new page
+    if (window.history.state?.page !== currentPage) {
+      window.history.pushState({ page: currentPage }, '', '');
+    }
+    // Scroll to top on page change
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
+
   // Real-time Firestore sync for News Bulletin
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'news'), async (snapshot) => {
@@ -2559,19 +2589,7 @@ export default function App() {
                 </p>
               </div>
             </div>
-            {/* Back to Estates landing page link */}
-            <button
-              id="back-to-estates-btn"
-              onClick={() => {
-                setCurrentPage('landing');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              title="Back to Estate Overview"
-              className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-800/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all active:scale-95 ml-1"
-            >
-              <MapPin className="w-3 h-3" />
-              <span className="hidden sm:inline">Estates</span>
-            </button>
+
           </div>
 
           {/* Theme toggle + Search + Student profile on the SAME row right after the title */}
