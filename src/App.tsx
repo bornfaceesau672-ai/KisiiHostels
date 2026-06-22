@@ -233,6 +233,27 @@ const SkeletonCard = () => (
   </div>
 );
 
+const getWhatsAppColor = (name: string) => {
+  const colors = [
+    { text: 'text-[#128c7e] dark:text-[#25d366]', bg: 'bg-[#128c7e]/10 text-[#128c7e] dark:bg-[#25d366]/10 dark:text-[#25d366]' },
+    { text: 'text-[#075e54] dark:text-[#00a884]', bg: 'bg-[#075e54]/10 text-[#075e54] dark:bg-[#00a884]/10 dark:text-[#00a884]' },
+    { text: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300' },
+    { text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300' },
+    { text: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300' },
+    { text: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300' },
+    { text: 'text-fuchsia-600 dark:text-fuchsia-400', bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-300' },
+    { text: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300' },
+    { text: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300' },
+  ];
+  if (name === 'Admin') return { text: 'text-rose-600 dark:text-rose-400 font-extrabold', bg: 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-200 border border-rose-200 dark:border-rose-900' };
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const idx = Math.abs(hash) % colors.length;
+  return colors[idx];
+};
+
 export default function App() {
   // Local persistence states
   const [hostels, setHostels] = useState<Hostel[]>(() => {
@@ -6285,11 +6306,11 @@ export default function App() {
                   <div key={news.id} className={`bg-white dark:bg-slate-900 border rounded-2xl p-5 shadow-sm hover:shadow-md transition duration-200 ${news.isPinned ? 'border-indigo-300 dark:border-indigo-850/80 ring-1 ring-indigo-50/50 dark:ring-indigo-950/20' : 'border-slate-200 dark:border-slate-800'}`}>
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold border border-slate-200/50 dark:border-slate-800/40 ${getWhatsAppColor(news.authorName).bg}`}>
                           {news.authorInitials}
                         </div>
                         <div>
-                          <h3 className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                          <h3 className={`font-bold flex items-center gap-2 ${getWhatsAppColor(news.authorName).text}`}>
                             {news.authorName}
                             {news.type && news.type !== 'General' && (
                               <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${news.typeColor}`}>
@@ -6329,7 +6350,7 @@ export default function App() {
                       )}
                     </div>
                     
-                    <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4 ml-[52px]">
+                    <p className="text-sm text-[#111b21] dark:text-[#e9edef] leading-relaxed mb-4 ml-[52px]">
                       {news.content}
                     </p>
 
@@ -6388,12 +6409,12 @@ export default function App() {
                                 <div key={reply.id} className={`rounded-xl p-3 border transition-all duration-200 animate-in fade-in duration-200 ${reply.isPinned ? 'border-indigo-150 bg-indigo-50/20 dark:border-indigo-900/35 dark:bg-indigo-950/15' : 'bg-slate-50 border-slate-100 dark:bg-slate-900/50 dark:border-slate-800/40'}`}>
                                   <div className="flex items-start justify-between mb-1">
                                     <div className="flex items-center gap-2">
-                                      <div className="w-6 h-6 rounded-full bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center font-bold text-[10px] text-indigo-600 dark:text-indigo-400">
+                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] border border-slate-200/40 dark:border-slate-800/20 ${getWhatsAppColor(reply.authorName).bg}`}>
                                         {reply.authorInitials}
                                       </div>
                                       <div className="flex flex-col">
                                         <div className="flex items-center gap-1.5">
-                                          <span className="text-xs font-bold text-slate-850 dark:text-slate-200">
+                                          <span className={`text-xs font-bold ${getWhatsAppColor(reply.authorName).text}`}>
                                             {reply.authorName}
                                           </span>
                                           {reply.isPinned && (
@@ -6428,7 +6449,7 @@ export default function App() {
                                       </div>
                                     )}
                                   </div>
-                                  <p className="text-xs text-slate-600 dark:text-slate-400 pl-8 leading-relaxed">
+                                  <p className="text-xs text-[#111b21] dark:text-[#e9edef] pl-8 leading-relaxed">
                                     {reply.content}
                                   </p>
                                 </div>
