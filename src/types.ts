@@ -128,7 +128,7 @@ export interface NewsPost {
   content: string;
   createdAt: string;
   likes: number;
-  type?: 'Alert' | 'Info' | 'Important' | 'General';
+  type?: string;
   typeColor?: string;
   hasLiked?: boolean;
   replies?: NewsReply[];

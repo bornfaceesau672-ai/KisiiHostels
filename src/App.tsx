@@ -71,7 +71,10 @@ import {
   Heart,
   Send,
   Pin,
-  PinOff
+  PinOff,
+  Flag,
+  Copy,
+  Check
 } from 'lucide-react';
 
 
@@ -246,6 +249,7 @@ const getWhatsAppColor = (name: string) => {
     { text: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300' },
   ];
   if (name === 'Admin') return { text: 'text-rose-600 dark:text-rose-400 font-extrabold', bg: 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-200 border border-rose-200 dark:border-rose-900' };
+  if (name === 'Anonymous Comrade') return { text: 'text-slate-500 dark:text-slate-400 font-semibold', bg: 'bg-slate-105 dark:bg-slate-900 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-800/40' };
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -771,6 +775,48 @@ export default function App() {
   const [replyInputPostId, setReplyInputPostId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
 
+  // KSH Gossip Hub Redesign State Variables
+  const [gossipFilter, setGossipFilter] = useState<string>('all');
+  const [gossipSearchQuery, setGossipSearchQuery] = useState<string>('');
+  const [gossipSortBy, setGossipSortBy] = useState<'latest' | 'likes' | 'replies'>('latest');
+  const [postCategory, setPostCategory] = useState<string>('General');
+  const [postAnonymously, setPostAnonymously] = useState<boolean>(false);
+  const [pollVotedOption, setPollVotedOption] = useState<string | null>(() => {
+    return localStorage.getItem('ksh_poll_voted_option');
+  });
+  const [pollVotes, setPollVotes] = useState<Record<string, number>>(() => {
+    try {
+      const saved = localStorage.getItem('ksh_poll_votes');
+      return saved ? JSON.parse(saved) : { 'Option A': 28, 'Option B': 42, 'Option C': 19, 'Option D': 31 };
+    } catch {
+      return { 'Option A': 28, 'Option B': 42, 'Option C': 19, 'Option D': 31 };
+    }
+  });
+  const [reportedPostIds, setReportedPostIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('ksh_reported_posts') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [revealedReportedPostIds, setRevealedReportedPostIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (pollVotedOption) {
+      localStorage.setItem('ksh_poll_voted_option', pollVotedOption);
+    } else {
+      localStorage.removeItem('ksh_poll_voted_option');
+    }
+  }, [pollVotedOption]);
+
+  useEffect(() => {
+    localStorage.setItem('ksh_poll_votes', JSON.stringify(pollVotes));
+  }, [pollVotes]);
+
+  useEffect(() => {
+    localStorage.setItem('ksh_reported_posts', JSON.stringify(reportedPostIds));
+  }, [reportedPostIds]);
+
   // Local storage for liked news IDs to keep the "hasLiked" private to the user's browser
   const [likedPostIds, setLikedPostIds] = useState<string[]>(() => {
     try {
@@ -892,6 +938,25 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'Alert':
+      case 'Important':
+        return 'bg-rose-100 text-rose-750 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200/30 dark:border-rose-900/40';
+      case 'Lost & Found':
+        return 'bg-emerald-100 text-emerald-750 dark:bg-emerald-950/30 dark:text-[#25d366] border border-emerald-250/30 dark:border-emerald-900/40';
+      case 'Water & Power':
+        return 'bg-blue-100 text-blue-750 dark:bg-blue-950/30 dark:text-blue-400 border border-blue-200/30 dark:border-blue-900/40';
+      case 'Gossip':
+      case 'Info':
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/30 dark:border-amber-900/40';
+      case 'Room Search':
+        return 'bg-indigo-100 text-indigo-755 dark:bg-indigo-950/30 dark:text-indigo-400 border border-indigo-200/30 dark:border-indigo-900/40';
+      default:
+        return 'bg-slate-100 text-slate-705 dark:bg-slate-800/80 dark:text-slate-350 border border-slate-200/30 dark:border-slate-800/40';
+    }
+  };
+
   const handlePostNews = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPostContent.trim()) return;
@@ -906,24 +971,24 @@ export default function App() {
       const isAdmin = (userProfile?.email || currentUser?.email || '').toLowerCase() === ADMIN_EMAIL;
       const newPostId = Date.now().toString();
       
+      const finalCategory = isAdmin ? 'Alert' : postCategory;
       const newPost: NewsPost = {
         id: newPostId,
-        authorName: isAdmin ? 'Admin' : author,
-        authorInitials: isAdmin ? 'AD' : author.substring(0, 2).toUpperCase(),
+        authorName: isAdmin ? 'Admin' : (postAnonymously ? 'Anonymous Comrade' : author),
+        authorInitials: isAdmin ? 'AD' : (postAnonymously ? '👤' : author.substring(0, 2).toUpperCase()),
         authorEmail: currentUser.email || undefined,
         content: newPostContent.trim(),
         createdAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
         likes: 0,
-        type: isAdmin ? 'Alert' : 'General',
-        typeColor: isAdmin 
-          ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' 
-          : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+        type: finalCategory,
+        typeColor: getCategoryColor(finalCategory),
         replies: [],
         timestamp: Date.now()
       };
 
       await setDoc(doc(db, 'news', newPostId), newPost);
       setNewPostContent('');
+      setPostAnonymously(false);
       showFeedback('✓ Gossip posted successfully!', 'success');
     } catch (err) {
       console.error('Error posting news:', err);
@@ -6258,256 +6323,716 @@ export default function App() {
 
           {/* TAB 6: KSH Gossip */}
           {activeTab === 'news' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-6 animate-in fade-in duration-300 bg-gradient-to-br from-[#FAF9F5] via-[#FCFBF9] to-[#F5F2EB] dark:from-[#141312] dark:via-[#191817] dark:to-[#171614] p-5 md:p-6 rounded-[32px] border border-[#e8e2d5] dark:border-[#2d2b28] shadow-[inset_0_1px_3px_rgba(0,0,0,0.01)] dark:shadow-[inset_0_1px_3px_rgba(0,0,0,0.3)]">
               
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
-                <div>
-                  <h2 className="text-2xl font-bold font-sans text-slate-900 dark:text-slate-100 tracking-tight">KSH Gossip</h2>
-                  <p className="text-xs text-slate-500 mt-1">
+              {/* Header Section */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 border-b border-slate-200/65 dark:border-slate-800/80 pb-5">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-2xl font-extrabold font-sans text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+                      <span>KSH Gossip Hub</span>
+                      <Sparkles className="w-5 h-5 text-amber-500 fill-amber-500/20" />
+                    </h2>
+                    <span className="flex items-center gap-1.5 text-[9px] bg-emerald-100/60 text-emerald-700 dark:bg-emerald-950/40 dark:text-[#25d366] border border-emerald-200/30 dark:border-emerald-900/40 px-2 py-0.5 rounded-full uppercase tracking-wider font-mono font-extrabold shadow-sm animate-pulse">
+                      ● Live Feed
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     Stay updated with the latest gossip, announcements, and events happening around Kisii University hostels.
                   </p>
                 </div>
-              </div>
 
-              <div className="max-w-4xl mx-auto space-y-4">
-                {/* Input Form */}
-                <form onSubmit={handlePostNews} className="bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl p-4 shadow-sm mb-6">
-                  <div className="flex gap-3">
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex-shrink-0 flex items-center justify-center font-bold text-indigo-700 dark:text-indigo-400">
-                      {(userProfile?.displayName || (currentUser ? currentUser.email?.split('@')[0] : 'CR') || 'CR').substring(0, 2).toUpperCase()}
-                    </div>
-                    <div className="flex-1">
-                      <textarea
-                        value={newPostContent}
-                        onChange={(e) => setNewPostContent(e.target.value)}
-                        placeholder="What's happening on campus?"
-                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
-                        rows={3}
-                      />
-                      <div className="flex justify-end mt-2">
-                        <button
-                          type="submit"
-                          disabled={!newPostContent.trim() || isPostingNews}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 text-white text-sm font-bold rounded-xl transition-all cursor-pointer"
-                        >
-                          {isPostingNews ? (
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          ) : (
-                            <Send className="w-4 h-4" />
-                          )}
-                          Post
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </form>
-
-                {newsPosts.map((news) => (
-                  <div key={news.id} className={`bg-white dark:bg-slate-900 border rounded-2xl p-5 shadow-sm hover:shadow-md transition duration-200 ${news.isPinned ? 'border-indigo-300 dark:border-indigo-850/80 ring-1 ring-indigo-50/50 dark:ring-indigo-950/20' : 'border-slate-200 dark:border-slate-800'}`}>
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold border border-slate-200/50 dark:border-slate-800/40 ${getWhatsAppColor(news.authorName).bg}`}>
-                          {news.authorInitials}
-                        </div>
-                        <div>
-                          <h3 className={`font-bold flex items-center gap-2 ${getWhatsAppColor(news.authorName).text}`}>
-                            {news.authorName}
-                            {news.type && news.type !== 'General' && (
-                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${news.typeColor}`}>
-                                {news.type}
-                              </span>
-                            )}
-                            {news.isPinned && (
-                              <span className="flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 uppercase tracking-wider">
-                                <Pin className="w-2.5 h-2.5 fill-current" /> Pinned
-                              </span>
-                            )}
-                          </h3>
-                          <span className="text-[11px] font-medium text-slate-400 font-mono">{news.createdAt}</span>
-                        </div>
-                      </div>
-
-                      {/* Admin or Author post actions */}
-                      {(isAdminUser || (currentUser && news.authorEmail === currentUser.email)) && (
-                        <div className="flex items-center gap-2">
-                          {isAdminUser && (
-                            <button 
-                              onClick={() => handlePinPost(news.id)}
-                              title={news.isPinned ? "Unpin Post" : "Pin Post"}
-                              className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${news.isPinned ? 'bg-indigo-50 border-indigo-200 text-indigo-600 dark:bg-indigo-900/20 dark:border-indigo-800' : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-slate-600 dark:bg-slate-800 dark:border-slate-700'}`}
-                            >
-                              {news.isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
-                            </button>
-                          )}
-                          <button 
-                            onClick={() => handleDeletePost(news.id)}
-                            title="Delete Post"
-                            className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-100 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-rose-950/20 dark:hover:border-rose-900/55 transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <p className="text-sm text-[#111b21] dark:text-[#e9edef] leading-relaxed mb-4 ml-[52px]">
-                      {news.content}
-                    </p>
-
-                    <div className="flex items-center gap-4 ml-[52px] border-t border-slate-100 dark:border-slate-800/50 pt-3">
+                {/* Search & Sort Controls */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  <div className="relative flex-1 sm:w-64">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Search posts or authors..."
+                      value={gossipSearchQuery}
+                      onChange={(e) => setGossipSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30 text-slate-800 dark:text-slate-100"
+                    />
+                    {gossipSearchQuery && (
                       <button 
-                        onClick={() => handleLikeNews(news.id)}
-                        className={`flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer ${likedPostIds.includes(news.id) ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'}`}
+                        type="button"
+                        onClick={() => setGossipSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-[10px] bg-transparent border-none p-0 cursor-pointer"
                       >
-                        <Heart className={`w-4 h-4 ${likedPostIds.includes(news.id) ? 'fill-current' : ''}`} />
-                        {news.likes > 0 && <span>{news.likes}</span>}
+                        ✕
                       </button>
-                      <button 
-                        onClick={() => {
-                          if (replyInputPostId === news.id) {
-                            setReplyInputPostId(null);
-                            setReplyContent('');
-                          } else {
-                            setReplyInputPostId(news.id);
-                            setReplyContent('');
-                          }
-                        }}
-                        className={`flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer ${replyInputPostId === news.id ? 'text-indigo-500' : 'text-slate-400 hover:text-indigo-500'}`}
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                        <span>Reply</span>
-                        {news.replies && news.replies.length > 0 && (
-                          <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded-full text-[10px]">
-                            {news.replies.length}
-                          </span>
-                        )}
-                      </button>
-                      <button 
-                        onClick={() => handleShareNews(news)}
-                        className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-emerald-500 transition-colors ml-auto cursor-pointer"
-                      >
-                        <Share2 className="w-4 h-4" />
-                        Share
-                      </button>
-                    </div>
-
-                    {/* Nested Replies Section */}
-                    {(replyInputPostId === news.id || (news.replies && news.replies.length > 0)) && (
-                      <div className="ml-[52px] mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/50 space-y-3">
-                        {/* List existing replies */}
-                        {news.replies && news.replies.length > 0 && (() => {
-                          const sortedReplies = [...news.replies].sort((a, b) => {
-                            if (a.isPinned && !b.isPinned) return -1;
-                            if (!a.isPinned && b.isPinned) return 1;
-                            const valA = parseInt(a.id) || 0;
-                            const valB = parseInt(b.id) || 0;
-                            return valA - valB;
-                          });
-                          return (
-                            <div className="space-y-2">
-                              {sortedReplies.map((reply) => (
-                                <div key={reply.id} className={`rounded-xl p-3 border transition-all duration-200 animate-in fade-in duration-200 ${reply.isPinned ? 'border-indigo-150 bg-indigo-50/20 dark:border-indigo-900/35 dark:bg-indigo-950/15' : 'bg-slate-50 border-slate-100 dark:bg-slate-900/50 dark:border-slate-800/40'}`}>
-                                  <div className="flex items-start justify-between mb-1">
-                                    <div className="flex items-center gap-2">
-                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] border border-slate-200/40 dark:border-slate-800/20 ${getWhatsAppColor(reply.authorName).bg}`}>
-                                        {reply.authorInitials}
-                                      </div>
-                                      <div className="flex flex-col">
-                                        <div className="flex items-center gap-1.5">
-                                          <span className={`text-xs font-bold ${getWhatsAppColor(reply.authorName).text}`}>
-                                            {reply.authorName}
-                                          </span>
-                                          {reply.isPinned && (
-                                            <span className="flex items-center gap-0.5 text-[8px] font-bold px-1.5 py-0.2 bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 rounded">
-                                              <Pin className="w-2 h-2 fill-current" /> Pinned
-                                            </span>
-                                          )}
-                                        </div>
-                                        <span className="text-[8px] text-slate-450 dark:text-slate-400 font-mono">
-                                          {reply.createdAt}
-                                        </span>
-                                      </div>
-                                    </div>
-
-                                    {/* Admin comment moderation actions */}
-                                    {isAdminUser && (
-                                      <div className="flex items-center gap-1">
-                                        <button 
-                                          onClick={() => handlePinComment(news.id, reply.id)}
-                                          title={reply.isPinned ? "Unpin Comment" : "Pin Comment"}
-                                          className={`p-1 rounded transition-colors cursor-pointer ${reply.isPinned ? 'text-indigo-600 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-900/20' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                                        >
-                                          {reply.isPinned ? <PinOff className="w-3 h-3" /> : <Pin className="w-3 h-3" />}
-                                        </button>
-                                        <button 
-                                          onClick={() => handleDeleteComment(news.id, reply.id)}
-                                          title="Delete Comment"
-                                          className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors cursor-pointer"
-                                        >
-                                          <Trash2 className="w-3 h-3" />
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <p className="text-xs text-[#111b21] dark:text-[#e9edef] pl-8 leading-relaxed">
-                                    {reply.content}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-                          );
-                        })()}
-
-                        {/* Reply Form */}
-                        {replyInputPostId === news.id && (
-                          <form 
-                            onSubmit={(e) => {
-                              e.preventDefault();
-                              handlePostReply(news.id);
-                            }}
-                            className="flex gap-3 items-start mt-2"
-                          >
-                            <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-[11px] text-slate-600 dark:text-slate-400 shrink-0">
-                              {(userProfile?.displayName || (currentUser ? currentUser.email?.split('@')[0] : 'CR') || 'CR').substring(0, 2).toUpperCase()}
-                            </div>
-                            <div className="flex-1 space-y-2">
-                              <textarea
-                                value={replyContent}
-                                onChange={(e) => setReplyContent(e.target.value)}
-                                placeholder="Write a reply..."
-                                rows={2}
-                                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none text-slate-800 dark:text-slate-100"
-                              />
-                              <div className="flex justify-end gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setReplyInputPostId(null);
-                                    setReplyContent('');
-                                  }}
-                                  className="px-3 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 text-xs font-bold rounded-lg transition-all cursor-pointer"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  type="submit"
-                                  disabled={!replyContent.trim()}
-                                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 text-white text-xs font-bold rounded-lg transition-all cursor-pointer"
-                                >
-                                  Reply
-                                </button>
-                              </div>
-                            </div>
-                          </form>
-                        )}
-                      </div>
                     )}
                   </div>
-                ))}
+
+                  <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl">
+                    <span className="text-[10px] font-mono text-slate-400 uppercase font-bold">Sort:</span>
+                    <select
+                      value={gossipSortBy}
+                      onChange={(e) => setGossipSortBy(e.target.value as any)}
+                      className="bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none border-none cursor-pointer pr-1"
+                    >
+                      <option value="latest">Latest</option>
+                      <option value="likes">Most Liked</option>
+                      <option value="replies">Most Replied</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sticky Category Tabs */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-800 -mx-1 px-1">
+                {[
+                  { id: 'all', label: 'All Feed', icon: '🌐' },
+                  { id: 'General', label: 'General', icon: '💬' },
+                  { id: 'Alert', label: 'Alerts', icon: '📢' },
+                  { id: 'Lost & Found', label: 'Lost & Found', icon: '🔍' },
+                  { id: 'Water & Power', label: 'Water & Power', icon: '💧' },
+                  { id: 'Gossip', label: 'Comrade Chat', icon: '✨' },
+                  { id: 'Room Search', label: 'Room Search', icon: '🔑' },
+                ].map((tab) => {
+                  const isActive = gossipFilter === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setGossipFilter(tab.id)}
+                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shadow-sm ${
+                        isActive
+                          ? 'bg-[#128c7e] text-white dark:bg-[#00a884] dark:text-[#111b21] scale-105 font-bold shadow-emerald-500/10'
+                          : 'bg-white hover:bg-slate-50 text-slate-600 border border-slate-200/70 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-400 dark:border-slate-800/80'
+                      }`}
+                    >
+                      <span>{tab.icon}</span>
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Two Column Layout Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                
+                {/* Left Column: Feed Content & Compose Form */}
+                <div className="lg:col-span-2 space-y-5">
+                  
+                  {/* Accordion Post Creator Form */}
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-[28px] p-5 shadow-sm transition-all duration-200">
+                    <form onSubmit={handlePostNews} className="space-y-4">
+                      <div className="flex gap-3 items-start">
+                        <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/40 border border-emerald-200/20 dark:border-emerald-900/20 flex-shrink-0 flex items-center justify-center font-bold text-emerald-700 dark:text-[#25d366]">
+                          {postAnonymously 
+                            ? '👤' 
+                            : (userProfile?.displayName || (currentUser ? currentUser.email?.split('@')[0] : 'CR') || 'CR').substring(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex-1 space-y-3">
+                          <textarea
+                            value={newPostContent}
+                            onChange={(e) => setNewPostContent(e.target.value.substring(0, 350))}
+                            placeholder="What's happening on campus? Share anonymously or as a comrade..."
+                            className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 resize-none text-[#111b21] dark:text-[#e9edef] min-h-[90px]"
+                            rows={3}
+                          />
+                          
+                          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                            <div className="flex flex-wrap items-center gap-3">
+                              {/* Category selection tag */}
+                              {!isAdminUser && (
+                                <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2.5 py-1.5 rounded-xl">
+                                  <span className="text-[10px] text-slate-400 font-mono font-bold">TAG:</span>
+                                  <select
+                                    value={postCategory}
+                                    onChange={(e) => setPostCategory(e.target.value)}
+                                    className="bg-transparent text-xs font-bold text-slate-700 dark:text-slate-300 focus:outline-none border-none cursor-pointer"
+                                  >
+                                    <option value="General">General</option>
+                                    <option value="Lost & Found">Lost & Found</option>
+                                    <option value="Water & Power">Water & Power</option>
+                                    <option value="Gossip">Comrade Chat</option>
+                                    <option value="Room Search">Room Search</option>
+                                  </select>
+                                </div>
+                              )}
+
+                              {/* Anonymous poster toggle */}
+                              {!isAdminUser && (
+                                <label className="flex items-center gap-2 cursor-pointer select-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2.5 py-1.5 rounded-xl hover:bg-slate-100/50 dark:hover:bg-slate-900/50 transition-colors">
+                                  <input
+                                    type="checkbox"
+                                    checked={postAnonymously}
+                                    onChange={(e) => setPostAnonymously(e.target.checked)}
+                                    className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/30 w-3.5 h-3.5 cursor-pointer accent-[#128c7e]"
+                                  />
+                                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                                    Post Anonymously 👤
+                                  </span>
+                                </label>
+                              )}
+                            </div>
+
+                            {/* Character length count & submit */}
+                            <div className="flex items-center gap-3 ml-auto">
+                              <span className="text-[10px] font-mono text-slate-400">
+                                {newPostContent.length}/350
+                              </span>
+                              <button
+                                type="submit"
+                                disabled={!newPostContent.trim() || isPostingNews}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-[#128c7e] hover:bg-[#075e54] dark:bg-[#005c4b] dark:hover:bg-[#00a884] dark:text-[#111b21] disabled:opacity-50 text-white text-xs font-extrabold rounded-xl transition-all cursor-pointer shadow-sm"
+                              >
+                                {isPostingNews ? (
+                                  <div className="w-4 h-4 border-2 border-white/30 border-t-white dark:border-slate-800/30 dark:border-t-slate-800 rounded-full animate-spin" />
+                                ) : (
+                                   <Send className="w-3.5 h-3.5" />
+                                )}
+                                Post to Hub
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+
+                {(() => {
+                  const filteredNewsPosts = newsPosts
+                    .filter((news) => {
+                      if (gossipFilter !== 'all' && news.type !== gossipFilter) return false;
+                      if (gossipSearchQuery.trim()) {
+                        const query = gossipSearchQuery.toLowerCase();
+                        return (
+                          news.content?.toLowerCase().includes(query) ||
+                          news.authorName?.toLowerCase().includes(query) ||
+                          news.type?.toLowerCase().includes(query)
+                        );
+                      }
+                      return true;
+                    })
+                    .sort((a, b) => {
+                      // Pinned posts float to the top
+                      if (a.isPinned && !b.isPinned) return -1;
+                      if (!a.isPinned && b.isPinned) return 1;
+
+                      if (gossipSortBy === 'likes') {
+                        return (b.likes || 0) - (a.likes || 0);
+                      }
+                      if (gossipSortBy === 'replies') {
+                        return (b.replies?.length || 0) - (a.replies?.length || 0);
+                      }
+                      return (b.timestamp || 0) - (a.timestamp || 0);
+                    });
+
+                  if (filteredNewsPosts.length === 0) {
+                    return (
+                      <div className="bg-white dark:bg-slate-900 border border-[#e6dfd5]/85 dark:border-[#2d2b28] rounded-[28px] p-10 text-center shadow-sm">
+                        <div className="text-4xl mb-3 animate-bounce">💬</div>
+                        <h4 className="text-sm font-bold text-slate-805 dark:text-slate-200">No Comrade Gossip Yet</h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                          There are no active posts in this section. Start the conversation by posting above!
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return filteredNewsPosts.map((news) => {
+                    const isReported = reportedPostIds.includes(news.id);
+                    const isRevealed = revealedReportedPostIds.includes(news.id);
+                    const showBlurred = isReported && !isRevealed;
+
+                    return (
+                      <div 
+                        key={news.id} 
+                        className={`bg-[#fefdfb] dark:bg-[#191817] border rounded-[24px] p-5 shadow-sm hover:shadow-md transition-all duration-200 ${
+                          news.isPinned 
+                            ? 'border-amber-350 dark:border-amber-900/50 shadow-md ring-1 ring-amber-50/50 dark:ring-amber-950/20 rotate-[0.2deg]' 
+                            : 'border-[#e6dfd5]/85 dark:border-[#2c2b29]/75'
+                        }`}
+                      >
+                        {/* Post Header */}
+                        <div className="flex items-start justify-between mb-3.5">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold border border-slate-200/50 dark:border-slate-800/40 ${getWhatsAppColor(news.authorName).bg}`}>
+                              {news.authorInitials}
+                            </div>
+                            <div>
+                              <h3 className={`font-bold flex flex-wrap items-center gap-1.5 text-xs sm:text-sm ${getWhatsAppColor(news.authorName).text}`}>
+                                <span>{news.authorName}</span>
+                                {news.type && news.type !== 'General' && (
+                                  <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${news.typeColor}`}>
+                                    {news.type}
+                                  </span>
+                                )}
+                                {news.isPinned && (
+                                  <span className="flex items-center gap-0.5 text-[8px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-450 uppercase tracking-wider">
+                                    <Pin className="w-2.5 h-2.5 fill-current" /> Pinned
+                                  </span>
+                                )}
+                                {isReported && (
+                                  <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 uppercase tracking-wider animate-pulse">
+                                    ⚠️ Reported
+                                  </span>
+                                )}
+                              </h3>
+                              <span className="text-[10px] font-medium text-slate-400 font-mono">{news.createdAt}</span>
+                            </div>
+                          </div>
+
+                          {/* Action controls (Admin or Author) */}
+                          <div className="flex items-center gap-1.5">
+                            {isAdminUser && (
+                              <button 
+                                onClick={() => handlePinPost(news.id)}
+                                title={news.isPinned ? "Unpin Post" : "Pin Post"}
+                                className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                                  news.isPinned 
+                                    ? 'bg-amber-50 border-amber-200 text-amber-605 dark:bg-amber-900/20 dark:border-amber-800' 
+                                    : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-slate-650 dark:bg-slate-800 dark:border-slate-700'
+                                }`}
+                              >
+                                {news.isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+                              </button>
+                            )}
+                            
+                            {/* Report Toggle */}
+                            {!isAdminUser && (
+                              <button 
+                                onClick={() => {
+                                  if (isReported) {
+                                    showFeedback('You have already reported this post.', 'info');
+                                  } else {
+                                    setReportedPostIds([...reportedPostIds, news.id]);
+                                    showFeedback('⚠️ Post reported for caretaker review.', 'success');
+                                  }
+                                }}
+                                title="Report / Flag Post"
+                                className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                                  isReported 
+                                    ? 'bg-rose-50 border-rose-200 text-rose-505 dark:bg-rose-955/30 dark:border-rose-900/40' 
+                                    : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-rose-500 hover:bg-rose-50 hover:border-rose-100 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-rose-955/20'
+                                }`}
+                              >
+                                <Flag className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+
+                            {/* Delete Button (Admin or Author of post) */}
+                            {(isAdminUser || (currentUser && news.authorEmail === currentUser.email)) && (
+                              <button 
+                                onClick={() => handleDeletePost(news.id)}
+                                title="Delete Post"
+                                className="p-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-100 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-rose-950/20 dark:hover:border-rose-900/55 transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Post Content */}
+                        <div className="ml-0 sm:ml-[52px] mb-4 relative">
+                          {showBlurred ? (
+                            <div className="space-y-3">
+                              <p className="text-xs text-slate-450 dark:text-slate-500 italic bg-rose-50/20 dark:bg-rose-950/5 border border-rose-100/30 dark:border-rose-900/20 p-3 rounded-xl select-none">
+                                🚫 [Content hidden: This post has been reported by comrades for review under University accommodation guidelines]
+                              </p>
+                              <button
+                                onClick={() => setRevealedReportedPostIds([...revealedReportedPostIds, news.id])}
+                                className="text-xs font-bold text-amber-600 dark:text-amber-450 hover:underline cursor-pointer flex items-center gap-1"
+                              >
+                                👁️ Reveal content anyway
+                              </button>
+                            </div>
+                          ) : (
+                            <p className="text-xs sm:text-sm text-[#111b21] dark:text-[#e9edef] leading-relaxed whitespace-pre-line">
+                              {news.content}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Actions bar (Likes, Replies count, Share) */}
+                        <div className="flex items-center gap-4 ml-0 sm:ml-[52px] border-t border-[#f2ece2] dark:border-slate-800/40 pt-3">
+                          <button 
+                            onClick={() => handleLikeNews(news.id)}
+                            className={`flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer ${
+                              likedPostIds.includes(news.id) 
+                                ? 'text-rose-500' 
+                                : 'text-slate-400 hover:text-rose-500'
+                            }`}
+                          >
+                            <Heart className={`w-4 h-4 ${likedPostIds.includes(news.id) ? 'fill-current' : ''}`} />
+                            {news.likes > 0 && <span>{news.likes}</span>}
+                          </button>
+                          
+                          <button 
+                            onClick={() => {
+                              if (replyInputPostId === news.id) {
+                                setReplyInputPostId(null);
+                                setReplyContent('');
+                              } else {
+                                setReplyInputPostId(news.id);
+                                setReplyContent('');
+                              }
+                            }}
+                            className={`flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer ${
+                              replyInputPostId === news.id ? 'text-[#128c7e] dark:text-[#00a884]' : 'text-slate-400 hover:text-emerald-500'
+                            }`}
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                            <span>Reply</span>
+                            {news.replies && news.replies.length > 0 && (
+                              <span className="bg-slate-100 dark:bg-slate-800 text-slate-655 dark:text-slate-400 px-1.5 py-0.5 rounded-full text-[10px]">
+                                {news.replies.length}
+                              </span>
+                            )}
+                          </button>
+
+                          <button 
+                            onClick={() => handleShareNews(news)}
+                            className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-emerald-500 transition-colors ml-auto cursor-pointer"
+                          >
+                            <Share2 className="w-4 h-4" />
+                            Share
+                          </button>
+                        </div>
+
+                        {/* Nested Replies Section */}
+                        {(replyInputPostId === news.id || (news.replies && news.replies.length > 0)) && (
+                          <div className="ml-0 sm:ml-[52px] mt-4 pt-4 border-t border-[#f2ece2] dark:border-slate-800/40 space-y-4 relative">
+                            {/* Vertical timeline connector */}
+                            {news.replies && news.replies.length > 0 && (
+                              <div className="absolute left-3.5 top-5 bottom-8 w-0.5 bg-slate-200/60 dark:bg-slate-850 hidden sm:block" />
+                            )}
+
+                            {/* List existing replies */}
+                            {news.replies && news.replies.length > 0 && (() => {
+                              const sortedReplies = [...news.replies].sort((a, b) => {
+                                if (a.isPinned && !b.isPinned) return -1;
+                                if (!a.isPinned && b.isPinned) return 1;
+                                const valA = parseInt(a.id) || 0;
+                                const valB = parseInt(b.id) || 0;
+                                return valA - valB;
+                              });
+
+                              return (
+                                <div className="space-y-3 pl-0 sm:pl-8">
+                                  {sortedReplies.map((reply) => {
+                                    const isPostAuthor = reply.authorName === news.authorName;
+                                    return (
+                                      <div 
+                                        key={reply.id} 
+                                        className={`rounded-xl p-3 border transition-all duration-200 animate-in fade-in duration-200 relative ${
+                                          reply.isPinned 
+                                            ? 'border-indigo-150 bg-indigo-50/20 dark:border-indigo-900/35 dark:bg-indigo-950/15' 
+                                            : isPostAuthor
+                                              ? 'bg-emerald-50/30 border-emerald-100/50 dark:bg-emerald-950/5 dark:border-emerald-900/30'
+                                              : 'bg-slate-50 border-slate-100 dark:bg-slate-900/30 dark:border-slate-850/40'
+                                        }`}
+                                      >
+                                        <div className="flex items-start justify-between mb-1.5">
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] border border-slate-200/40 dark:border-slate-850/20 ${getWhatsAppColor(reply.authorName).bg}`}>
+                                              {reply.authorInitials}
+                                            </div>
+                                            <div className="flex flex-col">
+                                              <div className="flex items-center gap-1.5 flex-wrap">
+                                                <span className={`text-xs font-bold ${getWhatsAppColor(reply.authorName).text}`}>
+                                                  {reply.authorName}
+                                                </span>
+                                                {isPostAuthor && (
+                                                  <span className="text-[7px] bg-emerald-100/70 text-emerald-800 dark:bg-emerald-950/80 dark:text-[#25d366] px-1 py-0.2 rounded font-extrabold uppercase font-mono tracking-wider">
+                                                    Author
+                                                  </span>
+                                                )}
+                                                {reply.isPinned && (
+                                                  <span className="flex items-center gap-0.5 text-[7px] font-bold px-1.5 py-0.2 bg-indigo-50 text-indigo-650 dark:bg-indigo-950/60 dark:text-indigo-400 rounded">
+                                                    <Pin className="w-2 h-2 fill-current" /> Pinned
+                                                  </span>
+                                                )}
+                                              </div>
+                                              <span className="text-[8px] text-slate-450 dark:text-slate-450 font-mono">
+                                                {reply.createdAt}
+                                              </span>
+                                            </div>
+                                          </div>
+
+                                          {/* Admin comment actions */}
+                                          {isAdminUser && (
+                                            <div className="flex items-center gap-1">
+                                              <button 
+                                                onClick={() => handlePinComment(news.id, reply.id)}
+                                                title={reply.isPinned ? "Unpin Comment" : "Pin Comment"}
+                                                className={`p-1 rounded transition-colors cursor-pointer ${
+                                                  reply.isPinned 
+                                                    ? 'text-indigo-600 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-900/20' 
+                                                    : 'text-slate-400 hover:text-slate-650 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                                }`}
+                                              >
+                                                {reply.isPinned ? <PinOff className="w-3 h-3" /> : <Pin className="w-3 h-3" />}
+                                              </button>
+                                              <button 
+                                                onClick={() => handleDeleteComment(news.id, reply.id)}
+                                                title="Delete Comment"
+                                                className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors cursor-pointer"
+                                              >
+                                                <Trash2 className="w-3 h-3" />
+                                              </button>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <p className="text-xs text-[#111b21] dark:text-[#e9edef] pl-8 leading-relaxed">
+                                          {reply.content}
+                                        </p>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })()}
+
+                            {/* Reply compose form */}
+                            {replyInputPostId === news.id && (
+                              <form 
+                                onSubmit={(e) => {
+                                  e.preventDefault();
+                                  handlePostReply(news.id);
+                                }}
+                                className="flex gap-3 items-start mt-2 pl-0 sm:pl-8"
+                              >
+                                <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-[11px] text-slate-600 dark:text-slate-400 shrink-0 border border-slate-200/50 dark:border-slate-850/50">
+                                  {(userProfile?.displayName || (currentUser ? currentUser.email?.split('@')[0] : 'CR') || 'CR').substring(0, 2).toUpperCase()}
+                                </div>
+                                <div className="flex-1 space-y-2">
+                                  <textarea
+                                    value={replyContent}
+                                    onChange={(e) => setReplyContent(e.target.value.substring(0, 250))}
+                                    placeholder="Write a reply..."
+                                    rows={2}
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 resize-none text-[#111b21] dark:text-[#e9edef]"
+                                  />
+                                  <div className="flex justify-end gap-2 items-center">
+                                    <span className="text-[9px] text-slate-400 font-mono mr-auto">
+                                      {replyContent.length}/250
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setReplyInputPostId(null);
+                                        setReplyContent('');
+                                      }}
+                                      className="px-3 py-1 bg-slate-105 hover:bg-slate-200 dark:bg-slate-805 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-355 text-[10px] font-bold rounded-lg transition-all cursor-pointer border border-slate-200/40 dark:border-slate-800"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      type="submit"
+                                      disabled={!replyContent.trim()}
+                                      className="px-3.5 py-1 bg-[#128c7e] hover:bg-[#075e54] dark:bg-[#005c4b] dark:hover:bg-[#00a884] disabled:opacity-50 text-white dark:text-[#111b21] text-[10px] font-bold rounded-lg transition-all cursor-pointer shadow-sm"
+                                    >
+                                      Reply
+                                    </button>
+                                  </div>
+                                </div>
+                              </form>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+
+              {/* Right Column: Widgets / Comrade Engagement (Poll, Helpline, Leaderboard) */}
+              <div className="lg:col-span-1 space-y-6">
+                
+                {/* Comrade Poll Widget */}
+                <div className="bg-[#fefdfb] dark:bg-[#191817] border border-[#e6dfd5]/85 dark:border-[#2d2b28] rounded-[28px] p-5 shadow-sm">
+                  <div className="flex items-center gap-2 border-b border-[#f2ece2] dark:border-slate-800/40 pb-3 mb-4">
+                    <BarChart2 className="w-5 h-5 text-amber-500" />
+                    <div>
+                      <h4 className="text-xs font-mono font-bold text-slate-455 uppercase">Comrade Poll</h4>
+                      <h3 className="text-sm font-extrabold text-slate-850 dark:text-slate-105">Vote of the Week</h3>
+                    </div>
+                  </div>
+
+                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-4 leading-relaxed">
+                    What should the administration prioritize for Kisii University hostels next semester?
+                  </p>
+
+                  <div className="space-y-3">
+                    {[
+                      { id: 'Option A', label: '💧 Consistent Borehole Water Supply' },
+                      { id: 'Option B', label: '🔌 Solar Backup Power in Study Halls' },
+                      { id: 'Option C', label: '🚪 Speedier Caretaker Repair Responses' },
+                      { id: 'Option D', label: '👮 Enhanced Night CCTV & Guard Patrols' }
+                    ].map((option) => {
+                      const totalVotes = Object.values(pollVotes).reduce((sum, v) => sum + v, 0);
+                      const optionVotes = pollVotes[option.id] || 0;
+                      const percentage = totalVotes > 0 ? Math.round((optionVotes / totalVotes) * 100) : 0;
+                      const hasVoted = !!pollVotedOption;
+                      const isUserVote = pollVotedOption === option.id;
+
+                      return (
+                        <button
+                          key={option.id}
+                          disabled={hasVoted}
+                          onClick={() => {
+                            const newVotes = { ...pollVotes, [option.id]: (pollVotes[option.id] || 0) + 1 };
+                            setPollVotes(newVotes);
+                            setPollVotedOption(option.id);
+                            showFeedback('✓ Thanks for voting, Comrade! Your opinion matters.', 'success');
+                          }}
+                          className={`w-full text-left p-3 rounded-xl border text-xs transition-all relative overflow-hidden flex items-center justify-between ${
+                            isUserVote 
+                              ? 'border-[#128c7e] bg-emerald-50/20 dark:border-[#00a884] dark:bg-emerald-950/15'
+                              : hasVoted
+                                ? 'border-slate-100 bg-slate-50/30 dark:border-slate-850/50 dark:bg-transparent'
+                                : 'border-[#e6dfd5]/85 hover:border-emerald-500/50 hover:bg-slate-50/50 dark:border-[#2c2b29] dark:hover:border-slate-700 dark:hover:bg-slate-850/20 cursor-pointer'
+                          }`}
+                        >
+                          {/* Progress Bar background overlay if voted */}
+                          {hasVoted && (
+                            <div 
+                              className={`absolute left-0 top-0 bottom-0 transition-all duration-1050 ${
+                                isUserVote ? 'bg-emerald-500/10 dark:bg-[#00a884]/10' : 'bg-slate-200/40 dark:bg-slate-800/30'
+                              }`}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          )}
+
+                          <span className="font-semibold text-slate-750 dark:text-slate-300 relative z-10 pr-2">
+                            {option.label}
+                          </span>
+                          
+                          <span className="font-bold font-mono text-slate-500 dark:text-slate-400 text-[10px] relative z-10 shrink-0">
+                            {hasVoted ? `${percentage}%` : 'Vote'}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {pollVotedOption && (
+                    <div className="mt-4 pt-3 border-t border-[#f2ece2] dark:border-slate-800/40 flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-slate-450 dark:text-slate-500">
+                        Total votes: {Object.values(pollVotes).reduce((sum, v) => sum + v, 0)} comrades
+                      </span>
+                      <button
+                        onClick={() => {
+                          const prevVote = pollVotedOption;
+                          const newVotes = { ...pollVotes };
+                          if (prevVote && newVotes[prevVote] > 0) {
+                            newVotes[prevVote] = newVotes[prevVote] - 1;
+                          }
+                          setPollVotes(newVotes);
+                          setPollVotedOption(null);
+                          showFeedback('Poll reset. Feel free to vote again!', 'info');
+                        }}
+                        className="text-[10px] font-bold text-rose-500 hover:underline bg-transparent border-none cursor-pointer"
+                      >
+                        Change Vote
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Top Comrades Leaderboard */}
+                <div className="bg-[#fefdfb] dark:bg-[#191817] border border-[#e6dfd5]/85 dark:border-[#2d2b28] rounded-[28px] p-5 shadow-sm">
+                  <div className="flex items-center gap-2 border-b border-[#f2ece2] dark:border-slate-800/40 pb-3 mb-4">
+                    <TrendingUp className="w-5 h-5 text-indigo-500" />
+                    <div>
+                      <h4 className="text-xs font-mono font-bold text-slate-455 uppercase">Leaderboard</h4>
+                      <h3 className="text-sm font-extrabold text-slate-855 dark:text-slate-105">Top Comrades</h3>
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-slate-500 dark:text-slate-455 mb-4 leading-relaxed">
+                    Comrades earn badges and standing points by posting useful alerts, helping room seekers, and answering hostel questions.
+                  </p>
+
+                  <div className="space-y-3">
+                    {[
+                      { name: 'Comrade Eliazar', title: '👑 Hostel Prefect', points: 142, color: 'text-amber-500' },
+                      { name: 'Borehole General', title: '💧 Water Sentinel', points: 98, color: 'text-blue-500' },
+                      { name: 'Lost & Found Guru', title: '🔍 Search Master', points: 77, color: 'text-emerald-500' },
+                      { name: 'Gossip Warden', title: '💬 Chat Captain', points: 54, color: 'text-[#128c7e] dark:text-[#25d366]' }
+                    ].map((leader, i) => (
+                      <div 
+                        key={leader.name} 
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-850 hover:scale-[1.01] transition-transform"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="w-5 h-5 rounded-full bg-slate-55 dark:bg-slate-800 flex items-center justify-center font-bold text-[10px] text-slate-450">
+                            {i + 1}
+                          </span>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-slate-800 dark:text-slate-205">{leader.name}</span>
+                            <span className="text-[9px] text-slate-455 dark:text-slate-505 font-semibold">{leader.title}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-xs font-extrabold text-slate-805 dark:text-slate-200 font-mono">{leader.points}</span>
+                          <span className="text-[8px] text-slate-400 font-bold block">pts</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Emergency Helper Desk (Helpline Dashboard) */}
+                <div className="bg-[#fefdfb] dark:bg-[#191817] border border-[#e6dfd5]/85 dark:border-[#2d2b28] rounded-[28px] p-5 shadow-sm">
+                  <div className="flex items-center gap-2 border-b border-[#f2ece2] dark:border-slate-800/40 pb-3 mb-4">
+                    <Phone className="w-4 h-4 text-emerald-500" />
+                    <div>
+                      <h4 className="text-xs font-mono font-bold text-slate-455 uppercase">Emergency Help</h4>
+                      <h3 className="text-sm font-extrabold text-slate-855 dark:text-slate-105">Caretaker Helper Desk</h3>
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-slate-500 dark:text-slate-455 mb-4 leading-relaxed">
+                    Direct access numbers for emergency repair fundis, campus guards, and central hostel caretakers.
+                  </p>
+
+                  <div className="space-y-2.5">
+                    {[
+                      { role: 'Central Warden Desk', name: 'Warden John', num: '0795858929', desc: 'Curfew & general clearance queries' },
+                      { role: 'Plumbing Service', name: 'Fundi Joseph', num: '0722000111', desc: 'Borehole water & burst pipes' },
+                      { role: 'Electrical Emergency', name: 'Electrician Mike', num: '0733000222', desc: 'Blackout, sparks, socket repairs' },
+                      { role: 'Campus Security Desk', name: 'Officer Mwangi', num: '0711999999', desc: '24/7 security emergencies' }
+                    ].map((help) => (
+                      <div 
+                        key={help.role} 
+                        className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-850 hover:shadow-xs transition-shadow"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex flex-col">
+                            <span className="text-[8px] bg-slate-100 dark:bg-slate-800 text-slate-550 dark:text-slate-400 px-1.5 py-0.5 rounded font-mono uppercase font-bold tracking-wider w-max mb-1">
+                              {help.role}
+                            </span>
+                            <span className="text-xs font-extrabold text-slate-800 dark:text-slate-205">{help.name}</span>
+                            <span className="text-[9px] text-slate-400 leading-snug mt-0.5">{help.desc}</span>
+                          </div>
+                          
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(help.num);
+                              showFeedback(`✓ Copied ${help.name}'s number (${help.num}) to clipboard!`, 'success');
+                            }}
+                            title="Copy Phone Number"
+                            className="p-1.5 rounded-lg bg-slate-50 hover:bg-emerald-50 hover:text-emerald-650 border border-slate-150 text-slate-400 dark:bg-slate-850 dark:border-slate-800 dark:hover:bg-emerald-950/20 transition-all cursor-pointer shrink-0"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
               </div>
 
             </div>
-          )}
+
+          </div>
+        )}
 
         </section>
 
