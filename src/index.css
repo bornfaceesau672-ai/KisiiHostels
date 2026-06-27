@@ -419,3 +419,24 @@ object {
     display: none !important;
   }
 }
+
+/* ================================================================
+   SCREENSHOT & PRINT SECURITY PROTECTIONS
+   ================================================================ */
+.no-screenshots {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+@media print {
+  .no-screenshots,
+  body.no-screenshots,
+  #root.no-screenshots {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+}
+

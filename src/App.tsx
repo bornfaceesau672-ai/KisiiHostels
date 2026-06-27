@@ -1539,6 +1539,129 @@ export default function App() {
     }, 5000);
   };
 
+  // Screenshot & Focus-loss Prevention Logic
+  const [isScreenProtected, setIsScreenProtected] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (isAdminUser) {
+      document.body.classList.remove('no-screenshots');
+      return;
+    }
+
+    document.body.classList.add('no-screenshots');
+
+    let focusTimeout: any;
+
+    const handleBlur = () => {
+      setIsScreenProtected(true);
+    };
+
+    const handleFocus = () => {
+      // Small delay before unprotecting to prevent capturing during focus transition
+      focusTimeout = setTimeout(() => {
+        setIsScreenProtected(false);
+      }, 400);
+    };
+
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      showFeedback('Right-click copy operations are disabled for security reasons.', 'warning');
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent PrintScreen key capture
+      if (e.key === 'PrintScreen' || e.key === 'Snapshot') {
+        e.preventDefault();
+        setIsScreenProtected(true);
+        try {
+          navigator.clipboard.writeText("Screenshots of this portal are prohibited for security purposes.");
+        } catch (err) {
+          // Ignore clipboard permission errors
+        }
+        showFeedback('Screenshots are disabled on this portal for security reasons.', 'warning');
+        // Auto-clear after 3 seconds if window is in focus
+        setTimeout(() => {
+          if (document.hasFocus()) {
+            setIsScreenProtected(false);
+          }
+        }, 3000);
+      }
+
+      // Prevent Ctrl+P / Cmd+P (Print Screen)
+      if ((e.ctrlKey || e.metaKey) && e.key?.toLowerCase() === 'p') {
+        e.preventDefault();
+        showFeedback('Printing this portal is disabled for security reasons.', 'warning');
+      }
+
+      // Prevent Ctrl+S / Cmd+S (Save Page)
+      if ((e.ctrlKey || e.metaKey) && e.key?.toLowerCase() === 's') {
+        e.preventDefault();
+        showFeedback('Saving pages is disabled for security reasons.', 'warning');
+      }
+
+      // Prevent F12 / DevTools
+      if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key?.toLowerCase() === 'i')) {
+        e.preventDefault();
+        showFeedback('Developer tools are restricted for security reasons.', 'warning');
+      }
+    };
+
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('contextmenu', handleContextMenu);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      clearTimeout(focusTimeout);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('contextmenu', handleContextMenu);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isAdminUser]);
+
+  // Dynamic DOM injection of Security Shield Overlay
+  useEffect(() => {
+    let overlayDiv = document.getElementById('security-shield-overlay');
+    if (isScreenProtected && !isAdminUser) {
+      if (!overlayDiv) {
+        overlayDiv = document.createElement('div');
+        overlayDiv.id = 'security-shield-overlay';
+        overlayDiv.className = 'fixed inset-0 z-[99999] bg-slate-950/90 flex flex-col items-center justify-center text-center p-6 select-none';
+        overlayDiv.style.backdropFilter = 'blur(20px)';
+        overlayDiv.style.webkitBackdropFilter = 'blur(20px)';
+        overlayDiv.innerHTML = `
+          <div class="bg-slate-900/95 border border-slate-800 rounded-[32px] p-8 max-w-md w-full mx-4 shadow-2xl flex flex-col items-center gap-6 text-center" style="background-color: rgb(15 23 42 / 0.95); border: 1px solid rgb(30 41 59); border-radius: 24px; padding: 2rem; max-width: 28rem; width: calc(100% - 2rem); margin: 0 1rem; box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25); display: flex; flex-direction: column; align-items: center; gap: 1.5rem; text-align: center;">
+            <div class="w-16 h-16 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center justify-center text-rose-500 mx-auto" style="background-color: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 1rem; width: 4rem; height: 4rem; display: flex; align-items: center; justify-content: center; color: rgb(244, 63, 94); margin-left: auto; margin-right: auto;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="animate-pulse" style="animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;"><path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 .76-.97l8.24-2a1 1 0 0 1 .48 0l8.24 2A1 1 0 0 1 20 6z"/></svg>
+            </div>
+            <div class="space-y-2" style="margin-top: 0.5rem;">
+              <h3 class="text-xl font-extrabold text-slate-100" style="color: #f8fafc; font-family: 'Inter', ui-sans-serif, system-ui; font-size: 1.25rem; font-weight: 800; margin: 0; line-height: 1.25;">Security Shield Active</h3>
+              <p class="text-xs text-slate-400 leading-relaxed" style="color: #94a3b8; font-family: 'Inter', ui-sans-serif, system-ui; font-size: 0.75rem; margin-top: 0.5rem; line-height: 1.625;">
+                For security reasons, content is hidden when the portal is not in focus to prevent unauthorized screenshots and screen recording.
+              </p>
+            </div>
+            <div class="w-full h-[1px] bg-slate-800" style="background-color: #1e293b; height: 1px; width: 100%;"></div>
+            <p class="text-[10px] text-rose-450 font-bold uppercase tracking-wider flex items-center gap-1.5 justify-center" style="color: #f43f5e; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0;">
+              <span class="inline-block w-1.5 h-1.5 rounded-full bg-rose-500" style="background-color: #f43f5e; width: 6px; height: 6px; border-radius: 9999px;"></span>
+              Content Protected
+            </p>
+          </div>
+        `;
+        document.body.appendChild(overlayDiv);
+      }
+    } else {
+      if (overlayDiv) {
+        overlayDiv.remove();
+      }
+    }
+
+    return () => {
+      const el = document.getElementById('security-shield-overlay');
+      if (el) el.remove();
+    };
+  }, [isScreenProtected, isAdminUser]);
+
   const renderAuthGuard = (featureName: string, description: string) => (
     <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 md:p-12 text-center border border-slate-200 dark:border-slate-800 shadow-md max-w-xl mx-auto space-y-6 animate-in fade-in duration-300 my-8">
       <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mx-auto ring-8 ring-indigo-50/50 dark:ring-indigo-950/30">
