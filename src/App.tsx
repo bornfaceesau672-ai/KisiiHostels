@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Hostel, Room, Booking, MaintenanceRequest, HostelReview, RelocationRequest, NewsPost } from './types';
+import { Hostel, Room, Booking, MaintenanceRequest, HostelReview, RelocationRequest, NewsPost, AdminChatMessage } from './types';
 import { INITIAL_HOSTELS, INITIAL_BOOKINGS, INITIAL_MAINTENANCE, ClientUser, INITIAL_USERS, INITIAL_RELOCATIONS } from './initialData';
 import { INITIAL_REVIEWS } from './initialReviews';
 import HostelCard from './components/HostelCard';
@@ -23,7 +23,7 @@ import {
   onAuthStateChanged,
   sendEmailVerification
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import { 
   Building, 
   MapPin, 
@@ -778,6 +778,58 @@ export default function App() {
 
   // Anonymous message state for Gossip Hub
   const [postAnonymously, setPostAnonymously] = useState<boolean>(false);
+  
+  // State for Direct Admin Messages
+  const [adminChats, setAdminChats] = useState<AdminChatMessage[]>([]);
+  const [activeChatStudentEmail, setActiveChatStudentEmail] = useState<string | null>(null);
+  const [newAdminMessage, setNewAdminMessage] = useState<string>('');
+  const [sendChatAnonymously, setSendChatAnonymously] = useState<boolean>(false);
+  const [isSendingAdminMessage, setIsSendingAdminMessage] = useState<boolean>(false);
+  
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Scroll chat to bottom when messages or active chat changes
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [adminChats, activeChatStudentEmail, activeTab]);
+
+  const studentChatSummaries = useMemo(() => {
+    const groups: Record<string, { email: string; lastMsg: string; timestamp: number; unreadCount: number; senderName: string }> = {};
+    adminChats.forEach((msg) => {
+      const studentEmail = msg.chatId;
+      const isFromStudent = msg.senderEmail === studentEmail;
+      const current = groups[studentEmail];
+      
+      let unreadIncrement = isFromStudent ? 1 : 0;
+      
+      if (!current) {
+        groups[studentEmail] = {
+          email: studentEmail,
+          lastMsg: msg.text,
+          timestamp: msg.timestamp,
+          unreadCount: unreadIncrement,
+          senderName: isFromStudent ? msg.senderName : 'Comrade'
+        };
+      } else {
+        if (msg.timestamp > current.timestamp) {
+          current.lastMsg = msg.text;
+          current.timestamp = msg.timestamp;
+          if (isFromStudent) {
+            current.senderName = msg.senderName;
+          }
+        }
+        if (!isFromStudent) {
+          current.unreadCount = 0;
+        } else {
+          current.unreadCount += unreadIncrement;
+        }
+      }
+    });
+    return Object.values(groups).sort((a, b) => b.timestamp - a.timestamp);
+  }, [adminChats]);
+  
   const [anonMessage, setAnonMessage] = useState<string>('');
   const [isSendingAnon, setIsSendingAnon] = useState<boolean>(false);
   const [likedPostIds_dummy, setLikedPostIds_dummy] = useState<never[]>([]); // placeholder to avoid removing next block
@@ -902,6 +954,77 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Real-time Firestore sync for Admin Chats
+  useEffect(() => {
+    if (!currentUser) {
+      setAdminChats([]);
+      return;
+    }
+
+    const isAdmin = (userProfile?.email || currentUser?.email || '').toLowerCase() === ADMIN_EMAIL;
+    const chatsRef = collection(db, 'admin_chats');
+    
+    let chatsQuery;
+    if (isAdmin) {
+      chatsQuery = query(chatsRef);
+    } else {
+      chatsQuery = query(chatsRef, where('chatId', '==', currentUser.email));
+    }
+
+    const unsubscribe = onSnapshot(chatsQuery, (snapshot) => {
+      const loaded: AdminChatMessage[] = [];
+      snapshot.forEach((docSnap) => {
+        loaded.push(docSnap.data() as AdminChatMessage);
+      });
+      // Sort in-memory to prevent indexing errors in Firestore
+      loaded.sort((a, b) => a.timestamp - b.timestamp);
+      setAdminChats(loaded);
+    }, (error) => {
+      console.warn('Real-time admin chats sync failed:', error);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser, userProfile]);
+
+  const handleSendAdminMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAdminMessage.trim() || !currentUser) return;
+
+    setIsSendingAdminMessage(true);
+    try {
+      const isSenderAdmin = (userProfile?.email || currentUser?.email || '').toLowerCase() === ADMIN_EMAIL;
+      const chatId = isSenderAdmin ? activeChatStudentEmail : currentUser.email;
+      if (!chatId) {
+        showFeedback('No active conversation selected.', 'warning');
+        return;
+      }
+
+      const messageId = Date.now().toString() + '_' + Math.random().toString(36).substring(2, 9);
+      const senderName = isSenderAdmin 
+        ? 'Admin' 
+        : (sendChatAnonymously ? 'Anonymous Comrade' : (userProfile?.displayName || currentUser.email?.split('@')[0] || 'Comrade Resident'));
+
+      const newMsg: AdminChatMessage = {
+        id: messageId,
+        chatId: chatId,
+        senderEmail: currentUser.email || '',
+        senderName: senderName,
+        recipientEmail: isSenderAdmin ? chatId : ADMIN_EMAIL,
+        text: newAdminMessage.trim(),
+        timestamp: Date.now(),
+        createdAt: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+      };
+
+      await setDoc(doc(db, 'admin_chats', messageId), newMsg);
+      setNewAdminMessage('');
+    } catch (err) {
+      console.error('Error sending message to admin:', err);
+      showFeedback('Failed to send message.', 'warning');
+    } finally {
+      setIsSendingAdminMessage(false);
+    }
+  };
 
   const getCategoryColor = (category: string) => {
     switch (category) {
@@ -6288,7 +6411,11 @@ export default function App() {
 
           {/* TAB 6: KSH Gossip */}
           {activeTab === 'news' && (
-            <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-300">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-in fade-in duration-300">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                {/* Main Gossip Wall */}
+                <div className="lg:col-span-2 space-y-6">
               
               {/* Header Section */}
               <div className="bg-gradient-to-br from-[#FAF9F5] via-[#FCFBF9] to-[#F5F2EB] dark:from-[#141312] dark:via-[#191817] dark:to-[#171614] p-6 rounded-[28px] border border-[#e8e2d5] dark:border-[#2d2b28] shadow-sm flex flex-col gap-2">
@@ -6595,7 +6722,238 @@ export default function App() {
               </div>
 
             </div>
-          )}
+
+            {/* Direct Message Admin Column (Right 1 column on desktop) */}
+            <div className="lg:col-span-1 space-y-6">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[28px] shadow-sm flex flex-col h-[600px] overflow-hidden">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 dark:from-emerald-950/30 dark:to-teal-950/20 px-5 py-4 border-b border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold shrink-0 shadow-inner">
+                      👑
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-200 tracking-tight flex items-center gap-1.5">
+                        <span>Direct Line to Admin</span>
+                      </h3>
+                      <p className="text-[10px] text-slate-505 dark:text-slate-400 flex items-center gap-1">
+                        <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        Active Support
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Back button for Admin detailed chat */}
+                  {isAdminUser && activeChatStudentEmail && (
+                    <button
+                      onClick={() => setActiveChatStudentEmail(null)}
+                      className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 text-[10px] font-bold rounded-lg transition-colors cursor-pointer border border-slate-200/50 dark:border-slate-800"
+                    >
+                      ← Inbox
+                    </button>
+                  )}
+                </div>
+
+                {/* Chat Body */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 dark:bg-slate-950/40">
+                  {!currentUser ? (
+                    /* Logged Out State */
+                    <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4">
+                      <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center shadow-inner">
+                        <Lock className="w-8 h-8 text-slate-400" />
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">Secure Direct Message</h4>
+                        <p className="text-xs text-slate-505 dark:text-slate-400 mt-1 max-w-[220px] mx-auto leading-relaxed">
+                          Sign in to text the Admin directly. Keep your questions and booking queries completely private.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setAuthModalMode('signin');
+                          setIsAuthModalOpen(true);
+                        }}
+                        className="px-4 py-2 bg-[#128c7e] hover:bg-[#075e54] text-white text-xs font-extrabold rounded-xl shadow-sm transition-colors cursor-pointer"
+                      >
+                        Sign In to Chat
+                      </button>
+                    </div>
+                  ) : isAdminUser ? (
+                    /* Admin User View */
+                    !activeChatStudentEmail ? (
+                      /* Admin Inbox List */
+                      studentChatSummaries.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2 mt-12">
+                          <MessageSquare className="w-8 h-8 text-slate-300 dark:text-slate-700" />
+                          <p className="text-xs font-bold text-slate-500 dark:text-slate-400">Your inbox is empty</p>
+                          <p className="text-[10px] text-slate-400 max-w-[180px]">When students message you, they will appear here in real-time.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5">
+                          {studentChatSummaries.map((chat) => {
+                            const initials = chat.senderName === 'Anonymous Comrade' ? '👤' : chat.email.substring(0, 2).toUpperCase();
+                            return (
+                              <button
+                                key={chat.email}
+                                type="button"
+                                onClick={() => {
+                                  setActiveChatStudentEmail(chat.email);
+                                }}
+                                className="w-full text-left bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-800/80 p-3.5 rounded-2xl flex items-center gap-3 transition-all duration-200 cursor-pointer shadow-sm animate-in fade-in duration-200"
+                              >
+                                <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center text-xs shrink-0 border border-indigo-100/30 dark:border-indigo-900/30">
+                                  {initials}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between mb-0.5">
+                                    <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[120px]">
+                                      {chat.senderName}
+                                    </span>
+                                    <span className="text-[9px] text-slate-400 font-mono">
+                                      {new Date(chat.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate pr-4">
+                                    {chat.lastMsg}
+                                  </p>
+                                </div>
+                                {chat.unreadCount > 0 && (
+                                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 shadow-sm animate-pulse" />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )
+                    ) : (
+                      /* Admin Chat Detail View */
+                      (() => {
+                        const chatMessages = adminChats.filter(m => m.chatId === activeChatStudentEmail);
+                        return (
+                          <div className="space-y-3.5">
+                            <div className="text-center py-1">
+                              <span className="bg-slate-100 dark:bg-slate-900 border border-slate-200/40 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[9px] font-mono px-2 py-0.5 rounded-full">
+                                Chatting with: {activeChatStudentEmail}
+                              </span>
+                            </div>
+                            {chatMessages.map((msg) => {
+                              const isAdminMsg = msg.senderEmail === ADMIN_EMAIL;
+                              return (
+                                <div
+                                  key={msg.id}
+                                  className={`flex flex-col max-w-[85%] ${isAdminMsg ? 'ml-auto items-end' : 'mr-auto items-start'} animate-in fade-in duration-200`}
+                                >
+                                  <div className={`p-3 rounded-2xl text-xs leading-relaxed ${
+                                    isAdminMsg
+                                      ? 'bg-emerald-600 text-white rounded-tr-none shadow-sm'
+                                      : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-none shadow-sm'
+                                  }`}>
+                                    <div className="font-bold text-[9px] text-slate-400 dark:text-slate-500 mb-0.5 uppercase tracking-wide">
+                                      {msg.senderName}
+                                    </div>
+                                    <p className="whitespace-pre-line break-words">{msg.text}</p>
+                                  </div>
+                                  <span className="text-[8px] text-slate-400 mt-1 font-mono">{msg.createdAt}</span>
+                                </div>
+                              );
+                            })}
+                            <div ref={chatEndRef} />
+                          </div>
+                        );
+                      })()
+                    )
+                  ) : (
+                    /* Regular Student Chat Detail View */
+                    <div className="space-y-3.5">
+                      {adminChats.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2 mt-12">
+                          <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <MessageSquare className="w-6 h-6" />
+                          </div>
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Start a chat with Admin</p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 max-w-[200px] leading-relaxed mx-auto">
+                            Type a message below to text the administrator. Your inquiries are strictly confidential.
+                          </p>
+                        </div>
+                      ) : (
+                        adminChats.map((msg) => {
+                          const isMe = msg.senderEmail === currentUser.email;
+                          return (
+                            <div
+                              key={msg.id}
+                              className={`flex flex-col max-w-[85%] ${isMe ? 'ml-auto items-end' : 'mr-auto items-start'} animate-in fade-in duration-200`}
+                            >
+                              <div className={`p-3 rounded-2xl text-xs leading-relaxed ${
+                                isMe
+                                  ? 'bg-emerald-600 text-white rounded-tr-none shadow-sm'
+                                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-none shadow-sm'
+                              }`}>
+                                <div className="font-bold text-[9px] text-slate-400 dark:text-slate-500 mb-0.5 uppercase tracking-wide">
+                                  {msg.senderName}
+                                </div>
+                                <p className="whitespace-pre-line break-words">{msg.text}</p>
+                              </div>
+                              <span className="text-[8px] text-slate-400 mt-1 font-mono">{msg.createdAt}</span>
+                            </div>
+                          );
+                        })
+                      )}
+                      <div ref={chatEndRef} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Chat Footer Input Area */}
+                {currentUser && (!isAdminUser || activeChatStudentEmail) && (
+                  <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+                    <form onSubmit={handleSendAdminMessage} className="space-y-2">
+                      <div className="flex gap-2">
+                        <textarea
+                          value={newAdminMessage}
+                          onChange={(e) => setNewAdminMessage(e.target.value.substring(0, 500))}
+                          placeholder="Type a message..."
+                          rows={1}
+                          className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-800 dark:text-slate-100 resize-none h-9"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSendAdminMessage(e);
+                            }
+                          }}
+                        />
+                        <button
+                          type="submit"
+                          disabled={!newAdminMessage.trim() || isSendingAdminMessage}
+                          className="px-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      
+                      {/* Anonymity toggle for students */}
+                      {!isAdminUser && (
+                        <div className="flex items-center gap-1.5 pl-1">
+                          <input
+                            type="checkbox"
+                            id="send-anon"
+                            checked={sendChatAnonymously}
+                            onChange={(e) => setSendChatAnonymously(e.target.checked)}
+                            className="w-3.5 h-3.5 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500 focus:ring-offset-0 focus:outline-none cursor-pointer"
+                          />
+                          <label htmlFor="send-anon" className="text-[9px] font-semibold text-slate-500 dark:text-slate-400 select-none cursor-pointer">
+                            Hide my identity (send anonymously)
+                          </label>
+                        </div>
+                      )}
+                    </form>
+                  </div>
+                )}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
         </section>
 
       </main>

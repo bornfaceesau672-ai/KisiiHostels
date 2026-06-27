@@ -136,4 +136,15 @@ export interface NewsPost {
   timestamp?: number;
 }
 
+export interface AdminChatMessage {
+  id: string;
+  chatId: string; // student's email, links the conversation
+  senderEmail: string;
+  senderName: string;
+  recipientEmail: string;
+  text: string;
+  timestamp: number;
+  createdAt: string;
+}
+
 
