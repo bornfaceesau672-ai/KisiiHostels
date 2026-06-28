@@ -440,3 +440,31 @@ object {
   }
 }
 
+/* ================================================================
+   GLOWING HOVER EFFECTS FOR TITLES
+   ================================================================ */
+.glow-title {
+  display: inline-block;
+  transition: text-shadow 0.3s ease, filter 0.3s ease, transform 0.3s ease;
+}
+
+.glow-title:hover {
+  text-shadow: 0 0 10px rgba(99, 102, 241, 0.6), 
+               0 0 20px rgba(99, 102, 241, 0.4), 
+               0 0 30px rgba(139, 92, 246, 0.3);
+  filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.4));
+  transform: translateY(-0.5px) scale(1.005);
+}
+
+.glow-gradient-title {
+  display: inline-block;
+  transition: filter 0.3s ease, transform 0.3s ease;
+}
+
+.glow-gradient-title:hover {
+  filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.6)) 
+          drop-shadow(0 0 24px rgba(139, 92, 246, 0.4));
+  transform: translateY(-0.5px) scale(1.005);
+}
+
+

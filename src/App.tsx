@@ -2803,7 +2803,7 @@ export default function App() {
             <Home className="w-7 h-7 text-white stroke-[2.25] drop-shadow-sm" />
           </div>
           <div className="space-y-1 mt-2">
-            <h2 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 tracking-tight leading-none uppercase font-sans">
+            <h2 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 tracking-tight leading-none uppercase font-sans glow-title">
               Nyumbani<span className="text-indigo-600 dark:text-indigo-400">Kisii</span>
             </h2>
             <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tracking-widest font-bold mt-1">
@@ -2936,7 +2936,7 @@ export default function App() {
                 : 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-200'
           }`}>
             <span className="text-xl" aria-hidden="true">
-              {alertBanner.type === 'success' ? '✅' : alertBanner.type === 'warning' ? '⚠�?' : 'ℹ�?'}
+              {alertBanner.type === 'success' ? '✅' : alertBanner.type === 'warning' ? '⚠?' : 'ℹ?'}
             </span>
             <span>{alertBanner.text}</span>
           </div>
@@ -2960,7 +2960,7 @@ export default function App() {
                 </div>
               </div>
               <div>
-                <h1 className="text-sm sm:text-base font-extrabold tracking-tight text-slate-800 dark:text-slate-100 leading-none">
+                <h1 className="text-sm sm:text-base font-extrabold tracking-tight text-slate-800 dark:text-slate-100 leading-none glow-title">
                   Nyumbani<span className="text-indigo-600 dark:text-indigo-400">Kisii</span>
                 </h1>
                 <p className="text-[9px] uppercase font-mono tracking-widest text-slate-500 dark:text-slate-400 font-bold mt-1">
@@ -3140,7 +3140,7 @@ export default function App() {
               <span className="text-[10px] bg-indigo-500/30 text-indigo-200 border border-indigo-400/20 py-1 px-3 rounded-full font-bold uppercase tracking-widest inline-block select-none animate-pulse">
                 Semesters Booking Live 🟢
               </span>
-              <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">Find Comfort, Excel Academically.</h2>
+              <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight glow-title">Find Comfort, Excel Academically.</h2>
               <p className="text-xs md:text-sm text-slate-200 leading-relaxed font-normal">
                 Secure standard rooms and executive student studios near Kisii University campus gate. Backed with borehole plumbing, high-speed Wi-Fi, and 24/7 watchmen security.
               </p>
@@ -4489,7 +4489,7 @@ export default function App() {
               
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                 <div>
-                  <h2 className="text-2xl font-bold font-sans text-slate-900 tracking-tight">Your Hostel Bookings & Invoices</h2>
+                  <h2 className="text-2xl font-bold font-sans text-slate-900 tracking-tight glow-title">Your Hostel Bookings & Invoices</h2>
                   <p className="text-xs text-slate-500 text-slate-500 mt-1">
                     Direct access to official tenancy receipts, payment paybill gateways, and safe checkout releases.
                   </p>
@@ -4808,7 +4808,7 @@ export default function App() {
               
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
                 <div>
-                  <h2 className="text-2xl font-bold font-sans text-slate-900 dark:text-white tracking-tight">University Services Hub</h2>
+                  <h2 className="text-2xl font-bold font-sans text-slate-900 dark:text-white tracking-tight glow-title">University Services Hub</h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Direct communication terminal with wardens, repair fundis, and transport movers.
                   </p>
@@ -5019,7 +5019,7 @@ export default function App() {
             <div className="space-y-6 animate-in fade-in duration-300">
               <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
                 <div>
-                  <h2 className="text-2xl font-bold font-sans text-slate-900 dark:text-slate-100 tracking-tight">Admin Dashboard</h2>
+                  <h2 className="text-2xl font-bold font-sans text-slate-900 dark:text-slate-100 tracking-tight glow-title">Admin Dashboard</h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Operations view for hostel capacity, booking approvals, payments, and maintenance dispatch.
                   </p>
@@ -6514,7 +6514,7 @@ export default function App() {
               
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                 <div>
-                  <h2 className="text-2xl font-bold font-sans text-slate-900 tracking-tight">AI Warden Assistant Terminal</h2>
+                  <h2 className="text-2xl font-bold font-sans text-slate-900 tracking-tight glow-title">AI Warden Assistant Terminal</h2>
                   <p className="text-xs text-slate-500 mt-1">
                     Talk to Fundi Sophia, our smart AI responder tailored specifically for Kisii University student life, hostels, security parameters, and curfew regulations.
                   </p>
@@ -6543,7 +6543,7 @@ export default function App() {
               {/* Header Section */}
               <div className="bg-gradient-to-br from-[#FAF9F5] via-[#FCFBF9] to-[#F5F2EB] dark:from-[#141312] dark:via-[#191817] dark:to-[#171614] p-6 rounded-[28px] border border-[#e8e2d5] dark:border-[#2d2b28] shadow-sm flex flex-col gap-2">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-extrabold font-sans text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+                  <h2 className="text-2xl font-extrabold font-sans text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2 glow-title">
                     <span>KSH Gossip & Whispers</span>
                     <Sparkles className="w-5 h-5 text-amber-500 fill-amber-500/20" />
                   </h2>
@@ -7193,7 +7193,7 @@ export default function App() {
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight">Hostel Comparison</h2>
+              <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight glow-title">Hostel Comparison</h2>
             </div>
             <button 
               onClick={() => {

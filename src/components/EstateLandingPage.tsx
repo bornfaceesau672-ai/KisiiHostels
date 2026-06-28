@@ -314,7 +314,7 @@ const EstateLandingPage: React.FC<EstateLandingPageProps> = ({
           <Sparkles style={{ width: 14, height: 14, color: '#fbbf24' }} />
         </div>
 
-        <h2 style={{
+        <h2 className="glow-gradient-title" style={{
           fontSize: 'clamp(2.2rem, 6vw, 4rem)', fontWeight: 900, color: 'white',
           lineHeight: 1.15, letterSpacing: '-0.03em', marginBottom: '1rem',
           textShadow: '0 4px 24px rgba(59,130,246,0.4)',
@@ -387,7 +387,7 @@ const EstateLandingPage: React.FC<EstateLandingPageProps> = ({
       {/* ESTATE GRID */}
       <section style={{ position: 'relative', zIndex: 10, padding: '0 1rem 5rem', maxWidth: '80rem', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'white', marginBottom: '0.5rem' }}>🏘️ Browse by Estate</h3>
+          <h3 className="glow-title" style={{ fontSize: '1.4rem', fontWeight: 900, color: 'white', marginBottom: '0.5rem' }}>🏘️ Browse by Estate</h3>
           <p style={{ fontSize: '0.85rem', color: 'rgba(147,197,253,0.65)' }}>
             Click <strong style={{ color: '#93c5fd' }}>Show Hostels</strong> to see names, or <strong style={{ color: '#93c5fd' }}>View</strong> to go straight into full details.
           </p>
@@ -643,7 +643,7 @@ const EstateLandingPage: React.FC<EstateLandingPageProps> = ({
         borderTop: '1px solid rgba(59,130,246,0.15)',
       }}>
         <div style={{ maxWidth: '40rem', margin: '0 auto' }}>
-          <h3 style={{ fontSize: 'clamp(1.4rem, 4vw, 2rem)', fontWeight: 900, color: 'white', marginBottom: '0.75rem', lineHeight: 1.25 }}>
+          <h3 className="glow-title" style={{ fontSize: 'clamp(1.4rem, 4vw, 2rem)', fontWeight: 900, color: 'white', marginBottom: '0.75rem', lineHeight: 1.25 }}>
             Ready to Book Your Room?
           </h3>
           <p style={{ fontSize: '0.875rem', color: 'rgba(147,197,253,0.75)', lineHeight: 1.7, marginBottom: '2rem' }}>
