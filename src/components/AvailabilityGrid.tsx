@@ -74,29 +74,7 @@ export default function AvailabilityGrid({ hostel, onSelectBookRoom, activeBooki
         </div>
       )}
 
-      {/* Direct Landlord Contact Section */}
-      {hostel.landlordPhone && (
-        <div className="bg-indigo-50/50 border border-indigo-200 rounded-2xl p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 bg-indigo-100 text-indigo-700 rounded-xl">
-              <Phone className="w-5 h-5 stroke-[2]" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-slate-900">Direct Landlord Contact</h4>
-              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                Have inquiries about room lockouts, keys, rent deposits, or want real-time assistance? Get in touch directly at your convenience.
-              </p>
-            </div>
-          </div>
-          <a
-            href={`tel:${hostel.landlordPhone}`}
-            className="flex items-center justify-center gap-2 bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-xs px-5 py-3 rounded-xl transition-all shadow-sm font-mono w-full md:w-auto text-center active:scale-[0.98] shrink-0"
-          >
-            <Phone className="w-4 h-4" />
-            <span>Call Landlord: {hostel.landlordPhone}</span>
-          </a>
-        </div>
-      )}
+
 
       <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>

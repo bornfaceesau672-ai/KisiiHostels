@@ -4034,40 +4034,7 @@ export default function App() {
 
                             </div>
 
-                            {/* Right Hotline caretaker Card with WhatsApp Action */}
-                            <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl flex flex-col gap-4 self-stretch justify-between">
-                              <div className="space-y-3">
-                                <span className="text-[9px] font-mono text-indigo-700 font-extrabold uppercase tracking-widest bg-indigo-50 border border-indigo-150 rounded px-2 py-0.5 inline-block">
-                                  Care Desk Hotline
-                                </span>
-                                <h4 className="text-sm font-bold text-slate-900 leading-normal">Hostel Representative Contact</h4>
-                                <p className="text-xs text-slate-500 leading-relaxed font-normal">
-                                  Direct contact for live virtual room tour video streams, immediate key allocation, or physical room booking queries.
-                                </p>
-                                <div className="text-xs font-mono py-2 px-3 bg-white rounded-xl border border-slate-200 font-bold text-slate-800 space-y-1">
-                                  <div>Phone: +254 795 858929</div>
-                                  <div className="text-[10px] text-emerald-600 font-normal">✓ WhatsApp Available</div>
-                                </div>
-                              </div>
 
-                              <div className="space-y-2 pt-2">
-                                <a 
-                                  href="tel:0795858929"
-                                  className="w-full flex items-center justify-center gap-2 text-xs font-bold py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-900 border border-slate-950 text-white transition-all text-center"
-                                >
-                                  <Phone className="w-3.5 h-3.5" /> Call Key Allocator
-                                </a>
-                                
-                                <a 
-                                  href={`https://wa.me/254795858929?text=Hi%2C%20Comrade%20Caretaker.%20I%20am%20interested%20in%20allotting%20a%20spot%20at%20${encodeURIComponent(selectedHostel.name)}.%20Please%20verify%20room%20availability%20checks.`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="w-full flex items-center justify-center gap-2 text-xs font-bold py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-all text-center"
-                                >
-                                  📨 WhatsApp Landlord
-                                </a>
-                              </div>
-                            </div>
 
                           </div>
                         </div>
@@ -4542,9 +4509,7 @@ export default function App() {
                                 <p className="flex items-center gap-1.5">
                                   <span>?</span> Platform: <b className="text-slate-900 font-bold">{b.tourPlatform}</b>
                                 </p>
-                                <p className="flex items-center gap-1.5 font-mono">
-                                  👤 Contact Caretaker: <b className="text-slate-900 font-bold">{associatedHostel?.landlordPhone || '+254795858929'}</b>
-                                </p>
+
                               </div>
                             </div>
 
@@ -4565,15 +4530,6 @@ export default function App() {
                                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded-lg hover:bg-indigo-700 transition active:scale-95 cursor-pointer"
                                   >
                                     <span>Join Video Call Now 🚀</span>
-                                  </a>
-                                  
-                                  <a 
-                                    href={`https://wa.me/${(associatedHostel?.landlordPhone || '254795858929').replace(/[^0-9]/g, '')}?text=Hi%2C%20Landlord.%20I%20have%20scheduled%20a%20hostel%20virtual%20tour%20for%20${encodeURIComponent(b.hostelName)}%20tomorrow.%20Let's%20connect.`}
-                                    target="_blank" 
-                                    rel="noreferrer" 
-                                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white font-bold text-xs rounded-lg hover:bg-emerald-700 transition active:scale-95 cursor-pointer"
-                                  >
-                                    <span>Chat on WhatsApp</span>
                                   </a>
                                 </div>
                               </div>
