@@ -480,5 +480,38 @@ object {
   transform: translateY(-2px) scale(1.015);
 }
 
+/* ================================================================
+   SECURITY BASELINE STYLING — watermarking, screenshot blur & print
+   ================================================================ */
+.watermarked-image-container {
+  position: relative;
+}
+
+.watermarked-image-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: var(--watermark-image);
+  background-repeat: repeat;
+  opacity: 0.95;
+  z-index: 10;
+}
+
+/* Screenshot/Window Blur Protection */
+.window-blurred .watermarked-image-container img {
+  filter: blur(25px) grayscale(1) !important;
+  transition: filter 0.1s ease-in-out;
+}
+
+/* Print Protection */
+@media print {
+  body.print-shield-active,
+  body.print-shield-active * {
+    display: none !important;
+  }
+}
+
+
 
 

@@ -20,8 +20,7 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signOut, 
-  onAuthStateChanged,
-  sendEmailVerification
+  onAuthStateChanged
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import { 
@@ -396,12 +395,6 @@ export default function App() {
           setCurrentUser(firebaseUser);
           logAnalyticsEvent('login', { method: 'firebase_auth', userId: firebaseUser.uid });
           
-          // Force email verification (except for admin account)
-          if (!firebaseUser.emailVerified && firebaseUser.email !== ADMIN_EMAIL) {
-            setAuthModalMode('verification_pending');
-            setIsAuthModalOpen(true);
-          }
-
           const localKey = `kisii_user_profile_${firebaseUser.uid}`;
           
           // 1. Instantly load local cache if available (Non-blocking)
@@ -1614,7 +1607,7 @@ export default function App() {
         overlayDiv.id = 'security-shield-overlay';
         overlayDiv.className = 'fixed inset-0 z-[99999] bg-slate-950/90 flex flex-col items-center justify-center text-center p-6 select-none';
         overlayDiv.style.backdropFilter = 'blur(20px)';
-        overlayDiv.style.webkitBackdropFilter = 'blur(20px)';
+        overlayDiv.style.setProperty('-webkit-backdrop-filter', 'blur(20px)');
         overlayDiv.innerHTML = `
           <div class="bg-slate-900/95 border border-slate-800 rounded-[32px] p-8 max-w-md w-full mx-4 shadow-2xl flex flex-col items-center gap-6 text-center" style="background-color: rgb(15 23 42 / 0.95); border: 1px solid rgb(30 41 59); border-radius: 24px; padding: 2rem; max-width: 28rem; width: calc(100% - 2rem); margin: 0 1rem; box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25); display: flex; flex-direction: column; align-items: center; gap: 1.5rem; text-align: center;">
             <div class="w-16 h-16 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center justify-center text-rose-500 mx-auto" style="background-color: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 1rem; width: 4rem; height: 4rem; display: flex; align-items: center; justify-content: center; color: rgb(244, 63, 94); margin-left: auto; margin-right: auto;">
@@ -1790,17 +1783,9 @@ export default function App() {
   // Email and Password Sign in handler
   const handleEmailSignIn = async (emailInput: string, passwordInput: string) => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, emailInput, passwordInput);
-      const user = userCredential.user;
-      
-      if (user && !user.emailVerified && user.email !== ADMIN_EMAIL) {
-        setAuthModalMode('verification_pending');
-        setIsAuthModalOpen(true);
-        showFeedback('Email verification required. Please check your inbox.', 'warning');
-      } else {
-        setIsAuthModalOpen(false);
-        showFeedback('✓ Welcome back, Comrade! You are now signed in.', 'success');
-      }
+      await signInWithEmailAndPassword(auth, emailInput, passwordInput);
+      setIsAuthModalOpen(false);
+      showFeedback('✓ Welcome back, Comrade! You are now signed in.', 'success');
       logAnalyticsEvent('sign_in_success', { email: emailInput });
     } catch (error: any) {
       console.error(error);
@@ -1835,13 +1820,6 @@ export default function App() {
         throw new Error('Could not establish an authorized session with Firebase.');
       }
 
-      // Send verification email
-      try {
-        await sendEmailVerification(createdUser);
-      } catch (verificationErr) {
-        console.warn('Initial verification email send failed:', verificationErr);
-      }
-
       // 2. Build profile payload
       const profilePayload = {
         uid: createdUser.uid,
@@ -1858,10 +1836,9 @@ export default function App() {
       setUserProfile(profilePayload);
       setRegisteredUsers(prev => [profilePayload, ...prev.filter(u => u.uid !== profilePayload.uid)]);
       
-      // Instead of closing the modal, set mode to verification_pending
-      setAuthModalMode('verification_pending');
-      setIsAuthModalOpen(true);
-      showFeedback(`✓ Welcome, ${displayNameInput}! Verification link sent to ${emailInput}.`, 'success');
+      // Close the modal upon successful signup
+      setIsAuthModalOpen(false);
+      showFeedback(`✓ Welcome, ${displayNameInput}! Your account has been registered.`, 'success');
       logAnalyticsEvent('sign_up_success', { category: categoryInput, email: emailInput });
 
       // 4. Try Firestore write — silent failure if permissions not set

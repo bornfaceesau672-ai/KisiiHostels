@@ -42,12 +42,13 @@ export default function AvailabilityGrid({ hostel, onSelectBookRoom, activeBooki
   return (
     <div id={`availability-grid-${hostel.id}`} className="space-y-6">
       {primaryImage && (
-        <div className="relative h-48 md:h-60 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+        <div className="relative h-48 md:h-60 rounded-2xl overflow-hidden border border-slate-200 shadow-sm watermarked-image-container">
           <img 
             src={primaryImage} 
             alt={hostel.name} 
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
+            draggable={false}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-black/10" />
           <div className="absolute bottom-5 left-5 right-5 text-white">

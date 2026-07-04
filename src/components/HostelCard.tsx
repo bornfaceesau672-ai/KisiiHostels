@@ -58,12 +58,13 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
         onClick={() => window.open(hostel.externalLink, '_blank', 'noopener,noreferrer')}
       >
         {/* 1. Hostel Image Section */}
-        <div className="h-44 bg-slate-100 dark:bg-slate-950 relative overflow-hidden animate-in fade-in duration-300">
+        <div className="h-44 bg-slate-100 dark:bg-slate-950 relative overflow-hidden animate-in fade-in duration-300 watermarked-image-container">
           <img 
             src={cardImage} 
             alt={hostel.name} 
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             referrerPolicy="no-referrer"
+            draggable={false}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/45 pointer-events-none" />
           <div className="absolute top-3 left-3">
@@ -111,12 +112,13 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
       onClick={() => onSelect(hostel)}
     >
       {/* 1. Hostel Image Section */}
-      <div className="h-44 bg-slate-100 dark:bg-slate-950 relative overflow-hidden animate-in fade-in duration-300">
+      <div className="h-44 bg-slate-100 dark:bg-slate-950 relative overflow-hidden animate-in fade-in duration-300 watermarked-image-container">
         <img 
           src={cardImage} 
           alt={hostel.name} 
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           referrerPolicy="no-referrer"
+          draggable={false}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/45 pointer-events-none" />
         

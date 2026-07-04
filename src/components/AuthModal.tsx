@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { X, Mail, Lock, User, Phone, Sparkles, LogIn, UserPlus, AlertCircle, CheckCircle, RefreshCw, LogOut, KeyRound } from 'lucide-react';
+import { X, Mail, Lock, User, Phone, Sparkles, LogIn, UserPlus, AlertCircle, CheckCircle, KeyRound } from 'lucide-react';
 import { auth } from '../lib/firebase';
-import { sendPasswordResetEmail, sendEmailVerification, signOut } from 'firebase/auth';
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 interface AuthModalProps {
   onClose: () => void;
   onSignIn: (email: string, pass: string) => Promise<void>;
   onSignUp: (email: string, pass: string, name: string, category: 'Student' | 'Property Owner' | 'Guest', phone: string) => Promise<void>;
-  initialMode?: 'signin' | 'signup' | 'forgotpassword' | 'verification_pending';
+  initialMode?: 'signin' | 'signup' | 'forgotpassword';
   onVerified?: () => void;
 }
 
@@ -34,7 +34,7 @@ function getAuthErrorMessage(error: any): string {
 }
 
 export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = 'signin', onVerified }: AuthModalProps) {
-  const [mode, setMode] = useState<'signin' | 'signup' | 'forgotpassword' | 'verification_pending'>(initialMode);
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgotpassword'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -87,65 +87,7 @@ export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = '
     });
   };
 
-  const checkVerificationStatus = async () => {
-    setError('');
-    setSuccessMessage('');
-    setLoading(true);
-    try {
-      if (auth.currentUser) {
-        await auth.currentUser.reload();
-        if (auth.currentUser.emailVerified) {
-          setSuccessMessage('✓ Email verified successfully! Welcome to the Comrade Portal.');
-          if (onVerified) {
-            onVerified();
-          }
-        } else {
-          setError('Email is still not verified. Please check your inbox and click the verification link.');
-        }
-      } else {
-        throw new Error('No user is currently logged in.');
-      }
-    } catch (err: any) {
-      console.error(err);
-      setError(err?.message || 'Failed to check verification status.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const resendVerification = async () => {
-    setError('');
-    setSuccessMessage('');
-    setLoading(true);
-    try {
-      if (auth.currentUser) {
-        await sendEmailVerification(auth.currentUser);
-        setSuccessMessage('✓ Verification email has been resent! Please check your inbox.');
-      } else {
-        throw new Error('No user session found to send verification email.');
-      }
-    } catch (err: any) {
-      console.error(err);
-      setError(err?.message || 'Failed to resend verification email.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCancelVerification = async () => {
-    setError('');
-    setSuccessMessage('');
-    setLoading(true);
-    try {
-      await signOut(auth);
-      onClose();
-    } catch (err: any) {
-      console.error(err);
-      setError('Failed to sign out. Please refresh the page.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,7 +149,7 @@ export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = '
       const friendlyMsg = getAuthErrorMessage(err);
       // If it's a Firestore permission error during signup (account was still created), show success
       if (err?.message?.includes('Missing or insufficient permissions') || err?.message?.includes('locally')) {
-        setSuccessMessage('Account created! Profile saved locally — check your email for the verification link.');
+        setSuccessMessage('Account created! Profile saved locally.');
       } else {
         setError(friendlyMsg);
       }
@@ -216,101 +158,7 @@ export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = '
     }
   };
 
-  // RENDER EMAIL VERIFICATION VIEW (LOCKED IF UNVERIFIED)
-  if (mode === 'verification_pending') {
-    return (
-      <div id="auth-modal-overlay" className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex justify-center items-center z-50 p-4 animate-fade-in">
-        <div 
-          id="auth-modal" 
-          className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-200"
-        >
-          {/* Header */}
-          <div className="bg-indigo-700 text-white p-6 relative">
-            <span className="text-[10px] uppercase tracking-widest font-mono bg-white/20 text-indigo-100 px-3 py-1 rounded-full font-bold">
-              Comrade Security Hub
-            </span>
-            <h3 className="text-xl font-extrabold font-sans mt-2 flex items-center gap-2">
-              <Mail className="w-5 h-5 animate-pulse" /> Verify Your Email
-            </h3>
-            <p className="text-indigo-200 text-xs mt-1">
-              Please verify your email address to access the portal.
-            </p>
-          </div>
 
-          <div className="p-6 md:p-8 space-y-5">
-            {/* Error Banner */}
-            {error && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-xl text-xs font-semibold leading-relaxed flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            {/* Success Banner */}
-            {successMessage && (
-              <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 p-3 rounded-xl text-xs font-semibold leading-relaxed flex items-start gap-2">
-                <CheckCircle className="w-4 h-4 shrink-0 mt-0.5 text-emerald-500" />
-                <span>{successMessage}</span>
-              </div>
-            )}
-
-            <div className="text-center py-2">
-              <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto ring-8 ring-indigo-50/50 mb-4 animate-bounce">
-                <Mail className="w-7 h-7" />
-              </div>
-              <p className="text-sm text-slate-700 font-semibold">
-                Verification link sent to:
-              </p>
-              <p className="text-xs text-indigo-600 font-bold font-mono mt-1 break-all bg-indigo-50/50 py-1.5 px-3 rounded-xl inline-block">
-                {auth.currentUser?.email || email || 'your email address'}
-              </p>
-              <p className="text-[11px] text-slate-500 mt-3.5 leading-relaxed">
-                We've sent a link to activate your Comrade profile. Click the link in your email inbox or spam folder, then click the button below to continue.
-              </p>
-            </div>
-
-            <div className="space-y-3 pt-2">
-              <button
-                type="button"
-                onClick={checkVerificationStatus}
-                disabled={loading}
-                className="w-full py-3 bg-indigo-600 disabled:bg-indigo-400 text-white rounded-xl text-xs font-black tracking-wide hover:bg-indigo-700 transition flex items-center justify-center gap-1.5 shadow-md active:scale-[0.98] cursor-pointer"
-              >
-                {loading ? (
-                  <span className="animate-spin text-white">●</span>
-                ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4" />
-                    <span>I HAVE VERIFIED MY EMAIL</span>
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={resendVerification}
-                disabled={loading}
-                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black tracking-wide transition flex items-center justify-center gap-1.5 active:scale-[0.98] cursor-pointer"
-              >
-                <RefreshCw className="w-4 h-4" />
-                <span>RESEND VERIFICATION EMAIL</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleCancelVerification}
-                disabled={loading}
-                className="w-full py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-black tracking-wide transition flex items-center justify-center gap-1.5 active:scale-[0.98] cursor-pointer"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>CANCEL & SIGN OUT</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // RENDER SIGN IN, REGISTER AND FORGOT PASSWORD FORMS
   return (
