@@ -94,12 +94,8 @@ export default function BookRoomModal({ hostel, room, onClose, onSubmitBooking, 
             </h4>
             
             <div className="space-y-1.5 text-xs text-slate-600">
-              <div className="flex justify-between">
-                <span>Semester Rent (KES):</span>
-                <span className="font-mono font-semibold text-slate-900">KES {room.priceKes.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-[11px] text-slate-500 -mt-1 b-0.5">
-                <span>Monthly Rent Equivalent:</span>
+              <div className="flex justify-between text-[11px] text-slate-500 b-0.5">
+                <span>Monthly Rent:</span>
                 <span className="font-mono font-semibold text-emerald-600">
                   {formatMonthlyRent(room.rentMonthlyKes || Math.round(room.priceKes / 4))}
                 </span>

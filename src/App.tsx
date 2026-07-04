@@ -12,7 +12,7 @@ import AuthModal from './components/AuthModal';
 import EditProfileModal from './components/EditProfileModal';
 import EstateLandingPage from './components/EstateLandingPage';
 import { getHostelImages, getHostelYoutubeEmbed } from './utils/mediaHelper';
-import { getNumericRent, formatMonthlyRent, formatSemesterRent } from './utils/rentHelper';
+import { getNumericRent, formatMonthlyRent } from './utils/rentHelper';
 
 // Firebase core logic imports
 import { auth, db, handleFirestoreError, OperationType, logAnalyticsEvent } from './lib/firebase';
@@ -1999,8 +1999,7 @@ export default function App() {
     logAnalyticsEvent('room_booking', {
       hostelId: roomToBook.hostel.id,
       hostelName: roomToBook.hostel.name,
-      roomNumber: roomToBook.room.roomNumber,
-      rentSemesterKes: roomToBook.room.priceKes
+      roomNumber: roomToBook.room.roomNumber
     });
     setActiveTab('bookings');
     setCurrentPage('details');
@@ -2262,7 +2261,7 @@ export default function App() {
       description: 'A beautiful newly listed student hostel lodging option situated close to Kisii University gate.',
       landlordPhone: '0795858929',
       rentMonthlyKes: 4500,
-      rentSemesterKes: 18000,
+
       rooms: [
         {
           id: `${newHostelId.replace('hostel-', '')}-${Date.now()}`,
@@ -2756,14 +2755,20 @@ export default function App() {
     const totalBeds = hostel.rooms.reduce((acc, room) => acc + room.maxOccupants, 0);
     const occupiedBeds = hostel.rooms.reduce((acc, room) => acc + room.currentOccupants, 0);
     const availableBeds = totalBeds - occupiedBeds;
-    const getMinSemesterRent = () => {
-      if (hostel.rentSemesterKes !== undefined && hostel.rentSemesterKes !== null && hostel.rentSemesterKes !== '') {
-        const parsed = typeof hostel.rentSemesterKes === 'number' ? hostel.rentSemesterKes : parseInt(String(hostel.rentSemesterKes).match(/\d+/)?.[0] || '0', 10);
+    const getMinMonthlyRent = () => {
+      if (hostel.rentMonthlyKes !== undefined && hostel.rentMonthlyKes !== null && hostel.rentMonthlyKes !== '') {
+        const parsed = typeof hostel.rentMonthlyKes === 'number' ? hostel.rentMonthlyKes : parseInt(String(hostel.rentMonthlyKes).match(/\d+/)?.[0] || '0', 10);
         return parsed || 0;
       }
-      return hostel.rooms.length > 0 ? Math.min(...hostel.rooms.map((room) => room.priceKes)) : 0;
+      return hostel.rooms.length > 0 ? Math.min(...hostel.rooms.map((room) => {
+        if (room.rentMonthlyKes) {
+          const val = typeof room.rentMonthlyKes === 'number' ? room.rentMonthlyKes : parseInt(String(room.rentMonthlyKes).match(/\d+/)?.[0] || '0', 10);
+          return val || Math.round(room.priceKes / 4);
+        }
+        return Math.round(room.priceKes / 4);
+      })) : 0;
     };
-    const minRent = getMinSemesterRent();
+    const minRent = getMinMonthlyRent();
     return {
       hostel,
       totalBeds,
@@ -3841,17 +3846,7 @@ export default function App() {
 
                     const monthlyRent = getMinMonthlyRent();
 
-                    const getMinSemesterRent = () => {
-                      if (selectedHostel.rentSemesterKes !== undefined && selectedHostel.rentSemesterKes !== null && selectedHostel.rentSemesterKes !== '') {
-                        return selectedHostel.rentSemesterKes;
-                      }
-                      if (!selectedHostel.rooms || selectedHostel.rooms.length === 0) {
-                        return 18000;
-                      }
-                      return Math.min(...selectedHostel.rooms.map(r => r.priceKes));
-                    };
 
-                    const semesterRent = getMinSemesterRent();
 
                     const detailedRules = selectedHostel.rules && selectedHostel.rules.length > 0 ? selectedHostel.rules : [
                       "No loud speakers or subwoofer sound systems after 10:00 PM",
@@ -3973,22 +3968,15 @@ export default function App() {
                                 </p>
                               </div>
 
-                              {/* Rates Grid Block: price (per month per person/per semester) */}
+                              {/* Rates Block: price (per month per person) */}
                               <div className="bg-gradient-to-br from-emerald-50/60 to-slate-50 border border-emerald-100/80 rounded-2xl p-4 space-y-2">
                                 <span className="text-[10px] font-mono tracking-wider font-bold text-emerald-800 uppercase block">
                                   💰 Active Rent & Pricing Schedule (Approved)
                                 </span>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                  <div className="bg-white border border-emerald-50 p-3 rounded-xl">
-                                    <span className="text-[10px] text-slate-500 block font-sans">Monthly Rate (Per Person)</span>
-                                    <span className="text-lg font-black text-emerald-600 font-mono break-all">{formatMonthlyRent(monthlyRent)}</span>
-                                    <span className="text-[9px] text-slate-400 block mt-0.5 font-mono">Electricity and water inclusive</span>
-                                  </div>
-                                  <div className="bg-white border border-slate-100 p-3 rounded-xl">
-                                    <span className="text-[10px] text-slate-500 block font-sans">Full Academic Semester</span>
-                                    <span className="text-lg font-extrabold text-slate-800 font-mono break-all">{formatSemesterRent(semesterRent)}</span>
-                                    <span className="text-[9px] text-slate-400 block mt-0.5 font-mono">Guarantees bed space for 4 months</span>
-                                  </div>
+                                <div className="bg-white border border-emerald-50 p-3 rounded-xl">
+                                  <span className="text-[10px] text-slate-500 block font-sans">Monthly Rate (Per Person)</span>
+                                  <span className="text-lg font-black text-emerald-600 font-mono break-all">{formatMonthlyRent(monthlyRent)}</span>
+                                  <span className="text-[9px] text-slate-400 block mt-0.5 font-mono">Electricity and water inclusive</span>
                                 </div>
                               </div>
 
@@ -4747,7 +4735,7 @@ export default function App() {
                             
                             <div className="space-y-1.5 text-xs text-slate-600">
                               <div className="flex justify-between">
-                                <span className="text-slate-500">Semester Rent:</span>
+                                <span className="text-slate-500">Monthly Rent:</span>
                                 <span className="font-mono font-semibold text-slate-900">KES {rentAmount.toLocaleString()}</span>
                               </div>
                               <div className="flex justify-between">
@@ -5426,10 +5414,7 @@ export default function App() {
                         <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Monthly Rent From</span>
                         <input type="text" value={adminDraftHostel.rentMonthlyKes || ''} onChange={(e) => handleAdminHostelFieldChange('rentMonthlyKes', e.target.value || undefined)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
                       </label>
-                      <label className="space-y-1">
-                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Semester Rent From</span>
-                        <input type="text" value={adminDraftHostel.rentSemesterKes || ''} onChange={(e) => handleAdminHostelFieldChange('rentSemesterKes', e.target.value || undefined)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
-                      </label>
+
                       <label className="space-y-1 md:col-span-2">
                         <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Description</span>
                         <textarea value={adminDraftHostel.description} onChange={(e) => handleAdminHostelFieldChange('description', e.target.value)} rows={3} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-semibold text-slate-800 dark:text-slate-100" />
@@ -5464,7 +5449,7 @@ export default function App() {
                           <div>Floor</div>
                           <div>Occupants</div>
                           <div>Max Occ.</div>
-                          <div>Semester Rent</div>
+                          <div>Monthly Rent</div>
                           <div>Monthly Rent</div>
                           <div>Action</div>
                         </div>
@@ -5484,7 +5469,7 @@ export default function App() {
                           <input aria-label="Floor" type="number" value={room.floor} onChange={(e) => handleAdminRoomFieldChange(room.id, 'floor', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
                           <input aria-label="Occupants" type="number" value={room.currentOccupants} onChange={(e) => handleAdminRoomFieldChange(room.id, 'currentOccupants', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
                           <input aria-label="Max occupants" type="number" value={room.maxOccupants} onChange={(e) => handleAdminRoomFieldChange(room.id, 'maxOccupants', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
-                          <input aria-label="Semester rent" type="number" value={room.priceKes} onChange={(e) => handleAdminRoomFieldChange(room.id, 'priceKes', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
+                          <input aria-label="Monthly rent" type="number" value={room.priceKes} onChange={(e) => handleAdminRoomFieldChange(room.id, 'priceKes', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
                           <input aria-label="Monthly rent" type="text" value={room.rentMonthlyKes || ''} onChange={(e) => handleAdminRoomFieldChange(room.id, 'rentMonthlyKes', e.target.value || undefined)} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
                           <button onClick={() => handleAdminRemoveRoom(room.id)} className="rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-[10px] font-black hover:bg-rose-100 cursor-pointer">Remove</button>
                         </div>
@@ -5500,7 +5485,7 @@ export default function App() {
                   <div className="flex items-center justify-between gap-3 mb-4">
                     <div>
                       <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">Hostel Occupancy</h3>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Capacity and lowest semester rent by property.</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Capacity and lowest monthly rent by property.</p>
                     </div>
                     <span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2.5 py-1 rounded-lg">
                       {occupiedBedsCount}/{totalBedsCount} beds filled
@@ -7237,17 +7222,25 @@ export default function App() {
                   <tr>
                     <td className="p-4 border-b border-slate-100 dark:border-slate-800/50 font-bold text-slate-500 uppercase tracking-wider text-xs">Rent Starting At</td>
                     {compareHostels.map(hostel => {
-                      const getMinSemesterRent = () => {
-                        if (hostel.rentSemesterKes !== undefined && hostel.rentSemesterKes !== null && hostel.rentSemesterKes !== '') {
-                          return hostel.rentSemesterKes;
+                      const getMinMonthlyRentForCompare = () => {
+                        if (hostel.rentMonthlyKes !== undefined && hostel.rentMonthlyKes !== null && hostel.rentMonthlyKes !== '') {
+                          return hostel.rentMonthlyKes;
                         }
                         if (!hostel.rooms || hostel.rooms.length === 0) {
-                          return 18000;
+                          return 4500;
                         }
-                        return Math.min(...hostel.rooms.map(r => r.priceKes));
+                        const definedRents = hostel.rooms.map(r => r.rentMonthlyKes).filter(Boolean);
+                        if (definedRents.length > 0) {
+                          return definedRents.reduce((min, current) => {
+                            const minVal = getNumericRent(min, 999999);
+                            const currVal = getNumericRent(current, 999999);
+                            return currVal < minVal ? current : min;
+                          }, definedRents[0]);
+                        }
+                        return hostel.rooms.length > 0 ? Math.min(...hostel.rooms.map(r => Math.round(r.priceKes / 4))) : 4500;
                       };
-                      const rent = getMinSemesterRent();
-                      return <td key={hostel.id} className="p-4 border-b border-slate-100 dark:border-slate-800/50 font-black text-emerald-600 text-lg break-all">{formatSemesterRent(rent)}</td>;
+                      const rent = getMinMonthlyRentForCompare();
+                      return <td key={hostel.id} className="p-4 border-b border-slate-100 dark:border-slate-800/50 font-black text-emerald-600 text-lg break-all">{formatMonthlyRent(rent)}</td>;
                     })}
                   </tr>
                   <tr>
