@@ -4044,10 +4044,26 @@ export default function App() {
                                 <p className="text-xs text-slate-500 leading-relaxed font-normal">
                                   For virtual tour setup, key allocation details, or physical booking verification, coordinate with the desk:
                                 </p>
-                                <div className="text-xs font-mono py-2.5 px-3 bg-white rounded-xl border border-slate-200 font-bold text-slate-800 space-y-1 shadow-sm">
-                                  <div>Phone: +254 795 858929</div>
-                                  <div className="text-[10px] text-emerald-600 font-normal">✓ WhatsApp Available</div>
-                                </div>
+                                <a 
+                                  href={(() => {
+                                    let clean = '254795858929';
+                                    if (selectedHostel.landlordPhone) {
+                                      clean = String(selectedHostel.landlordPhone).replace(/[^0-9]/g, '');
+                                      if (clean.startsWith('0')) {
+                                        clean = '254' + clean.substring(1);
+                                      }
+                                    }
+                                    const msg = `Hello NyumbaniKisii admin, I am viewing rooms online at '${selectedHostel.name}' and would love to verify booking allotments checks`;
+                                    return `https://wa.me/${clean}?text=${encodeURIComponent(msg)}`;
+                                  })()}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="block text-xs font-mono py-2.5 px-3 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 border border-emerald-250 dark:border-emerald-900/60 font-bold text-emerald-700 dark:text-emerald-300 space-y-1 shadow-sm rounded-xl transition duration-200 active:scale-[0.98] cursor-pointer"
+                                  title="Click to Chat on WhatsApp"
+                                >
+                                  <div>Phone: {selectedHostel.landlordPhone || '+254 795 858929'}</div>
+                                  <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal">✓ Click to Chat on WhatsApp</div>
+                                </a>
                               </div>
                             </div>
 

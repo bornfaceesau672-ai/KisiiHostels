@@ -87,9 +87,22 @@ export default function AvailabilityGrid({ hostel, onSelectBookRoom, activeBooki
               </p>
             </div>
           </div>
-          <div className="bg-white border border-slate-200/80 px-4 py-2.5 rounded-xl text-sm font-bold font-mono text-slate-800 shadow-sm shrink-0">
-            📞 Phone: {hostel.landlordPhone}
-          </div>
+          <a
+            href={(() => {
+              let clean = String(hostel.landlordPhone || '254795858929').replace(/[^0-9]/g, '');
+              if (clean.startsWith('0')) {
+                clean = '254' + clean.substring(1);
+              }
+              const msg = `Hello NyumbaniKisii admin, I am viewing rooms online at '${hostel.name}' and would love to verify booking allotments checks`;
+              return `https://wa.me/${clean}?text=${encodeURIComponent(msg)}`;
+            })()}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 border border-emerald-250 dark:border-emerald-900/60 px-4 py-2.5 rounded-xl text-sm font-bold font-mono text-emerald-700 dark:text-emerald-300 shadow-sm shrink-0 transition active:scale-98 cursor-pointer select-none"
+            title="Chat on WhatsApp"
+          >
+            <span>💬 Chat: {hostel.landlordPhone}</span>
+          </a>
         </div>
       )}
 
