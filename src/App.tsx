@@ -308,13 +308,6 @@ export default function App() {
             uniqueParsed.push(h);
           }
         }
-        // Merge in any initial hostels that are missing from localStorage
-        for (const ih of INITIAL_HOSTELS) {
-          if (!seenIds.has(ih.id)) {
-            seenIds.add(ih.id);
-            uniqueParsed.push(ih);
-          }
-        }
         // If localStorage yielded no valid hostels, fall back to INITIAL_HOSTELS
         if (uniqueParsed.length === 0) {
           console.warn('LocalStorage had no valid hostels — falling back to INITIAL_HOSTELS.');
@@ -604,14 +597,6 @@ export default function App() {
           }
 
           if (loadedHostels.length > 0) {
-            // Merge in any initial hostels that are missing from Firestore
-            const seenIds = new Set(loadedHostels.map(h => h.id));
-            for (const ih of INITIAL_HOSTELS) {
-              if (!seenIds.has(ih.id)) {
-                loadedHostels.push(ih);
-              }
-            }
-
             // Sort hostels by estate/area to maintain layout alignment consistency
             const estateOrderLocal = [
               'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Safariland', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'
