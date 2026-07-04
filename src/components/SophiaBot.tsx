@@ -126,7 +126,7 @@ export default function SophiaBot({ userProfile }: SophiaBotProps) {
       // Realistic mock helper response for robust user UX
       const fallbackReplies: Record<string, string> = {
         'curfew': "Gates around Mwembe, Nyanchwa, and Jogoo are locked at 10:00 PM on the dot. Comrades are advised to be inside for safety!\n\nIf you have a late lesson or group discussion, coordinate directly with your block caretaker or warden to avoid being locked out. (Offline mode helper)",
-        'water': "Nyanchwa Apex, Mwembe Oasis, and several student courts feature continuous borehole water connections, meaning constant running water. Safariland Heights is also borehole-backed. (Offline mode helper)",
+        'water': "Nyanchwa Apex, Mwembe Oasis, and several student courts feature continuous borehole water connections, meaning constant running water. Roma Heights is also borehole-backed. (Offline mode helper)",
         'electricity': "Hostels share pre-loaded prepaid tokens. Comrades in a room coordinate to split the KPLC bill equally. (Offline mode helper)",
         'nyanchwa': "Nyanchwa is hilltop-located. Fantastic breeze and calm, quiet study atmosphere, but the hilly climb from Kisii campus is a stamina training! (Offline mode helper)",
         'pay rent': "Sasa comrade! Rent is paid per semester (4 months). Most landlords require a security deposit is paid upfront with the rent. Real-time token updates can be tracked inside the My Bookings invoice console. (Offline mode helper)",

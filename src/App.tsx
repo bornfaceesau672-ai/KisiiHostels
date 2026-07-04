@@ -105,8 +105,8 @@ const ESTATE_LABELS: Record<string, { label: string; icon: string; description: 
     icon: 'Home',
     description: 'Economical, social, and student-friendly residential suburb.'
   },
-  'Safariland': {
-    label: 'Safariland Plaza',
+  'Roma': {
+    label: 'Roma Estate',
     icon: 'Shops',
     description: 'Closer to shops, cyber cafes, and commercial printing centers.'
   },
@@ -163,7 +163,7 @@ const ESTATE_SCHOOL_INFO: Record<string, { distance: string; walkTime: string; s
     securityScore: '4.0/5 (Comrade Populated)',
     alert: 'Pocket friendly, highly populated student suburb. Safe walking in comrade batches after dusk.'
   },
-  'Safariland': {
+  'Roma': {
     distance: '300 - 550 meters',
     walkTime: '6 - 12 mins walk',
     securityScore: '4.3/5 (CCTV & Security Fenced)',
@@ -201,7 +201,7 @@ const estateOrder = [
   'Nyanchwa',
   'Milimani',
   'Jogoo',
-  'Safariland',
+  'Roma',
   'Nyaura',
   'Canaan',
   'Kisumu ndogo',
@@ -268,7 +268,7 @@ export default function App() {
       'Nyanchwa',
       'Milimani',
       'Jogoo',
-      'Safariland',
+      'Roma',
       'Nyaura',
       'Canaan',
       'Kisumu ndogo',
@@ -599,7 +599,7 @@ export default function App() {
           if (loadedHostels.length > 0) {
             // Sort hostels by estate/area to maintain layout alignment consistency
             const estateOrderLocal = [
-              'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Safariland', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'
+              'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Roma', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'
             ];
             const sorted = loadedHostels.sort((a, b) => {
               const indexA = estateOrderLocal.indexOf(a.area);
@@ -3306,7 +3306,7 @@ export default function App() {
                 </p>
               </div>
               <div className="pt-2 text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 group-hover:underline flex items-center gap-1">
-                Open Admin Control Center â†’
+                Open Admin Control Center →
               </div>
             </div>
 
@@ -3322,7 +3322,7 @@ export default function App() {
         {activeTab === 'explore' && exploreView === 'rooms' && selectedHostel && (
           <div className="mb-6 bg-gradient-to-r from-indigo-50/60 to-slate-50/50 dark:from-indigo-950/20 dark:to-slate-900/10 border border-indigo-100 dark:border-indigo-900 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-none">
             <div className="flex items-center gap-2.5">
-              <span className="text-2xl font-normal">�?�</span>
+              <span className="text-2xl font-normal">🏡</span>
               <div>
                 <h5 className="text-sm font-extrabold text-slate-800 dark:text-slate-200 leading-tight">{selectedHostel.name}</h5>
                 <span className="text-[9px] font-mono font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-950 px-1.5 py-0.5 rounded">Active Rooms Directory</span>
@@ -3337,7 +3337,7 @@ export default function App() {
               }}
               className="text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition px-3 py-1.5 rounded-xl block cursor-pointer"
             >
-              �? Back to All Hostels
+              ← Back to All Hostels
             </button>
           </div>
         )}
@@ -3407,7 +3407,7 @@ export default function App() {
                         
                         {/* Estate Area Filter Dropdown */}
                         <div className="shrink-0 flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1.5 transition shadow-sm hover:border-slate-300 dark:hover:border-slate-700">
-                           <span className="text-slate-500 text-[10px]">�?</span>
+                           <span className="text-slate-500 text-[10px]">📍</span>
                           <select 
                             value={filterArea}
                             onChange={(e) => {
@@ -3422,7 +3422,7 @@ export default function App() {
                             <option value="Mwembe" className="dark:bg-slate-900">Mwembe (Main Gate)</option>
                             <option value="Milimani" className="dark:bg-slate-900">Milimani (Executive)</option>
                             <option value="Jogoo" className="dark:bg-slate-900">Jogoo Estate</option>
-                            <option value="Safariland" className="dark:bg-slate-900">Safariland Plaza</option>
+                            <option value="Roma" className="dark:bg-slate-900">Roma Estate</option>
                             <option value="Nyaura" className="dark:bg-slate-900">Nyaura Outpost</option>
                             <option value="Canaan" className="dark:bg-slate-900">Canaan Estate</option>
                             <option value="Kisumu ndogo" className="dark:bg-slate-900">Kisumu Ndogo</option>

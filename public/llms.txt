@@ -14,7 +14,7 @@ NyumbaniKisii is a student accommodation search and booking portal for Kisii Uni
 
 ## Core features
 
-- Browse and search hostels across 8 estate zones: On-Campus, Mwembe, Nyanchwa, Milimani, Jogoo, Safariland, Nyaura, and Canaan
+- Browse and search hostels across 8 estate zones: On-Campus, Mwembe, Nyanchwa, Milimani, Jogoo, Roma, Nyaura, and Canaan
 - Filter by budget, distance to campus, Wi-Fi, borehole water, hot shower, and room type
 - View room availability grids with bed-level occupancy tracking
 - Book rooms with M-PESA payment simulation and invoice generation
@@ -31,7 +31,7 @@ NyumbaniKisii is a student accommodation search and booking portal for Kisii Uni
 - Nyanchwa Hills: 350–650m, secure highlands, panoramic views
 - Milimani Executive: 400–800m, upscale, premium security guarded
 - Jogoo Estate: 500–900m, economical, high student population
-- Safariland Plaza: 300–550m, near shops and commercial centers
+- Roma Estate: 300–550m, near shops and commercial centers
 - Nyaura Outpost: 650–950m, tranquil, nature-rich
 - Canaan Estate: 450–755m, modern, high water consistency
 

@@ -85,8 +85,8 @@ const ESTATE_META: Record<string, {
     badge: 'Best Value',
     emoji: '🏘️',
   },
-  'Safariland': {
-    label: 'Safariland',
+  'Roma': {
+    label: 'Roma',
     icon: 'Shop',
     gradient: 'from-cyan-600 via-teal-600 to-blue-700',
     accentColor: 'bg-cyan-500',
@@ -132,7 +132,7 @@ const ESTATE_META: Record<string, {
   },
 };
 
-const ESTATE_ORDER = ['On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Safariland', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'];
+const ESTATE_ORDER = ['On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Roma', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'];
 
 const EstateLandingPage: React.FC<EstateLandingPageProps> = ({
   hostels,
@@ -411,7 +411,7 @@ const EstateLandingPage: React.FC<EstateLandingPageProps> = ({
               'Nyanchwa': 'linear-gradient(135deg, #0d9488, #059669, #15803d)',
               'Milimani': 'linear-gradient(135deg, #4338ca, #1d4ed8, #0369a1)',
               'Jogoo': 'linear-gradient(135deg, #0284c7, #2563eb, #0891b2)',
-              'Safariland': 'linear-gradient(135deg, #0891b2, #0d9488, #1d4ed8)',
+              'Roma': 'linear-gradient(135deg, #0891b2, #0d9488, #1d4ed8)',
               'Nyaura': 'linear-gradient(135deg, #1d4ed8, #4338ca, #6d28d9)',
               'Canaan': 'linear-gradient(135deg, #0369a1, #1d4ed8, #3730a3)',
               'Kisumu ndogo': 'linear-gradient(135deg, #d97706, #ea580c, #b91c1c)',

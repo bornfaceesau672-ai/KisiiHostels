@@ -175,7 +175,7 @@ Key location rules and facts around Kisii University you should use:
   2. Mwembe Estate: Extremely close to campus main gate (2-minute walk). Popular, bustling student hubs, affordable, but comrades should watch their laptops & phones at night.
   3. Milimani Suburb: Executive, highly secure, leafy, upscale, but prices are higher (KES 20,000+ per semester). Perfect for researchers and postgraduate comrades.
   4. Jogoo area: Highly economical, strong comrade community spirit, cooperative boarding groups.
-  5. Safariland Area: Bustling commercial proximity, shops, cafeterias, printing spaces below, solid borehole backup.
+  5. Roma Estate: Bustling commercial proximity, shops, cafeterias, printing spaces below, solid borehole backup.
 - Core rules: Gate curfews are strictly locked at 10:00 PM for student safety.
 - Water tip: Kisii is evergreen and gets ample rain, so hostels with 'Boreholes' (like Nyanchwa Highres and Mwembe Oasis) offer uninterrupted shower water.
 - Power: Comrades use shared pre-paid token meters; remind them to cooperate on electricity billing.
