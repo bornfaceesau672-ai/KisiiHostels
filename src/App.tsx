@@ -4509,7 +4509,9 @@ export default function App() {
                                 <p className="flex items-center gap-1.5">
                                   <span>?</span> Platform: <b className="text-slate-900 font-bold">{b.tourPlatform}</b>
                                 </p>
-
+                                <p className="flex items-center gap-1.5 font-mono">
+                                  👤 Contact Caretaker: <b className="text-slate-900 font-bold">{associatedHostel?.landlordPhone || '+254795858929'}</b>
+                                </p>
                               </div>
                             </div>
 
