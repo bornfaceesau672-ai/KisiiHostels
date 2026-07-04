@@ -73,6 +73,25 @@ export default function AvailabilityGrid({ hostel, onSelectBookRoom, activeBooki
           </p>
         </div>
       )}
+      {/* Caretaker Contact Info Section (Static, No Direct Call/WhatsApp buttons) */}
+      {hostel.landlordPhone && (
+        <div className="bg-indigo-50/50 border border-indigo-200 rounded-2xl p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 bg-indigo-100 text-indigo-700 rounded-xl">
+              <Phone className="w-5 h-5 stroke-[2]" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900">Hostel Caretaker Contact</h4>
+              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                For room allocation inquiries, keys, and physical tenancy assistance, coordinate with the caretaker:
+              </p>
+            </div>
+          </div>
+          <div className="bg-white border border-slate-200/80 px-4 py-2.5 rounded-xl text-sm font-bold font-mono text-slate-800 shadow-sm shrink-0">
+            📞 Phone: {hostel.landlordPhone}
+          </div>
+        </div>
+      )}
 
 
 

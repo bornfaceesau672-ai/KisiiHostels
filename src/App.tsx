@@ -4034,6 +4034,23 @@ export default function App() {
 
                             </div>
 
+                            {/* Right Hotline caretaker Card - Static Contact (No direct dial links) */}
+                            <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl flex flex-col gap-4 self-stretch justify-between">
+                              <div className="space-y-3">
+                                <span className="text-[9px] font-mono text-indigo-700 font-extrabold uppercase tracking-widest bg-indigo-50 border border-indigo-150 rounded px-2 py-0.5 inline-block">
+                                  Care Desk Hotline
+                                </span>
+                                <h4 className="text-sm font-bold text-slate-900 leading-normal">Hostel Representative Contact</h4>
+                                <p className="text-xs text-slate-500 leading-relaxed font-normal">
+                                  For virtual tour setup, key allocation details, or physical booking verification, coordinate with the desk:
+                                </p>
+                                <div className="text-xs font-mono py-2.5 px-3 bg-white rounded-xl border border-slate-200 font-bold text-slate-800 space-y-1 shadow-sm">
+                                  <div>Phone: +254 795 858929</div>
+                                  <div className="text-[10px] text-emerald-600 font-normal">✓ WhatsApp Available</div>
+                                </div>
+                              </div>
+                            </div>
+
 
 
                           </div>
