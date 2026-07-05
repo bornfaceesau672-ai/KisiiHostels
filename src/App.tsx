@@ -539,90 +539,78 @@ export default function App() {
     localStorage.setItem('kisii_hostels', JSON.stringify(hostels));
   }, [hostels]);
 
-  // Caching & Firestore Revalidation / Seeding
+  // Caching & Firestore Revalidation / Seeding & Real-time new hostels notifications
   useEffect(() => {
-    const fetchHostelsFromFirestore = async () => {
+    let isInitial = true;
+    const unsubscribe = onSnapshot(collection(db, 'hostels'), async (snapshot) => {
       try {
-        const querySnapshot = await getDocs(collection(db, 'hostels'));
-        if (!querySnapshot.empty) {
-          const loadedHostels: Hostel[] = [];
-          // Build a lookup map from INITIAL_HOSTELS for fallback room data
-          const initialHostelMap = new Map<string, Hostel>();
-          for (const ih of INITIAL_HOSTELS) {
-            initialHostelMap.set(ih.id, ih);
-          }
-
-          for (const docSnap of querySnapshot.docs) {
-            let data = docSnap.data() as Hostel;
-
-            // Force update on-campus hostels if they are outdated in Firestore
-            if (data.id === 'hostel-venus-mars' || data.id === 'hostel-cz-blackhouse') {
-              if (!data.externalLink) {
-                console.log(`Outdated on-campus hostel "${data.name}" detected in Firestore. Syncing...`);
-                const freshHostel = INITIAL_HOSTELS.find(h => h.id === data.id);
-                if (freshHostel) {
-                  try {
-                    await setDoc(doc(db, 'hostels', data.id), freshHostel);
-                    data = freshHostel;
-                  } catch (syncErr) {
-                    console.error('Failed to sync on-campus hostel to Firestore:', syncErr);
-                  }
-                }
-              }
-            }
-
-            // Validate that the hostel has required fields and a valid rooms array
-            if (data && data.id && data.name && data.area) {
-              // Ensure rooms is a valid array; if missing/empty (and not externalLink), try to recover from INITIAL_HOSTELS
-              if (!Array.isArray(data.rooms) || (data.rooms.length === 0 && !data.externalLink)) {
-                const fallback = initialHostelMap.get(data.id);
-                if (fallback && Array.isArray(fallback.rooms) && fallback.rooms.length > 0) {
-                  data.rooms = fallback.rooms;
-                  console.warn(`Hostel "${data.name}" had missing/empty rooms — recovered from INITIAL_HOSTELS.`);
-                } else if (!data.externalLink) {
-                  console.warn(`Hostel "${data.name}" has no rooms and no fallback — skipping.`);
-                  continue; // Skip hostels with no rooms and no fallback
-                }
-              }
-              loadedHostels.push(data);
-            } else {
-              console.warn('Skipping invalid hostel document from Firestore:', docSnap.id);
-            }
-          }
-
-          if (loadedHostels.length > 0) {
-            // Sort hostels by estate/area to maintain layout alignment consistency
-            const estateOrderLocal = [
-              'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Roma', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'
-            ];
-            const sorted = loadedHostels.sort((a, b) => {
-              const indexA = estateOrderLocal.indexOf(a.area);
-              const indexB = estateOrderLocal.indexOf(b.area);
-              const orderA = indexA === -1 ? 999 : indexA;
-              const orderB = indexB === -1 ? 999 : indexB;
-              if (orderA !== orderB) return orderA - orderB;
-              return a.name.localeCompare(b.name);
-            });
-
-            setHostels(sorted);
-            localStorage.setItem('kisii_hostels', JSON.stringify(sorted));
-            console.log(`Successfully fetched and synced ${sorted.length} hostels from Firestore.`);
-          } else {
-            console.warn('All Firestore hostels were invalid — keeping local/initial data.');
-          }
-        } else {
+        if (snapshot.empty) {
           // If Firestore is empty, seed it with INITIAL_HOSTELS
           console.log('Firestore is empty. Auto-seeding default INITIAL_HOSTELS to database.');
           for (const hostel of INITIAL_HOSTELS) {
             await setDoc(doc(db, 'hostels', hostel.id), hostel);
           }
+          return;
         }
-      } catch (err) {
-        console.warn('Firestore hostels fetch failed, using local cached copy:', err);
-      }
-    };
 
-    fetchHostelsFromFirestore();
+        const loadedHostels: Hostel[] = [];
+        const initialHostelMap = new Map<string, Hostel>();
+        for (const ih of INITIAL_HOSTELS) {
+          initialHostelMap.set(ih.id, ih);
+        }
+
+        for (const docSnap of snapshot.docs) {
+          let data = docSnap.data() as Hostel;
+
+          // Validate that the hostel has required fields and a valid rooms array
+          if (data && data.id && data.name && data.area) {
+            // Ensure rooms is a valid array; if missing/empty (and not externalLink), try to recover from INITIAL_HOSTELS
+            if (!Array.isArray(data.rooms) || (data.rooms.length === 0 && !data.externalLink)) {
+              const fallback = initialHostelMap.get(data.id);
+              if (fallback && Array.isArray(fallback.rooms) && fallback.rooms.length > 0) {
+                data.rooms = fallback.rooms;
+              } else if (!data.externalLink) {
+                continue; // Skip hostels with no rooms and no fallback
+              }
+            }
+            loadedHostels.push(data);
+          }
+        }
+
+        if (loadedHostels.length > 0) {
+          // Sort hostels by estate/area to maintain layout alignment consistency
+          const estateOrderLocal = [
+            'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Roma', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'
+          ];
+          const sorted = loadedHostels.sort((a, b) => {
+            const indexA = estateOrderLocal.indexOf(a.area);
+            const indexB = estateOrderLocal.indexOf(b.area);
+            const orderA = indexA === -1 ? 999 : indexA;
+            const orderB = indexB === -1 ? 999 : indexB;
+            if (orderA !== orderB) return orderA - orderB;
+            return a.name.localeCompare(b.name);
+          });
+
+          setHostels(sorted);
+          localStorage.setItem('kisii_hostels', JSON.stringify(sorted));
+        }
+
+        // Trigger real-time notifications for newly added hostels after initial page load
+        if (!isInitial) {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === 'added') {
+              const newHostel = change.doc.data() as Hostel;
+              showFeedback(`🔔 A new rental and rooms have been added into NyumbaniKisii website, Check it out: "${newHostel.name}"`, 'info');
+            }
+          });
+        }
+        isInitial = false;
+      } catch (err) {
+        console.warn('Real-time hostels sync failed:', err);
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   // Real-time Firestore sync for Bookings
