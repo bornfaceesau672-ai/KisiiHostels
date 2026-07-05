@@ -388,6 +388,33 @@ export default function App() {
   } | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
 
+  // Real-time SMS broadcast alerts stack state for offline registered users
+  const [activePhoneAlerts, setActivePhoneAlerts] = useState<{ id: string; phone: string; name: string; message: string }[]>([]);
+
+  const dispatchSMSNotifications = (hostelName: string) => {
+    const message = `A new rental and rooms have been added into NyumbaniKisii website, Check it out: "${hostelName}"`;
+    
+    // Loop through registered users (both mock/offline and current)
+    registeredUsers.forEach((user, idx) => {
+      if (user.phone) {
+        setTimeout(() => {
+          const alertId = Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+          setActivePhoneAlerts(prev => [...prev, { 
+            id: alertId, 
+            phone: user.phone, 
+            name: user.displayName, 
+            message: message 
+          }]);
+          
+          // Auto remove after 6 seconds
+          setTimeout(() => {
+            setActivePhoneAlerts(prev => prev.filter(alert => alert.id !== alertId));
+          }, 6000);
+        }, idx * 800);
+      }
+    });
+  };
+
   // Listen for Firebase account session changes (with localStorage fallback)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
