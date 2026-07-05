@@ -208,6 +208,7 @@ const estateOrder = [
 ];
 
 const ADMIN_EMAIL = 'esaubornface73@gmail.com';
+const ADMIN_EMAILS = ['esaubornface73@gmail.com', 'hillaryngari4@gmail.com'];
 
 // Premium Skeleton loading card for elegant, smooth state transitions
 const SkeletonCard = () => (
@@ -940,7 +941,7 @@ export default function App() {
       return;
     }
 
-    const isAdmin = (userProfile?.email || currentUser?.email || '').toLowerCase() === ADMIN_EMAIL;
+    const isAdmin = ADMIN_EMAILS.includes((userProfile?.email || currentUser?.email || '').toLowerCase());
     const chatsRef = collection(db, 'admin_chats');
     
     let chatsQuery;
@@ -971,7 +972,7 @@ export default function App() {
 
     setIsSendingAdminMessage(true);
     try {
-      const isSenderAdmin = (userProfile?.email || currentUser?.email || '').toLowerCase() === ADMIN_EMAIL;
+      const isSenderAdmin = ADMIN_EMAILS.includes((userProfile?.email || currentUser?.email || '').toLowerCase());
       const chatId = isSenderAdmin ? activeChatStudentEmail : currentUser.email;
       if (!chatId) {
         showFeedback('No active conversation selected.', 'warning');
@@ -1034,7 +1035,7 @@ export default function App() {
     setIsPostingNews(true);
     try {
       const author = userProfile?.displayName || currentUser.email?.split('@')[0] || 'Comrade Resident';
-      const isAdmin = (userProfile?.email || currentUser?.email || '').toLowerCase() === ADMIN_EMAIL;
+      const isAdmin = ADMIN_EMAILS.includes((userProfile?.email || currentUser?.email || '').toLowerCase());
       const newPostId = Date.now().toString();
       
       const finalCategory = isAdmin ? 'Alert' : 'General';
@@ -1107,7 +1108,7 @@ export default function App() {
       if (!postToReply) return;
 
       const author = userProfile?.displayName || currentUser.email?.split('@')[0] || 'Comrade Resident';
-      const isAdmin = (userProfile?.email || currentUser?.email || '').toLowerCase() === ADMIN_EMAIL;
+      const isAdmin = ADMIN_EMAILS.includes((userProfile?.email || currentUser?.email || '').toLowerCase());
       
       const newReply = {
         id: Date.now().toString(),
@@ -1404,7 +1405,7 @@ export default function App() {
     setActiveImageIndex(0);
   }, [selectedHostel?.id]);
 
-  const isAdminUser = (userProfile?.email || currentUser?.email || '').toLowerCase() === ADMIN_EMAIL;
+  const isAdminUser = ADMIN_EMAILS.includes((userProfile?.email || currentUser?.email || '').toLowerCase());
 
   useEffect(() => {
     if (isAdminUser) {
@@ -2196,7 +2197,7 @@ export default function App() {
         } catch (e) {
           console.error('Failed to get token claims:', e);
         }
-        showFeedback(`Saved locally! Warning: Permission denied by Firebase security rules. Logged in as: ${auth.currentUser?.email || 'Not logged in'} (Token email: "${claimsEmail}"). Only esaubornface73@gmail.com is authorized to write to hostels.`, 'warning');
+        showFeedback(`Saved locally! Warning: Permission denied by Firebase security rules. Logged in as: ${auth.currentUser?.email || 'Not logged in'} (Token email: "${claimsEmail}"). Only authorized administrators are authorized to write to hostels.`, 'warning');
       } else {
         showFeedback(`Saved locally! Warning: Failed to sync with Firebase (${error?.message || 'Please check your connection'}).`, 'warning');
       }
@@ -2289,7 +2290,7 @@ export default function App() {
         } catch (e) {
           console.error('Failed to get token claims:', e);
         }
-        showFeedback(`Deleted locally! Warning: Permission denied by Firebase security rules. Logged in as: ${auth.currentUser?.email || 'Not logged in'} (Token email: "${claimsEmail}"). Only esaubornface73@gmail.com is authorized to delete hostels.`, 'warning');
+        showFeedback(`Deleted locally! Warning: Permission denied by Firebase security rules. Logged in as: ${auth.currentUser?.email || 'Not logged in'} (Token email: "${claimsEmail}"). Only authorized administrators are authorized to delete hostels.`, 'warning');
       } else {
         showFeedback(`Deleted locally! Warning: Failed to sync deletion with Firebase (${error?.message || 'Please check your connection'}).`, 'warning');
       }
@@ -4952,7 +4953,7 @@ export default function App() {
                 <div className="space-y-2">
                   <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">Admin Access Restricted</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-                    Only <span className="font-bold text-slate-900 dark:text-slate-100">{ADMIN_EMAIL}</span> can open the admin dashboard and edit hostel data.
+                    Only <span className="font-bold text-slate-900 dark:text-slate-100">{ADMIN_EMAILS.join(' or ')}</span> can open the admin dashboard and edit hostel data.
                   </p>
                 </div>
               </div>
@@ -6898,7 +6899,7 @@ export default function App() {
                               </span>
                             </div>
                             {chatMessages.map((msg) => {
-                              const isAdminMsg = msg.senderEmail === ADMIN_EMAIL;
+                              const isAdminMsg = ADMIN_EMAILS.includes(msg.senderEmail.toLowerCase());
                               return (
                                 <div
                                   key={msg.id}
