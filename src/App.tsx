@@ -395,6 +395,7 @@ export default function App() {
 
   // Real-time SMS broadcast alerts stack state for offline registered users
   const [activePhoneAlerts, setActivePhoneAlerts] = useState<{ id: string; phone: string; name: string; message: string }[]>([]);
+  const [smsBroadcastLogs, setSmsBroadcastLogs] = useState<{ id: string; timestamp: string; phone: string; recipient: string; status: string; message: string }[]>([]);
 
   const dispatchSMSNotifications = (hostelName: string) => {
     const message = `A new rental and rooms have been added into NyumbaniKisii website, Check it out: "${hostelName}"`;
@@ -420,12 +421,26 @@ export default function App() {
         setTimeout(() => {
           const alertId = Date.now() + '_' + Math.random().toString(36).substring(2, 9);
           console.log(`[SMS Broadcast Sim] Dispatching to ${user.displayName} (${user.phone})`);
+          
           setActivePhoneAlerts(prev => [...prev, { 
             id: alertId, 
             phone: user.phone, 
             name: user.displayName, 
             message: message 
           }]);
+
+          // Add to SMS broadcast logs
+          setSmsBroadcastLogs(prev => [
+            {
+              id: alertId,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+              phone: user.phone,
+              recipient: user.displayName,
+              status: 'Delivered',
+              message: message
+            },
+            ...prev
+          ]);
           
           // Auto remove after 6 seconds
           setTimeout(() => {
@@ -5868,6 +5883,52 @@ export default function App() {
                           </div>
                         )}
                       </div>
+                    </div>
+                  </div>
+
+                  {/* 4. SMS Broadcast Dispatch Monitor */}
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                          SMS Notification Broadcast Logs
+                        </h3>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">Live delivery records of rental notifications sent to offline registered numbers.</p>
+                      </div>
+                      <span className="text-[10px] font-mono bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold px-2 py-0.5 rounded-full">
+                        {smsBroadcastLogs.length} logged
+                      </span>
+                    </div>
+
+                    <div className="overflow-y-auto max-h-[250px] space-y-2 pr-1">
+                      {smsBroadcastLogs.map((log) => (
+                        <div key={log.id} className="border border-slate-150 dark:border-slate-800/60 rounded-xl p-3 flex items-center justify-between gap-3 bg-slate-50/20 dark:bg-slate-950/10 hover:bg-slate-50/50 dark:hover:bg-slate-950/30 transition-colors">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200">{log.recipient}</span>
+                              <span className="text-[9px] font-mono text-slate-400">{log.phone}</span>
+                            </div>
+                            <p className="text-[10.5px] text-slate-505 dark:text-slate-400 leading-normal">
+                              "{log.message}"
+                            </p>
+                          </div>
+                          
+                          <div className="text-right shrink-0">
+                            <span className="inline-flex items-center gap-1 text-[9px] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-350 font-bold px-2 py-0.5 rounded-full">
+                              <span className="w-1 h-1 rounded-full bg-emerald-500"></span>
+                              {log.status}
+                            </span>
+                            <span className="block text-[8px] text-slate-400 font-mono mt-1">{log.timestamp}</span>
+                          </div>
+                        </div>
+                      ))}
+
+                      {smsBroadcastLogs.length === 0 && (
+                        <div className="text-center py-8 text-xs text-slate-400 italic border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                          No notifications sent yet. Create a new hostel to trigger a live SMS broadcast!
+                        </div>
+                      )}
                     </div>
                   </div>
 
