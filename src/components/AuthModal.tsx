@@ -123,12 +123,11 @@ export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = '
 
       if (mode === 'signin') {
         if (!email.trim() || !password.trim()) {
-          throw new Error('Please fill in your email or phone and password to continue.');
+          throw new Error('Please fill in your email and password to continue.');
         }
-        const finalEmail = email.includes('@') ? email.trim().toLowerCase() : `${email.trim().replace(/\D/g, '')}@kisii.com`;
-        await onSignIn(finalEmail, password);
+        await onSignIn(email, password);
       } else if (mode === 'signup') {
-        if (!password.trim() || !name.trim() || !phone.trim()) {
+        if (!email.trim() || !password.trim() || !name.trim() || !phone.trim()) {
           throw new Error('Please fill in all fields to complete your registration.');
         }
         if (phone.length !== 10) {
@@ -137,43 +136,13 @@ export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = '
         if (password.length < 6) {
           throw new Error('Password must be at least 6 characters for your security.');
         }
-        const generatedEmail = `${phone.trim()}@kisii.com`;
-        await onSignUp(generatedEmail, password, name, category, phone);
+        await onSignUp(email, password, name, category, phone);
       } else if (mode === 'forgotpassword') {
         if (!email.trim()) {
-          throw new Error('Please enter your email address or phone number to receive reset link.');
+          throw new Error('Please enter your email address to receive reset link.');
         }
-        
-        // Call backend API to generate reset link
-        const res = await fetch('/api/auth/generate-reset-link', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ identifier: email })
-        });
-        
-        const data = await res.json();
-        
-        if (data.success && data.link) {
-          const cleanedPhone = email.includes('@') ? '' : email.trim().replace(/\D/g, '');
-          const targetPhone = cleanedPhone || '0795858929';
-          const text = encodeURIComponent(`Reset your Kisii Hostel Hub password here: ${data.link}`);
-          const whatsappUrl = `https://wa.me/254${targetPhone.replace(/^0/, '')}?text=${text}`;
-          
-          setSuccessMessage('✓ Password reset link generated! Redirecting to WhatsApp to send it to your phone...');
-          setTimeout(() => {
-            window.open(whatsappUrl, '_blank');
-          }, 2000);
-        } else if (data.method === 'fallback_warden') {
-          const text = encodeURIComponent(`Hello Warden, I forgot my password for my Kisii Hostel Hub account (Phone: ${data.phone}). Please reset it for me.`);
-          const whatsappUrl = `https://wa.me/254795858929?text=${text}`;
-          
-          setSuccessMessage('✓ Redirecting to Warden Helpline via WhatsApp to reset your password...');
-          setTimeout(() => {
-            window.open(whatsappUrl, '_blank');
-          }, 2000);
-        } else {
-          throw new Error(data.error || 'Failed to generate password reset link.');
-        }
+        await sendPasswordResetEmail(auth, email);
+        setSuccessMessage('✓ Password reset link has been sent to your email. Check your inbox!');
       }
     } catch (err: any) {
       console.error(err);
@@ -219,7 +188,7 @@ export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = '
           <p className="text-indigo-200 text-xs mt-1">
             {mode === 'signin' ? 'Sign in to access bookings, maintenance, and AI Sophia.' : 
              mode === 'signup' ? 'Register to book rooms, file repair tickets, and more.' : 
-             'Enter your email or phone below to receive a password reset link.'}
+             'Enter your email below to receive a password reset link.'}
           </p>
         </div>
 
@@ -259,21 +228,19 @@ export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = '
               </div>
             )}
 
-            {mode !== 'signup' && (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-                  <Mail className="w-3.5 h-3.5 text-slate-400" /> Email or Phone Number
-                </label>
-                <input 
-                  type="text"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. 0712345678 or comrade@gmail.com"
-                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
-                />
-              </div>
-            )}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                <Mail className="w-3.5 h-3.5 text-slate-400" /> Email Address
+              </label>
+              <input 
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="e.g. comrade@gmail.com"
+                className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
+              />
+            </div>
 
             {/* Phone Number for register flow only */}
             {mode === 'signup' && (
