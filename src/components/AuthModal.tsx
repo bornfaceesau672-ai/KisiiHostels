@@ -123,11 +123,12 @@ export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = '
 
       if (mode === 'signin') {
         if (!email.trim() || !password.trim()) {
-          throw new Error('Please fill in your email and password to continue.');
+          throw new Error('Please fill in your email or phone and password to continue.');
         }
-        await onSignIn(email, password);
+        const finalEmail = email.includes('@') ? email.trim().toLowerCase() : `${email.trim().replace(/\D/g, '')}@kisii.com`;
+        await onSignIn(finalEmail, password);
       } else if (mode === 'signup') {
-        if (!email.trim() || !password.trim() || !name.trim() || !phone.trim()) {
+        if (!password.trim() || !name.trim() || !phone.trim()) {
           throw new Error('Please fill in all fields to complete your registration.');
         }
         if (phone.length !== 10) {
@@ -136,12 +137,14 @@ export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = '
         if (password.length < 6) {
           throw new Error('Password must be at least 6 characters for your security.');
         }
-        await onSignUp(email, password, name, category, phone);
+        const generatedEmail = `${phone.trim()}@kisii.com`;
+        await onSignUp(generatedEmail, password, name, category, phone);
       } else if (mode === 'forgotpassword') {
         if (!email.trim()) {
-          throw new Error('Please enter your email address to receive reset link.');
+          throw new Error('Please enter your email address or phone number to receive reset link.');
         }
-        await sendPasswordResetEmail(auth, email);
+        const finalEmail = email.includes('@') ? email.trim().toLowerCase() : `${email.trim().replace(/\D/g, '')}@kisii.com`;
+        await sendPasswordResetEmail(auth, finalEmail);
         setSuccessMessage('✓ Password reset link has been sent to your email. Check your inbox!');
       }
     } catch (err: any) {
@@ -188,7 +191,7 @@ export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = '
           <p className="text-indigo-200 text-xs mt-1">
             {mode === 'signin' ? 'Sign in to access bookings, maintenance, and AI Sophia.' : 
              mode === 'signup' ? 'Register to book rooms, file repair tickets, and more.' : 
-             'Enter your email below to receive a password reset link.'}
+             'Enter your email or phone below to receive a password reset link.'}
           </p>
         </div>
 
@@ -228,19 +231,21 @@ export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = '
               </div>
             )}
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-                <Mail className="w-3.5 h-3.5 text-slate-400" /> Email Address
-              </label>
-              <input 
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="e.g. comrade@gmail.com"
-                className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
-              />
-            </div>
+            {mode !== 'signup' && (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                  <Mail className="w-3.5 h-3.5 text-slate-400" /> Email or Phone Number
+                </label>
+                <input 
+                  type="text"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="e.g. 0712345678 or comrade@gmail.com"
+                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition"
+                />
+              </div>
+            )}
 
             {/* Phone Number for register flow only */}
             {mode === 'signup' && (
