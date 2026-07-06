@@ -358,6 +358,11 @@ export default function App() {
     return INITIAL_USERS;
   });
 
+  const registeredUsersRef = useRef(registeredUsers);
+  useEffect(() => {
+    registeredUsersRef.current = registeredUsers;
+  }, [registeredUsers]);
+
   const [recordedStats, setRecordedStats] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem('kisii_recorded_stats');
@@ -393,12 +398,28 @@ export default function App() {
 
   const dispatchSMSNotifications = (hostelName: string) => {
     const message = `A new rental and rooms have been added into NyumbaniKisii website, Check it out: "${hostelName}"`;
+    console.log("dispatchSMSNotifications triggered for hostel:", hostelName);
     
-    // Loop through registered users (both mock/offline and current)
-    registeredUsers.forEach((user, idx) => {
+    // Combine INITIAL_USERS (offline users) and any dynamically loaded registered users
+    const allUsers = [...INITIAL_USERS];
+    
+    // Add dynamic users who aren't already in the list
+    if (Array.isArray(registeredUsersRef.current)) {
+      registeredUsersRef.current.forEach((du) => {
+        if (du && du.phone && !allUsers.some(u => u.phone === du.phone)) {
+          allUsers.push(du);
+        }
+      });
+    }
+
+    console.log("Broadcasting SMS notifications to users count:", allUsers.length);
+    
+    // Loop through combined users and dispatch alerts
+    allUsers.forEach((user, idx) => {
       if (user.phone) {
         setTimeout(() => {
           const alertId = Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+          console.log(`[SMS Broadcast Sim] Dispatching to ${user.displayName} (${user.phone})`);
           setActivePhoneAlerts(prev => [...prev, { 
             id: alertId, 
             phone: user.phone, 
@@ -410,7 +431,7 @@ export default function App() {
           setTimeout(() => {
             setActivePhoneAlerts(prev => prev.filter(alert => alert.id !== alertId));
           }, 6000);
-        }, idx * 800);
+        }, idx * 800); // Stagger popups by 800ms
       }
     });
   };
@@ -628,6 +649,7 @@ export default function App() {
             if (change.type === 'added') {
               const newHostel = change.doc.data() as Hostel;
               showFeedback(`🔔 A new rental and rooms have been added into NyumbaniKisii website, Check it out: "${newHostel.name}"`, 'info');
+              dispatchSMSNotifications(newHostel.name);
             }
           });
         }
