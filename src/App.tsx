@@ -74,7 +74,8 @@ import {
   PinOff,
   Flag,
   Copy,
-  Check
+  Check,
+  Cloud
 } from 'lucide-react';
 
 
@@ -393,6 +394,39 @@ export default function App() {
   } | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
 
+  const isAdminUser = ADMIN_EMAILS.includes((userProfile?.email || currentUser?.email || '').toLowerCase());
+
+  const [isSyncingCloudflare, setIsSyncingCloudflare] = useState<boolean>(false);
+  const handleSyncCloudflare = async () => {
+    setIsSyncingCloudflare(true);
+    try {
+      const res = await fetch('/api/admin/sync-r2', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!res.ok) {
+        throw new Error(`Server returned status ${res.status}`);
+      }
+      const data = await res.json();
+      if (data.success) {
+        showFeedback('✓ Successfully synchronized database changes to Cloudflare R2 cache!', 'success');
+        if (Array.isArray(data.hostels)) {
+          setHostels(data.hostels);
+          localStorage.setItem('kisii_hostels', JSON.stringify(data.hostels));
+        }
+      } else {
+        throw new Error(data.error || 'Failed to sync');
+      }
+    } catch (err: any) {
+      console.error('Cloudflare sync failed:', err);
+      showFeedback(`✕ Cloudflare sync failed: ${err.message || 'Please check server connectivity'}`, 'warning');
+    } finally {
+      setIsSyncingCloudflare(false);
+    }
+  };
+
   // Real-time SMS broadcast alerts stack state for offline registered users
   const [activePhoneAlerts, setActivePhoneAlerts] = useState<{ id: string; phone: string; name: string; message: string }[]>([]);
   const [smsBroadcastLogs, setSmsBroadcastLogs] = useState<{ id: string; timestamp: string; phone: string; recipient: string; status: string; message: string }[]>([]);
@@ -602,17 +636,54 @@ export default function App() {
     localStorage.setItem('kisii_hostels', JSON.stringify(hostels));
   }, [hostels]);
 
-  // Caching & Firestore Revalidation / Seeding & Real-time new hostels notifications
+  // Load hostels on mount from Cloudflare R2 or the server cache API
   useEffect(() => {
+    let active = true;
+    const loadHostelsData = async () => {
+      try {
+        const publicUrl = (import.meta as any).env?.VITE_CLOUDFLARE_R2_PUBLIC_URL || '';
+        const fetchUrl = publicUrl ? `${publicUrl.replace(/\/$/, '')}/hostels.json` : '/api/hostels';
+        console.log(`[Hostels] Fetching listings from: ${fetchUrl}`);
+        
+        const res = await fetch(fetchUrl);
+        if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+        
+        const data = await res.json();
+        if (active && Array.isArray(data) && data.length > 0) {
+          const estateOrderLocal = [
+            'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Roma', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'
+          ];
+          const sorted = data.sort((a: Hostel, b: Hostel) => {
+            const indexA = estateOrderLocal.indexOf(a.area);
+            const indexB = estateOrderLocal.indexOf(b.area);
+            const orderA = indexA === -1 ? 999 : indexA;
+            const orderB = indexB === -1 ? 999 : indexB;
+            if (orderA !== orderB) return orderA - orderB;
+            return a.name.localeCompare(b.name);
+          });
+          setHostels(sorted);
+          localStorage.setItem('kisii_hostels', JSON.stringify(sorted));
+        }
+      } catch (err) {
+        console.warn('[Hostels] Failed to fetch hostels from cache/R2, keeping existing/local:', err);
+      }
+    };
+
+    loadHostelsData();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // For Admin Users: Listen for real-time changes to Firestore
+  useEffect(() => {
+    if (!isAdminUser) return;
+
+    console.log('[Hostels] Admin mode: Subscribing to real-time Firestore updates...');
     let isInitial = true;
     const unsubscribe = onSnapshot(collection(db, 'hostels'), async (snapshot) => {
       try {
         if (snapshot.empty) {
-          // If Firestore is empty, seed it with INITIAL_HOSTELS
-          console.log('Firestore is empty. Auto-seeding default INITIAL_HOSTELS to database.');
-          for (const hostel of INITIAL_HOSTELS) {
-            await setDoc(doc(db, 'hostels', hostel.id), hostel);
-          }
           return;
         }
 
@@ -624,16 +695,13 @@ export default function App() {
 
         for (const docSnap of snapshot.docs) {
           let data = docSnap.data() as Hostel;
-
-          // Validate that the hostel has required fields and a valid rooms array
           if (data && data.id && data.name && data.area) {
-            // Ensure rooms is a valid array; if missing/empty (and not externalLink), try to recover from INITIAL_HOSTELS
             if (!Array.isArray(data.rooms) || (data.rooms.length === 0 && !data.externalLink)) {
               const fallback = initialHostelMap.get(data.id);
               if (fallback && Array.isArray(fallback.rooms) && fallback.rooms.length > 0) {
                 data.rooms = fallback.rooms;
               } else if (!data.externalLink) {
-                continue; // Skip hostels with no rooms and no fallback
+                continue;
               }
             }
             loadedHostels.push(data);
@@ -641,7 +709,6 @@ export default function App() {
         }
 
         if (loadedHostels.length > 0) {
-          // Sort hostels by estate/area to maintain layout alignment consistency
           const estateOrderLocal = [
             'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Roma', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'
           ];
@@ -653,12 +720,10 @@ export default function App() {
             if (orderA !== orderB) return orderA - orderB;
             return a.name.localeCompare(b.name);
           });
-
           setHostels(sorted);
           localStorage.setItem('kisii_hostels', JSON.stringify(sorted));
         }
 
-        // Trigger real-time notifications for newly added hostels after initial page load
         if (!isInitial) {
           snapshot.docChanges().forEach((change) => {
             if (change.type === 'added') {
@@ -670,12 +735,15 @@ export default function App() {
         }
         isInitial = false;
       } catch (err) {
-        console.warn('Real-time hostels sync failed:', err);
+        console.warn('[Hostels] Real-time admin hostels sync failed:', err);
       }
     });
 
-    return () => unsubscribe();
-  }, []);
+    return () => {
+      console.log('[Hostels] Admin mode: Unsubscribing from Firestore updates...');
+      unsubscribe();
+    };
+  }, [isAdminUser]);
 
   // Real-time Firestore sync for Bookings
   useEffect(() => {
@@ -1457,7 +1525,7 @@ export default function App() {
     setActiveImageIndex(0);
   }, [selectedHostel?.id]);
 
-  const isAdminUser = ADMIN_EMAILS.includes((userProfile?.email || currentUser?.email || '').toLowerCase());
+
 
   useEffect(() => {
     if (isAdminUser) {
@@ -2239,6 +2307,8 @@ export default function App() {
       } else {
         showFeedback(`${adminDraftHostel.name} created successfully and synced to Firebase.`, 'success');
       }
+      // Auto-sync database changes to Cloudflare R2
+      handleSyncCloudflare();
     } catch (error: any) {
       console.error('Firestore save failed:', error);
       if (error?.code === 'permission-denied' || error?.message?.includes('permission') || error?.message?.includes('denied')) {
@@ -2332,6 +2402,8 @@ export default function App() {
       // Delete from Firestore
       await deleteDoc(doc(db, 'hostels', adminSelectedHostelId));
       showFeedback('Hostel deleted successfully and synced to Firebase.', 'success');
+      // Auto-sync database changes to Cloudflare R2
+      handleSyncCloudflare();
     } catch (error: any) {
       console.error('Firestore delete failed:', error);
       if (error?.code === 'permission-denied' || error?.message?.includes('permission') || error?.message?.includes('denied')) {
@@ -5041,6 +5113,19 @@ export default function App() {
                       Repairs & Dispatch
                     </button>
                   </div>
+
+                  <button
+                    onClick={handleSyncCloudflare}
+                    disabled={isSyncingCloudflare}
+                    className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition active:scale-95 cursor-pointer ${
+                      isSyncingCloudflare 
+                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200/50 dark:border-slate-800'
+                        : 'bg-emerald-600 hover:bg-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-400 text-white shadow-sm'
+                    }`}
+                  >
+                    <Cloud className={`w-4 h-4 ${isSyncingCloudflare ? 'animate-spin' : ''}`} />
+                    {isSyncingCloudflare ? 'Syncing...' : 'Sync to Cloudflare'}
+                  </button>
 
                   <button
                     onClick={() => {
