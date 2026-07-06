@@ -143,9 +143,37 @@ export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = '
         if (!email.trim()) {
           throw new Error('Please enter your email address or phone number to receive reset link.');
         }
-        const finalEmail = email.includes('@') ? email.trim().toLowerCase() : `${email.trim().replace(/\D/g, '')}@kisii.com`;
-        await sendPasswordResetEmail(auth, finalEmail);
-        setSuccessMessage('✓ Password reset link has been sent to your email. Check your inbox!');
+        
+        // Call backend API to generate reset link
+        const res = await fetch('/api/auth/generate-reset-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: email })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success && data.link) {
+          const cleanedPhone = email.includes('@') ? '' : email.trim().replace(/\D/g, '');
+          const targetPhone = cleanedPhone || '0795858929';
+          const text = encodeURIComponent(`Reset your Kisii Hostel Hub password here: ${data.link}`);
+          const whatsappUrl = `https://wa.me/254${targetPhone.replace(/^0/, '')}?text=${text}`;
+          
+          setSuccessMessage('✓ Password reset link generated! Redirecting to WhatsApp to send it to your phone...');
+          setTimeout(() => {
+            window.open(whatsappUrl, '_blank');
+          }, 2000);
+        } else if (data.method === 'fallback_warden') {
+          const text = encodeURIComponent(`Hello Warden, I forgot my password for my Kisii Hostel Hub account (Phone: ${data.phone}). Please reset it for me.`);
+          const whatsappUrl = `https://wa.me/254795858929?text=${text}`;
+          
+          setSuccessMessage('✓ Redirecting to Warden Helpline via WhatsApp to reset your password...');
+          setTimeout(() => {
+            window.open(whatsappUrl, '_blank');
+          }, 2000);
+        } else {
+          throw new Error(data.error || 'Failed to generate password reset link.');
+        }
       }
     } catch (err: any) {
       console.error(err);

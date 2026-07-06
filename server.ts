@@ -8,6 +8,8 @@ import { exec } from 'child_process';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, doc, setDoc } from 'firebase/firestore';
 import { INITIAL_HOSTELS } from './src/initialData';
+import * as admin from 'firebase-admin';
+import { getAuth } from 'firebase-admin/auth';
 
 // Load environment variables
 dotenv.config();
@@ -17,6 +19,22 @@ const firebaseConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'fire
 
 // Initialize Firebase JS SDK on Server
 const firebaseApp = initializeApp(firebaseConfig);
+
+// Initialize Firebase Admin SDK if service account key is available in environment
+let firebaseAdminApp: any = null;
+if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+  try {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+    firebaseAdminApp = admin.initializeApp({
+      credential: admin.cert(serviceAccount)
+    });
+    console.log('[Firebase Admin] Initialized successfully with service account key.');
+  } catch (adminErr) {
+    console.error('[Firebase Admin] Failed to initialize Admin SDK from environment key:', adminErr);
+  }
+} else {
+  console.log('[Firebase Admin] FIREBASE_SERVICE_ACCOUNT_KEY not found in environment. WhatsApp password reset will fallback to Warden contact link.');
+}
 const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
   ? getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId)
   : getFirestore(firebaseApp);
@@ -182,6 +200,37 @@ async function startServer() {
   // API: Health status
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
+  });
+
+  // API: Generate password reset link using Firebase Admin SDK (or fallback to Warden)
+  app.post('/api/auth/generate-reset-link', async (req, res) => {
+    try {
+      const { identifier } = req.body;
+      if (!identifier) {
+        return res.status(400).json({ success: false, error: 'Identifier (phone or email) is required.' });
+      }
+
+      const email = identifier.includes('@') 
+        ? identifier.trim().toLowerCase() 
+        : `${identifier.trim().replace(/\D/g, '')}@kisii.com`;
+
+      if (firebaseAdminApp) {
+        // Generate reset link using Admin SDK
+        const link = await getAuth(firebaseAdminApp).generatePasswordResetLink(email);
+        res.json({ success: true, link, method: 'admin_sdk', email });
+      } else {
+        // No Admin SDK configured, report fallback needed
+        res.json({ 
+          success: false, 
+          error: 'Firebase Admin SDK not configured on server.',
+          method: 'fallback_warden',
+          phone: identifier.trim().replace(/\D/g, '')
+        });
+      }
+    } catch (err: any) {
+      console.error('[Reset Link API] Error generating link:', err);
+      res.status(500).json({ success: false, error: err.message || 'Internal server error generating reset link' });
+    }
   });
 
   // API: Verify reCAPTCHA token
