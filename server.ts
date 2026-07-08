@@ -21,142 +21,30 @@ const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabas
   ? getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId)
   : getFirestore(firebaseApp);
 
-let cachedHostels: any[] = [];
+// Cloudflare Worker URL — always used for listing GET and admin POST sync
+const CF_WORKER_URL = process.env.CLOUDFLARE_WORKER_URL || 'https://kisii-hostels-api.esaubornface73.workers.dev';
+const CF_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN || '';
 
-// Function to upload hostels list to Cloudflare (Worker or R2)
-async function syncToCloudflareR2(hostelsList: any[]) {
-  const workerUrl = process.env.CLOUDFLARE_WORKER_URL;
-  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+// Push updated hostels JSON to the Cloudflare Worker cache
+async function syncToWorker(hostelsList: any[]) {
+  console.log(`[Server Sync] POSTing ${hostelsList.length} hostels to Worker: ${CF_WORKER_URL}`);
+  const headers: any = { 'Content-Type': 'application/json' };
+  if (CF_API_TOKEN) headers['Authorization'] = `Bearer ${CF_API_TOKEN}`;
 
-  if (workerUrl) {
-    console.log(`[Server Sync] Syncing hostels list to Cloudflare Worker: ${workerUrl}...`);
-    const headers: any = {
-      'Content-Type': 'application/json'
-    };
-    if (apiToken) {
-      headers['Authorization'] = `Bearer ${apiToken}`;
-    }
-    const res = await fetch(workerUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(hostelsList)
-    });
-    if (!res.ok) {
-      const errText = await res.text();
-      let errMsg = errText;
-      try {
-        const errJson = JSON.parse(errText);
-        errMsg = errJson?.error || errJson?.message || errText;
-      } catch (e) {
-        // ignore
-      }
-      throw new Error(`Cloudflare Worker returned status ${res.status}: ${errMsg}`);
-    }
-    console.log('[Server Sync] Successfully synced to Cloudflare Worker!');
-    return;
-  }
-
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-  const bucketName = process.env.CLOUDFLARE_R2_BUCKET_NAME || 'kisii-hostels';
-
-  if (!accountId || !apiToken) {
-    throw new Error('Cloudflare Account ID or API Token not configured on the server.');
-  }
-
-  // 1. Attempt to create R2 bucket (will succeed or return "already exists" which we ignore)
-  const createBucketUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/r2/buckets`;
-  const createRes = await fetch(createBucketUrl, {
+  const res = await fetch(CF_WORKER_URL, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiToken}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ name: bucketName })
-  });
-  
-  if (!createRes.ok) {
-    const errData = await createRes.json() as any;
-    const isAlreadyExists = errData?.errors?.some((e: any) => e.message?.includes('already exists') || e.code === 10001);
-    if (!isAlreadyExists) {
-      const errMsg = errData?.errors?.[0]?.message || 'Unknown R2 bucket error';
-      throw new Error(`Failed to ensure Cloudflare R2 bucket: ${errMsg}`);
-    }
-  }
-
-  // 2. Upload the sorted hostels JSON to R2
-  const uploadUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/r2/buckets/${bucketName}/objects/hostels.json`;
-  console.log(`[Server Sync] Syncing hostels.json to Cloudflare R2...`);
-  const uploadRes = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${apiToken}`,
-      'Content-Type': 'application/json'
-    },
+    headers,
     body: JSON.stringify(hostelsList)
   });
 
-  if (!uploadRes.ok) {
-    const errText = await uploadRes.text();
+  if (!res.ok) {
+    const errText = await res.text();
     let errMsg = errText;
-    try {
-      const errJson = JSON.parse(errText);
-      errMsg = errJson?.errors?.[0]?.message || errText;
-    } catch (e) {
-      // ignore
-    }
-    throw new Error(`Failed to upload hostels.json to Cloudflare R2: ${errMsg}`);
+    try { errMsg = JSON.parse(errText)?.error || errText; } catch (e) { /* ignore */ }
+    throw new Error(`Worker POST failed (${res.status}): ${errMsg}`);
   }
-
-  console.log('[Server Sync] Successfully synced hostels.json to Cloudflare R2!');
+  console.log('[Server Sync] Successfully synced to Cloudflare Worker!');
 }
-
-// Initialize server memory cache on startup from Firestore
-async function initializeHostelsCache() {
-  console.log('[Server Cache] Initializing hostels cache from Firestore on boot...');
-  try {
-    const querySnapshot = await getDocs(collection(db, 'hostels'));
-    if (querySnapshot.empty) {
-      console.log('[Server Cache] Firestore is empty. Auto-seeding INITIAL_HOSTELS...');
-      for (const hostel of INITIAL_HOSTELS) {
-        await setDoc(doc(db, 'hostels', hostel.id), hostel);
-      }
-      cachedHostels = [...INITIAL_HOSTELS];
-      return;
-    }
-
-    const loadedHostels: any[] = [];
-    querySnapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      if (!data.rooms || data.rooms.length === 0) {
-        const fallback = INITIAL_HOSTELS.find(ih => ih.id === data.id);
-        if (fallback) {
-          data.rooms = fallback.rooms;
-        }
-      }
-      loadedHostels.push(data);
-    });
-
-    const estateOrderLocal = [
-      'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Roma', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'
-    ];
-    const sorted = loadedHostels.sort((a, b) => {
-      const indexA = estateOrderLocal.indexOf(a.area);
-      const indexB = estateOrderLocal.indexOf(b.area);
-      const orderA = indexA === -1 ? 999 : indexA;
-      const orderB = indexB === -1 ? 999 : indexB;
-      if (orderA !== orderB) return orderA - orderB;
-      return a.name.localeCompare(b.name);
-    });
-
-    cachedHostels = sorted;
-    console.log(`[Server Cache] Cache initialized with ${sorted.length} hostels.`);
-  } catch (err) {
-    console.error('[Server Cache] Failed to initialize hostels cache:', err);
-  }
-}
-
-// Run boot initialization
-initializeHostelsCache();
 
 
 let gitPushTimeout: NodeJS.Timeout | null = null;
@@ -448,15 +336,23 @@ Ask me any question about curfew hours, security, price estimates, or local rule
     }
   });
 
-  // API: Get hostels from memory cache (fallback/CDN route)
-  app.get('/api/hostels', (req, res) => {
-    res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300');
-    res.json(cachedHostels);
+  // API: Proxy GET /api/hostels → Cloudflare Worker (never touch Firestore from frontend)
+  app.get('/api/hostels', async (req, res) => {
+    try {
+      const workerRes = await fetch(CF_WORKER_URL);
+      if (!workerRes.ok) throw new Error(`Worker returned ${workerRes.status}`);
+      const data = await workerRes.json();
+      res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300');
+      res.json(data);
+    } catch (err: any) {
+      console.error('[Hostels] Failed to fetch from Worker:', err);
+      res.status(502).json({ error: 'Failed to retrieve hostels from Worker' });
+    }
   });
 
-  // API: Explicit sync from Firebase to Cloudflare R2 triggered by Admin
+  // API: Admin sync — read Firestore → push to Cloudflare Worker cache
   app.post('/api/admin/sync-r2', async (req, res) => {
-    console.log('[Sync Endpoint] Admin triggered Cloudflare R2 sync...');
+    console.log('[Sync] Admin triggered Worker sync from Firestore...');
     try {
       const querySnapshot = await getDocs(collection(db, 'hostels'));
       const loadedHostels: any[] = [];
@@ -464,35 +360,29 @@ Ask me any question about curfew hours, security, price estimates, or local rule
         const data = docSnap.data();
         if (!data.rooms || data.rooms.length === 0) {
           const fallback = INITIAL_HOSTELS.find(ih => ih.id === data.id);
-          if (fallback) {
-            data.rooms = fallback.rooms;
-          }
+          if (fallback) data.rooms = fallback.rooms;
         }
         loadedHostels.push(data);
       });
 
-      const estateOrderLocal = [
+      const estateOrder = [
         'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Roma', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'
       ];
       const sorted = loadedHostels.sort((a, b) => {
-        const indexA = estateOrderLocal.indexOf(a.area);
-        const indexB = estateOrderLocal.indexOf(b.area);
-        const orderA = indexA === -1 ? 999 : indexA;
-        const orderB = indexB === -1 ? 999 : indexB;
-        if (orderA !== orderB) return orderA - orderB;
+        const orderA = estateOrder.indexOf(a.area);
+        const orderB = estateOrder.indexOf(b.area);
+        if ((orderA === -1 ? 999 : orderA) !== (orderB === -1 ? 999 : orderB))
+          return (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB);
         return a.name.localeCompare(b.name);
       });
 
-      cachedHostels = sorted;
-      console.log(`[Sync Endpoint] Updated memory cache with ${sorted.length} hostels.`);
+      // Push updated JSON to Cloudflare Worker cache
+      await syncToWorker(sorted);
 
-      // Sync to Cloudflare R2
-      await syncToCloudflareR2(sorted);
-      
-      res.json({ success: true, hostels: sorted });
+      res.json({ success: true, hostels: sorted, count: sorted.length });
     } catch (err: any) {
-      console.error('[Sync Endpoint] Failed to sync to R2:', err);
-      res.status(500).json({ success: false, error: err.message || 'Internal sync failure' });
+      console.error('[Sync] Failed:', err);
+      res.status(500).json({ success: false, error: err.message || 'Sync failed' });
     }
   });
 

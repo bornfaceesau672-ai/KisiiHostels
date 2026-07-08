@@ -402,30 +402,24 @@ export default function App() {
     try {
       const res = await fetch('/api/admin/sync-r2', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
       });
       if (!res.ok) {
         throw new Error(`Server returned status ${res.status}`);
       }
       const data = await res.json();
       if (data.success) {
-        if (data.r2Warning) {
-          showFeedback(`⚠ Cache synced from Firebase, but Cloudflare R2 upload failed: ${data.r2Warning}`, 'warning');
-        } else {
-          showFeedback('✓ Successfully synchronized database changes to Cloudflare R2 cache!', 'success');
-        }
+        showFeedback(`✓ Successfully synced ${data.count ?? data.hostels?.length ?? ''} listings to Cloudflare Worker cache!`, 'success');
         if (Array.isArray(data.hostels)) {
           setHostels(data.hostels);
           localStorage.setItem('kisii_hostels', JSON.stringify(data.hostels));
         }
       } else {
-        throw new Error(data.error || 'Failed to sync');
+        throw new Error(data.error || 'Sync failed');
       }
     } catch (err: any) {
       console.error('Cloudflare sync failed:', err);
-      showFeedback(`✕ Cloudflare sync failed: ${err.message || 'Please check server connectivity'}`, 'warning');
+      showFeedback(`✕ Worker sync failed: ${err.message || 'Please check server connectivity'}`, 'warning');
     } finally {
       setIsSyncingCloudflare(false);
     }
@@ -645,20 +639,13 @@ export default function App() {
     let active = true;
     const loadHostelsData = async () => {
       try {
-        const workerUrl = (import.meta as any).env?.VITE_CLOUDFLARE_WORKER_URL || '';
-        const r2Url = (import.meta as any).env?.VITE_CLOUDFLARE_R2_PUBLIC_URL || '';
-        
-        let fetchUrl = '/api/hostels';
-        if (workerUrl) {
-          fetchUrl = workerUrl;
-        } else if (r2Url) {
-          fetchUrl = `${r2Url.replace(/\/$/, '')}/hostels.json`;
-        }
-        
-        console.log(`[Hostels] Fetching listings from: ${fetchUrl}`);
+        // Always load from Cloudflare Worker — never touch Firebase from frontend
+        const fetchUrl = (import.meta as any).env?.VITE_CLOUDFLARE_WORKER_URL
+          || 'https://kisii-hostels-api.esaubornface73.workers.dev';
+        console.log(`[Hostels] Fetching listings from Worker: ${fetchUrl}`);
         
         const res = await fetch(fetchUrl);
-        if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+        if (!res.ok) throw new Error(`Worker returned HTTP ${res.status}`);
         
         const data = await res.json();
         if (active && Array.isArray(data) && data.length > 0) {
@@ -677,7 +664,7 @@ export default function App() {
           localStorage.setItem('kisii_hostels', JSON.stringify(sorted));
         }
       } catch (err) {
-        console.warn('[Hostels] Failed to fetch hostels from cache/R2, keeping existing/local:', err);
+        console.warn('[Hostels] Could not fetch from Worker, keeping local cache:', err);
       }
     };
 
