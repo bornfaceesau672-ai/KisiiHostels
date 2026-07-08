@@ -416,12 +416,22 @@ app.post(['/api/admin/sync-r2', '/admin/sync-r2'], async (req, res) => {
     cachedHostels = sorted;
     console.log(`[Sync Endpoint] Updated memory cache with ${sorted.length} hostels.`);
 
-    // Sync to Cloudflare R2
-    await syncToCloudflareR2(sorted);
-    
-    res.json({ success: true, hostels: sorted });
+    // Attempt R2 sync — non-fatal if R2 is not yet enabled in Cloudflare Dashboard
+    let r2Warning: string | null = null;
+    try {
+      await syncToCloudflareR2(sorted);
+    } catch (r2Err: any) {
+      console.warn('[Sync Endpoint] R2 upload failed (non-fatal):', r2Err.message);
+      r2Warning = r2Err.message || 'Cloudflare R2 upload failed';
+    }
+
+    res.json({
+      success: true,
+      hostels: sorted,
+      ...(r2Warning ? { r2Warning } : {})
+    });
   } catch (err: any) {
-    console.error('[Sync Endpoint] Failed to sync to R2:', err);
+    console.error('[Sync Endpoint] Failed to sync from Firestore:', err);
     res.status(500).json({ success: false, error: err.message || 'Internal sync failure' });
   }
 });

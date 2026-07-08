@@ -411,7 +411,11 @@ export default function App() {
       }
       const data = await res.json();
       if (data.success) {
-        showFeedback('✓ Successfully synchronized database changes to Cloudflare R2 cache!', 'success');
+        if (data.r2Warning) {
+          showFeedback(`⚠ Cache synced from Firebase, but Cloudflare R2 upload failed: ${data.r2Warning}`, 'warning');
+        } else {
+          showFeedback('✓ Successfully synchronized database changes to Cloudflare R2 cache!', 'success');
+        }
         if (Array.isArray(data.hostels)) {
           setHostels(data.hostels);
           localStorage.setItem('kisii_hostels', JSON.stringify(data.hostels));
