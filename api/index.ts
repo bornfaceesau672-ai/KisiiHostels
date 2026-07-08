@@ -373,7 +373,7 @@ Ask me any question about curfew hours, security, price estimates, or local rule
 });
 
 // API: Get hostels from memory cache (fallback/CDN route)
-app.get('/api/hostels', async (req, res) => {
+app.get(['/api/hostels', '/hostels'], async (req, res) => {
   try {
     const hostels = await ensureHostelsCache();
     res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300');
@@ -385,7 +385,7 @@ app.get('/api/hostels', async (req, res) => {
 });
 
 // API: Explicit sync from Firebase to Cloudflare R2 triggered by Admin
-app.post('/api/admin/sync-r2', async (req, res) => {
+app.post(['/api/admin/sync-r2', '/admin/sync-r2'], async (req, res) => {
   console.log('[Sync Endpoint] Admin triggered Cloudflare R2 sync...');
   try {
     const querySnapshot = await getDocs(collection(db, 'hostels'));
