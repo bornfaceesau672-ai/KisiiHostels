@@ -404,10 +404,11 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
+      // Parse body first to get actual error details
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(`Server returned status ${res.status}`);
+        throw new Error(data?.error || `Server returned status ${res.status}`);
       }
-      const data = await res.json();
       if (data.success) {
         showFeedback(`✓ Successfully synced ${data.count ?? data.hostels?.length ?? ''} listings to Cloudflare Worker cache!`, 'success');
         if (Array.isArray(data.hostels)) {

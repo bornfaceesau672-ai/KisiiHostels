@@ -60,16 +60,6 @@ export default {
 
     // 2. Handle POST/PUT requests to update/sync listings
     if (request.method === "POST" || request.method === "PUT") {
-      // Validate Authentication Token
-      const authHeader = request.headers.get("Authorization");
-      const expectedToken = env.API_TOKEN;
-
-      if (expectedToken && authHeader !== `Bearer ${expectedToken}`) {
-        return new Response(JSON.stringify({ error: "Unauthorized: Invalid API Token" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
-      }
 
       let payload;
       try {
