@@ -3,8 +3,136 @@ import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, getDocs, doc, setDoc } from 'firebase/firestore';
+import { INITIAL_HOSTELS } from '../src/initialData';
 
 dotenv.config();
+
+// Load Firebase configuration
+const firebaseConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf8'));
+
+// Initialize Firebase JS SDK on Server
+const firebaseApp = initializeApp(firebaseConfig);
+const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
+  ? getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId)
+  : getFirestore(firebaseApp);
+
+let cachedHostels: any[] = [];
+
+// Function to upload hostels list to Cloudflare R2
+async function syncToCloudflareR2(hostelsList: any[]) {
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+  const bucketName = process.env.CLOUDFLARE_R2_BUCKET_NAME || 'kisii-hostels';
+
+  if (!accountId || !apiToken) {
+    throw new Error('Cloudflare Account ID or API Token not configured on the server.');
+  }
+
+  // 1. Attempt to create R2 bucket (will succeed or return "already exists" which we ignore)
+  const createBucketUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/r2/buckets`;
+  const createRes = await fetch(createBucketUrl, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ name: bucketName })
+  });
+  
+  if (!createRes.ok) {
+    const errData = await createRes.json() as any;
+    const isAlreadyExists = errData?.errors?.some((e: any) => e.message?.includes('already exists') || e.code === 10001);
+    if (!isAlreadyExists) {
+      const errMsg = errData?.errors?.[0]?.message || 'Unknown R2 bucket error';
+      throw new Error(`Failed to ensure Cloudflare R2 bucket: ${errMsg}`);
+    }
+  }
+
+  // 2. Upload the sorted hostels JSON to R2
+  const uploadUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/r2/buckets/${bucketName}/objects/hostels.json`;
+  console.log(`[Server Sync] Syncing hostels.json to Cloudflare R2...`);
+  const uploadRes = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${apiToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(hostelsList)
+  });
+
+  if (!uploadRes.ok) {
+    const errText = await uploadRes.text();
+    let errMsg = errText;
+    try {
+      const errJson = JSON.parse(errText);
+      errMsg = errJson?.errors?.[0]?.message || errText;
+    } catch (e) {
+      // ignore
+    }
+    throw new Error(`Failed to upload hostels.json to Cloudflare R2: ${errMsg}`);
+  }
+
+  console.log('[Server Sync] Successfully synced hostels.json to Cloudflare R2!');
+}
+
+// Initialize server memory cache on startup from Firestore
+async function initializeHostelsCache() {
+  console.log('[Server Cache] Initializing hostels cache from Firestore on boot...');
+  try {
+    const querySnapshot = await getDocs(collection(db, 'hostels'));
+    if (querySnapshot.empty) {
+      console.log('[Server Cache] Firestore is empty. Auto-seeding INITIAL_HOSTELS...');
+      for (const hostel of INITIAL_HOSTELS) {
+        await setDoc(doc(db, 'hostels', hostel.id), hostel);
+      }
+      cachedHostels = [...INITIAL_HOSTELS];
+      return;
+    }
+
+    const loadedHostels: any[] = [];
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (!data.rooms || data.rooms.length === 0) {
+        const fallback = INITIAL_HOSTELS.find(ih => ih.id === data.id);
+        if (fallback) {
+          data.rooms = fallback.rooms;
+        }
+      }
+      loadedHostels.push(data);
+    });
+
+    const estateOrderLocal = [
+      'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Roma', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'
+    ];
+    const sorted = loadedHostels.sort((a, b) => {
+      const indexA = estateOrderLocal.indexOf(a.area);
+      const indexB = estateOrderLocal.indexOf(b.area);
+      const orderA = indexA === -1 ? 999 : indexA;
+      const orderB = indexB === -1 ? 999 : indexB;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.name.localeCompare(b.name);
+    });
+
+    cachedHostels = sorted;
+    console.log(`[Server Cache] Cache initialized with ${sorted.length} hostels.`);
+  } catch (err) {
+    console.error('[Server Cache] Failed to initialize hostels cache:', err);
+  }
+}
+
+// Ensure hostels are loaded (handles serverless/cold starts)
+async function ensureHostelsCache() {
+  if (cachedHostels.length > 0) {
+    return cachedHostels;
+  }
+  await initializeHostelsCache();
+  return cachedHostels;
+}
+
+// Run boot initialization
+initializeHostelsCache();
 
 const app = express();
 app.use(express.json({ limit: '12mb' }));
@@ -241,6 +369,60 @@ Ask me any question about curfew hours, security, price estimates, or local rule
   } catch (error: any) {
     console.error('Gemini call error:', error);
     res.status(500).json({ error: 'Failed to generate assistance response', details: error.message });
+  }
+});
+
+// API: Get hostels from memory cache (fallback/CDN route)
+app.get('/api/hostels', async (req, res) => {
+  try {
+    const hostels = await ensureHostelsCache();
+    res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300');
+    res.json(hostels);
+  } catch (err: any) {
+    console.error('Failed to get hostels:', err);
+    res.status(500).json({ error: 'Failed to retrieve hostels list' });
+  }
+});
+
+// API: Explicit sync from Firebase to Cloudflare R2 triggered by Admin
+app.post('/api/admin/sync-r2', async (req, res) => {
+  console.log('[Sync Endpoint] Admin triggered Cloudflare R2 sync...');
+  try {
+    const querySnapshot = await getDocs(collection(db, 'hostels'));
+    const loadedHostels: any[] = [];
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (!data.rooms || data.rooms.length === 0) {
+        const fallback = INITIAL_HOSTELS.find(ih => ih.id === data.id);
+        if (fallback) {
+          data.rooms = fallback.rooms;
+        }
+      }
+      loadedHostels.push(data);
+    });
+
+    const estateOrderLocal = [
+      'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Roma', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'
+    ];
+    const sorted = loadedHostels.sort((a, b) => {
+      const indexA = estateOrderLocal.indexOf(a.area);
+      const indexB = estateOrderLocal.indexOf(b.area);
+      const orderA = indexA === -1 ? 999 : indexA;
+      const orderB = indexB === -1 ? 999 : indexB;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.name.localeCompare(b.name);
+    });
+
+    cachedHostels = sorted;
+    console.log(`[Sync Endpoint] Updated memory cache with ${sorted.length} hostels.`);
+
+    // Sync to Cloudflare R2
+    await syncToCloudflareR2(sorted);
+    
+    res.json({ success: true, hostels: sorted });
+  } catch (err: any) {
+    console.error('[Sync Endpoint] Failed to sync to R2:', err);
+    res.status(500).json({ success: false, error: err.message || 'Internal sync failure' });
   }
 });
 

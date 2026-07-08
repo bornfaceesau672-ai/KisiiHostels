@@ -866,7 +866,7 @@ export default function App() {
   }, [theme]);
 
   // UI Navigation / Viewing States
-  const [activeTab, setActiveTab] = useState<'explore' | 'bookings' | 'maintenance' | 'sophia' | 'admin' | 'news'>('explore');
+  const [activeTab, setActiveTab] = useState<'explore' | 'caretakers' | 'maintenance' | 'sophia' | 'admin' | 'news'>('explore');
   const [adminSubTab, setAdminSubTab] = useState<'listings' | 'clients' | 'repairs'>('listings');
   const [currentPage, setCurrentPage] = useState<'landing' | 'home' | 'details'>('landing');
   const [newsPosts, setNewsPosts] = useState<NewsPost[]>([]);
@@ -5782,7 +5782,7 @@ export default function App() {
                               if (loc.currentPage === 'home') return 'Home Landing Page';
                               switch (loc.activeTab) {
                                 case 'explore': return 'Exploring Hostel Listings';
-                                case 'bookings': return 'My Bookings Portal';
+                                case 'caretakers': return 'Caretakers Directory';
                                 case 'maintenance': return 'Maintenance Logs';
                                 case 'sophia': return 'Chatting with Sophia AI';
                                 case 'admin': return 'Admin Control Center';
