@@ -645,8 +645,16 @@ export default function App() {
     let active = true;
     const loadHostelsData = async () => {
       try {
-        const publicUrl = (import.meta as any).env?.VITE_CLOUDFLARE_R2_PUBLIC_URL || '';
-        const fetchUrl = publicUrl ? `${publicUrl.replace(/\/$/, '')}/hostels.json` : '/api/hostels';
+        const workerUrl = (import.meta as any).env?.VITE_CLOUDFLARE_WORKER_URL || '';
+        const r2Url = (import.meta as any).env?.VITE_CLOUDFLARE_R2_PUBLIC_URL || '';
+        
+        let fetchUrl = '/api/hostels';
+        if (workerUrl) {
+          fetchUrl = workerUrl;
+        } else if (r2Url) {
+          fetchUrl = `${r2Url.replace(/\/$/, '')}/hostels.json`;
+        }
+        
         console.log(`[Hostels] Fetching listings from: ${fetchUrl}`);
         
         const res = await fetch(fetchUrl);

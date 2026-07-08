@@ -23,10 +23,40 @@ const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabas
 
 let cachedHostels: any[] = [];
 
-// Function to upload hostels list to Cloudflare R2
+// Function to upload hostels list to Cloudflare (Worker or R2)
 async function syncToCloudflareR2(hostelsList: any[]) {
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const workerUrl = process.env.CLOUDFLARE_WORKER_URL;
   const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+
+  if (workerUrl) {
+    console.log(`[Server Sync] Syncing hostels list to Cloudflare Worker: ${workerUrl}...`);
+    const headers: any = {
+      'Content-Type': 'application/json'
+    };
+    if (apiToken) {
+      headers['Authorization'] = `Bearer ${apiToken}`;
+    }
+    const res = await fetch(workerUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(hostelsList)
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      let errMsg = errText;
+      try {
+        const errJson = JSON.parse(errText);
+        errMsg = errJson?.error || errJson?.message || errText;
+      } catch (e) {
+        // ignore
+      }
+      throw new Error(`Cloudflare Worker returned status ${res.status}: ${errMsg}`);
+    }
+    console.log('[Server Sync] Successfully synced to Cloudflare Worker!');
+    return;
+  }
+
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   const bucketName = process.env.CLOUDFLARE_R2_BUCKET_NAME || 'kisii-hostels';
 
   if (!accountId || !apiToken) {
