@@ -364,6 +364,8 @@ export default function App() {
     registeredUsersRef.current = registeredUsers;
   }, [registeredUsers]);
 
+  const firestoreLoadedRef = useRef(false);
+
   const [recordedStats, setRecordedStats] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem('kisii_recorded_stats');
@@ -649,6 +651,12 @@ export default function App() {
         if (!res.ok) throw new Error(`Worker returned HTTP ${res.status}`);
         
         const data = await res.json();
+        // If Firestore has already loaded, do not overwrite with worker data
+        if (firestoreLoadedRef.current) {
+          console.log('[Hostels] Firestore already loaded, ignoring worker response.');
+          return;
+        }
+
         if (active && Array.isArray(data) && data.length > 0) {
           const estateOrderLocal = [
             'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Roma', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'
@@ -675,11 +683,9 @@ export default function App() {
     };
   }, []);
 
-  // For Admin Users: Listen for real-time changes to Firestore
+  // Listen for real-time changes to Firestore for ALL users
   useEffect(() => {
-    if (!isAdminUser) return;
-
-    console.log('[Hostels] Admin mode: Subscribing to real-time Firestore updates...');
+    console.log('[Hostels] Subscribing to real-time Firestore updates...');
     let isInitial = true;
     const unsubscribe = onSnapshot(collection(db, 'hostels'), async (snapshot) => {
       try {
@@ -724,23 +730,29 @@ export default function App() {
           localStorage.setItem('kisii_hostels', JSON.stringify(sorted));
         }
 
+        // Mark that Firestore has successfully loaded the data
+        firestoreLoadedRef.current = true;
+
         if (!isInitial) {
           snapshot.docChanges().forEach((change) => {
             if (change.type === 'added') {
               const newHostel = change.doc.data() as Hostel;
               showFeedback(`🔔 A new rental and rooms have been added into NyumbaniKisii website, Check it out: "${newHostel.name}"`, 'info');
-              dispatchSMSNotifications(newHostel.name);
+              // Only trigger the SMS simulation if the user is an admin
+              if (isAdminUser) {
+                dispatchSMSNotifications(newHostel.name);
+              }
             }
           });
         }
         isInitial = false;
       } catch (err) {
-        console.warn('[Hostels] Real-time admin hostels sync failed:', err);
+        console.warn('[Hostels] Real-time hostels sync failed:', err);
       }
     });
 
     return () => {
-      console.log('[Hostels] Admin mode: Unsubscribing from Firestore updates...');
+      console.log('[Hostels] Unsubscribing from Firestore updates...');
       unsubscribe();
     };
   }, [isAdminUser]);
