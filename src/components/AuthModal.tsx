@@ -30,7 +30,13 @@ function getAuthErrorMessage(error: any): string {
   if (error?.message?.includes('Missing or insufficient permissions')) {
     return 'Profile saved locally. Syncing to database may take a moment — your account is active!';
   }
-  return error?.message || 'Something went wrong. Please try again.';
+
+  let rawMsg = error?.message || '';
+  if (rawMsg.includes('JSON') || rawMsg.includes('Unexpected token')) {
+    return 'Authentication service returned an invalid response. Please check your internet connection and try again.';
+  }
+
+  return rawMsg || 'Something went wrong. Please try again.';
 }
 
 export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = 'signin', onVerified }: AuthModalProps) {
@@ -113,12 +119,28 @@ export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = '
           body: JSON.stringify({ token })
         });
         if (!verifyRes.ok) {
-          const errData = await verifyRes.json();
-          throw new Error(errData.error || 'reCAPTCHA security check failed.');
+          let errorMsg = '';
+          try {
+            const errData = await verifyRes.json();
+            errorMsg = errData.error || errData.message;
+          } catch (e) {
+            // Safe fallback if server responds with non-JSON HTML (e.g. gateway error)
+            try {
+              const text = await verifyRes.text();
+              errorMsg = text.slice(0, 100);
+            } catch (e2) {
+              errorMsg = `Server error (Status ${verifyRes.status})`;
+            }
+          }
+          throw new Error(errorMsg || `Security check failed with status ${verifyRes.status}`);
         }
       } catch (verifyErr: any) {
         console.warn('reCAPTCHA API check failed:', verifyErr);
-        throw new Error(verifyErr.message || 'Security check failed. Please verify your internet connection.');
+        const isJsonError = verifyErr instanceof SyntaxError || verifyErr.message?.includes('JSON') || verifyErr.message?.includes('Unexpected token');
+        const cleanMsg = isJsonError 
+          ? 'Unable to connect to the security verification server. Please check your internet connection or try again later.' 
+          : (verifyErr.message || 'Security check failed. Please verify your internet connection.');
+        throw new Error(cleanMsg);
       }
 
       if (mode === 'signin') {

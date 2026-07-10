@@ -1931,7 +1931,13 @@ export default function App() {
         'auth/too-many-requests': 'Too many failed attempts. Please wait a few minutes.',
         'auth/network-request-failed': 'Network error — check your internet connection.',
       };
-      throw new Error(errorMessages[code] || error?.message || 'Login failed. Please verify your credentials.');
+
+      let rawMsg = error?.message || '';
+      if (rawMsg.includes('JSON') || rawMsg.includes('Unexpected token')) {
+        rawMsg = 'Authentication service returned an invalid response. Please check your internet connection and try again.';
+      }
+
+      throw new Error(errorMessages[code] || rawMsg || 'Login failed. Please verify your credentials.');
     }
   };
 
@@ -1983,6 +1989,12 @@ export default function App() {
       }
     } catch (error: any) {
       console.error('Sign up error:', error);
+      
+      let rawMsg = error?.message || '';
+      if (rawMsg.includes('JSON') || rawMsg.includes('Unexpected token')) {
+        rawMsg = 'Authentication service returned an invalid response. Please check your internet connection and try again.';
+      }
+
       if (error?.code && error.code.startsWith('auth/')) {
         const code = error.code;
         const authErrors: Record<string, string> = {
@@ -1991,9 +2003,9 @@ export default function App() {
           'auth/weak-password': 'Password is too weak. Use at least 6 characters.',
           'auth/network-request-failed': 'Network error — check your internet connection.',
         };
-        throw new Error(authErrors[code] || error?.message || 'Registration failed.');
+        throw new Error(authErrors[code] || rawMsg || 'Registration failed.');
       }
-      throw error;
+      throw new Error(rawMsg || 'Registration failed. Please try again.');
     }
   };
 
