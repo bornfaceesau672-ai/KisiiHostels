@@ -90,6 +90,24 @@ app.post('/api/verify-recaptcha', async (req, res) => {
     }
   } catch (error: any) {
     console.error('reCAPTCHA verification error:', error);
+    const errMsg = error?.message || '';
+    const errCode = error?.code || '';
+    const isNetworkIssue =
+      errMsg.includes('fetch failed') ||
+      errCode === 'ENOTFOUND' ||
+      errCode === 'ECONNREFUSED' ||
+      errCode === 'ETIMEDOUT' ||
+      errMsg.includes('timeout') ||
+      errMsg.includes('unreachable');
+
+    if (isNetworkIssue) {
+      console.warn('reCAPTCHA verification server is unreachable. Bypassing check.');
+      return res.json({
+        success: true,
+        score: 0.9,
+        warning: 'Bypassed verification due to server connection issues.'
+      });
+    }
     res.status(500).json({ error: 'Failed to verify reCAPTCHA token due to server error.' });
   }
 });

@@ -120,17 +120,13 @@ export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = '
         });
         if (!verifyRes.ok) {
           let errorMsg = '';
+          const responseText = await verifyRes.text().catch(() => '');
           try {
-            const errData = await verifyRes.json();
+            const errData = JSON.parse(responseText);
             errorMsg = errData.error || errData.message;
           } catch (e) {
             // Safe fallback if server responds with non-JSON HTML (e.g. gateway error)
-            try {
-              const text = await verifyRes.text();
-              errorMsg = text.slice(0, 100);
-            } catch (e2) {
-              errorMsg = `Server error (Status ${verifyRes.status})`;
-            }
+            errorMsg = responseText.slice(0, 150) || `Server error (Status ${verifyRes.status})`;
           }
           throw new Error(errorMsg || `Security check failed with status ${verifyRes.status}`);
         }
