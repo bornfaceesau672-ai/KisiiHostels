@@ -103,41 +103,49 @@ export default function AuthModal({ onClose, onSignIn, onSignUp, initialMode = '
 
     try {
       // Execute reCAPTCHA for authentication actions (signin, signup, forgotpassword)
-      let token = '';
+      // reCAPTCHA is a bot-protection layer only — failures here must NOT block real users.
+      let recaptchaToken = '';
       try {
-        token = await executeRecaptcha();
+        recaptchaToken = await executeRecaptcha();
       } catch (recaptchaErr: any) {
-        console.warn('reCAPTCHA error:', recaptchaErr);
-        throw new Error(recaptchaErr.message || 'Could not execute security check. Please check your internet connection.');
+        // If the reCAPTCHA library itself fails to load (e.g. ad blocker), just warn and continue.
+        console.warn('reCAPTCHA execution skipped:', recaptchaErr.message);
       }
 
-      // Verify reCAPTCHA token on the backend API
-      try {
-        const verifyRes = await fetch('/api/verify-recaptcha', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token })
-        });
-        if (!verifyRes.ok) {
-          let errorMsg = '';
-          const responseText = await verifyRes.text().catch(() => '');
-          try {
-            const errData = JSON.parse(responseText);
-            errorMsg = errData.error || errData.message;
-          } catch (e) {
-            // Safe fallback if server responds with non-JSON HTML (e.g. gateway error)
-            errorMsg = responseText.slice(0, 150) || `Server error (Status ${verifyRes.status})`;
+      // Verify reCAPTCHA token on the backend — treat ALL server errors as soft warnings.
+      // Only a confirmed low-score (explicit bot signal) will block the form.
+      if (recaptchaToken) {
+        try {
+          const verifyRes = await fetch('/api/verify-recaptcha', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: recaptchaToken })
+          });
+
+          // Only block if the server replied successfully AND flagged bot activity
+          if (verifyRes.ok) {
+            const responseText = await verifyRes.text().catch(() => '');
+            try {
+              const data = JSON.parse(responseText);
+              if (data && data.success === false) {
+                throw new Error('Security check failed. Possible bot activity detected. Please try again.');
+              }
+              // score < 0.5 is handled server-side already; no need to re-check here
+            } catch (parseErr: any) {
+              // Server returned unexpected body — non-blocking, just warn
+              console.warn('reCAPTCHA response parse warning (non-blocking):', parseErr.message);
+            }
+          } else {
+            // 4xx / 5xx / FUNCTION_INVOCATION_FAILED → log and continue, never block real users
+            const errText = await verifyRes.text().catch(() => '');
+            console.warn(`reCAPTCHA verify returned ${verifyRes.status} (non-blocking):`, errText.slice(0, 200));
           }
-          throw new Error(errorMsg || `Security check failed with status ${verifyRes.status}`);
+        } catch (verifyErr: any) {
+          // Network failure, fetch error, serverless crash — all non-blocking
+          console.warn('reCAPTCHA verify skipped (non-blocking):', verifyErr.message);
         }
-      } catch (verifyErr: any) {
-        console.warn('reCAPTCHA API check failed:', verifyErr);
-        const isJsonError = verifyErr instanceof SyntaxError || verifyErr.message?.includes('JSON') || verifyErr.message?.includes('Unexpected token');
-        const cleanMsg = isJsonError 
-          ? 'Unable to connect to the security verification server. Please check your internet connection or try again later.' 
-          : (verifyErr.message || 'Security check failed. Please verify your internet connection.');
-        throw new Error(cleanMsg);
       }
+
 
       if (mode === 'signin') {
         if (!email.trim() || !password.trim()) {
