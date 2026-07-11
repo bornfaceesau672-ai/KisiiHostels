@@ -409,7 +409,8 @@ export default function App() {
       // Parse body first to get actual error details
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(data?.error || `Server returned status ${res.status}`);
+        const stage = data?.stage ? ` [${data.stage}]` : '';
+        throw new Error(data?.error || `Server returned status ${res.status}${stage}`);
       }
       if (data.success) {
         showFeedback(`✓ Successfully synced ${data.count ?? data.hostels?.length ?? ''} listings to Cloudflare Worker cache!`, 'success');

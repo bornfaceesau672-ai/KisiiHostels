@@ -372,7 +372,20 @@ Ask me any question about curfew hours, security, price estimates, or local rule
   app.post('/api/admin/sync-r2', async (req, res) => {
     console.log('[Sync] Admin triggered Worker sync from Firestore...');
     try {
-      const querySnapshot = await getDocs(collection(db, 'hostels'));
+      // Step 1: Read from Firestore
+      console.log('[Sync] Step 1: Reading hostels from Firestore...');
+      let querySnapshot;
+      try {
+        querySnapshot = await getDocs(collection(db, 'hostels'));
+      } catch (firestoreErr: any) {
+        console.error('[Sync] FIRESTORE READ FAILED:', firestoreErr);
+        return res.status(500).json({
+          success: false,
+          error: `Firestore read failed: ${firestoreErr.message || firestoreErr}`,
+          stage: 'firestore-read'
+        });
+      }
+
       const loadedHostels: any[] = [];
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
@@ -382,6 +395,13 @@ Ask me any question about curfew hours, security, price estimates, or local rule
         }
         loadedHostels.push(data);
       });
+      console.log(`[Sync] Step 1 complete: loaded ${loadedHostels.length} hostels from Firestore`);
+
+      // If Firestore returned 0 documents, fall back to INITIAL_HOSTELS
+      if (loadedHostels.length === 0) {
+        console.warn('[Sync] Firestore returned 0 hostels — using INITIAL_HOSTELS fallback');
+        loadedHostels.push(...INITIAL_HOSTELS);
+      }
 
       const estateOrder = [
         'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Roma', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'
@@ -394,12 +414,23 @@ Ask me any question about curfew hours, security, price estimates, or local rule
         return a.name.localeCompare(b.name);
       });
 
-      // Push updated JSON to Cloudflare Worker cache
-      await syncToWorker(sorted);
+      // Step 2: Push updated JSON to Cloudflare Worker cache
+      console.log(`[Sync] Step 2: Pushing ${sorted.length} hostels to Cloudflare Worker...`);
+      try {
+        await syncToWorker(sorted);
+      } catch (workerErr: any) {
+        console.error('[Sync] CLOUDFLARE WORKER POST FAILED:', workerErr);
+        return res.status(500).json({
+          success: false,
+          error: `Cloudflare Worker sync failed: ${workerErr.message || workerErr}`,
+          stage: 'worker-post'
+        });
+      }
 
+      console.log(`[Sync] Success! Synced ${sorted.length} hostels to Cloudflare Worker.`);
       res.json({ success: true, hostels: sorted, count: sorted.length });
     } catch (err: any) {
-      console.error('[Sync] Failed:', err);
+      console.error('[Sync] Unexpected error:', err);
       res.status(500).json({ success: false, error: err.message || 'Sync failed' });
     }
   });
