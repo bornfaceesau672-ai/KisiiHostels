@@ -56,6 +56,7 @@ import {
   Share2,
   Settings,
   UserPlus,
+  Users,
   BarChart2,
   X,
   Lock,
@@ -880,6 +881,18 @@ export default function App() {
 
   // UI Navigation / Viewing States
   const [activeTab, setActiveTab] = useState<'explore' | 'caretakers' | 'maintenance' | 'sophia' | 'admin' | 'news'>('explore');
+  
+  // Caretaker Dashboard States
+  const [caretakerName, setCaretakerName] = useState('');
+  const [caretakerEmail, setCaretakerEmail] = useState('');
+  const [caretakerPhone, setCaretakerPhone] = useState('');
+  const [assignHostelId, setAssignHostelId] = useState('');
+  const [assignCaretakerPhone, setAssignCaretakerPhone] = useState('');
+  const [caretakerSearchQuery, setCaretakerSearchQuery] = useState('');
+  const [caretakerAreaFilter, setCaretakerAreaFilter] = useState('All');
+  const [caretakerBroadcastMsg, setCaretakerBroadcastMsg] = useState('');
+  const [caretakerSmsLogs, setCaretakerSmsLogs] = useState<{ id: string; timestamp: string; phone: string; recipient: string; status: string; message: string }[]>([]);
+
   const [adminSubTab, setAdminSubTab] = useState<'listings' | 'clients' | 'repairs'>('listings');
   const [currentPage, setCurrentPage] = useState<'landing' | 'home' | 'details'>('landing');
   const [newsPosts, setNewsPosts] = useState<NewsPost[]>([]);
@@ -2109,7 +2122,7 @@ export default function App() {
       hostelName: roomToBook.hostel.name,
       roomNumber: roomToBook.room.roomNumber
     });
-    setActiveTab('bookings');
+    setActiveTab('explore');
     setCurrentPage('details');
   };
 
@@ -2173,13 +2186,13 @@ export default function App() {
         console.warn('Failed to save virtual tour booking to Firestore:', err);
       }
     })();
-    showFeedback(`Virtual Video Tour with ${hostel.name} Caretaker scheduled successfully! Redirecting to your bookings hub...`, 'success');
+    showFeedback(`Virtual Video Tour with ${hostel.name} Caretaker scheduled successfully!`, 'success');
     logAnalyticsEvent('request_virtual_tour', {
       hostelId: hostel.id,
       hostelName: hostel.name,
       platform: chosenPlatform
     });
-    setActiveTab('bookings');
+    setActiveTab('explore');
     setCurrentPage('details');
   };
 
@@ -2739,6 +2752,109 @@ export default function App() {
       console.error('Failed to save relocation request to Firestore:', err);
       showFeedback(`Failed to submit relocation booking: ${err.message || 'Permission Denied'}. Please verify your Firestore rules.`, 'warning');
     }
+  };
+
+  // Add new Caretaker Property Owner
+  const handleAddCaretakerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAdminUser) {
+      showFeedback('Access Denied: Admins only.', 'warning');
+      return;
+    }
+    if (!caretakerName || !caretakerEmail || !caretakerPhone) {
+      showFeedback('Please fill out all caretaker profile fields.', 'info');
+      return;
+    }
+    const uid = `owner-${Date.now()}`;
+    const newCaretaker: ClientUser = {
+      uid,
+      displayName: caretakerName,
+      email: caretakerEmail,
+      phone: caretakerPhone,
+      category: 'Property Owner',
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await setDoc(doc(db, 'users', uid), newCaretaker);
+      setRegisteredUsers(prev => [newCaretaker, ...prev.filter(u => u.uid !== uid)]);
+      showFeedback(`Successfully registered caretaker: ${caretakerName}`, 'success');
+      setCaretakerName('');
+      setCaretakerEmail('');
+      setCaretakerPhone('');
+    } catch (err: any) {
+      console.error('Failed to save caretaker user:', err);
+      showFeedback(`Failed to save caretaker: ${err.message || 'Permission Denied'}.`, 'warning');
+    }
+  };
+
+  // Assign Caretaker to Hostel
+  const handleAssignCaretakerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAdminUser) {
+      showFeedback('Access Denied: Admins only.', 'warning');
+      return;
+    }
+    if (!assignHostelId || !assignCaretakerPhone) {
+      showFeedback('Please select a hostel and a caretaker to assign.', 'info');
+      return;
+    }
+
+    const targetHostel = hostels.find(h => h.id === assignHostelId);
+    if (!targetHostel) {
+      showFeedback('Selected hostel not found.', 'warning');
+      return;
+    }
+
+    const updatedHostel = {
+      ...targetHostel,
+      landlordPhone: assignCaretakerPhone
+    };
+
+    const nextHostels = hostels.map(h => h.id === assignHostelId ? updatedHostel : h);
+    setHostels(nextHostels);
+
+    try {
+      await setDoc(doc(db, 'hostels', assignHostelId), updatedHostel);
+      showFeedback(`Caretaker assigned to ${targetHostel.name} successfully!`, 'success');
+      setAssignHostelId('');
+      setAssignCaretakerPhone('');
+    } catch (err: any) {
+      console.error('Failed to assign caretaker to hostel:', err);
+      showFeedback(`Failed to assign caretaker: ${err.message || 'Permission Denied'}.`, 'warning');
+    }
+  };
+
+  // Broadcast SMS to Caretakers
+  const handleBroadcastCaretakerSMS = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAdminUser) {
+      showFeedback('Access Denied: Admins only.', 'warning');
+      return;
+    }
+    if (!caretakerBroadcastMsg.trim()) {
+      showFeedback('Please enter a message to broadcast.', 'info');
+      return;
+    }
+
+    const owners = registeredUsers.filter(u => u.category === 'Property Owner');
+    if (owners.length === 0) {
+      showFeedback('No caretakers registered in the system to broadcast to.', 'info');
+      return;
+    }
+
+    const newLogs = owners.map(owner => ({
+      id: `sms-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      timestamp: new Date().toLocaleTimeString(),
+      phone: owner.phone || '+254795858929',
+      recipient: owner.displayName,
+      status: 'Sent Successfully',
+      message: caretakerBroadcastMsg
+    }));
+
+    setCaretakerSmsLogs(prev => [...newLogs, ...prev]);
+    showFeedback(`SMS Broadcast triggered successfully to ${owners.length} caretakers.`, 'success');
+    setCaretakerBroadcastMsg('');
   };
 
   // Dispatch relocation booking to driver/mover
@@ -3311,41 +3427,66 @@ export default function App() {
               </div>
             </div>
 
-            {/* Preference Item 2: My Bookings */}
-            <div 
-              id="pref-bookings"
-              onClick={() => {
-                setActiveTab('bookings');
-                setCurrentPage('details');
-              }}
-              className="bg-white dark:bg-slate-900 p-7 rounded-[32px] border border-slate-100 dark:border-slate-800/60 shadow-[6px_6px_14px_#cbd5e1,-6px_-6px_14px_#ffffff] dark:shadow-[6px_6px_14px_#020617,-6px_-6px_14px_#1e293b] hover:shadow-[10px_10px_20px_#cbd5e1,-10px_-10px_20px_#ffffff] dark:hover:shadow-[10px_10px_20px_#020617,-10px_-10px_20px_#111827] active:scale-[0.985] transition-all cursor-pointer group space-y-4"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-11 h-11 bg-indigo-50 dark:bg-indigo-950/55 rounded-2xl flex items-center justify-center border border-indigo-100/60 dark:border-indigo-900/60 group-hover:bg-indigo-600 dark:group-hover:bg-indigo-600 transition-colors duration-200">
-                  <Receipt className="w-5.5 h-5.5 text-indigo-600 dark:text-indigo-400 group-hover:text-white dark:group-hover:text-white transition-colors duration-200" />
+            {/* Preference Item 2: Gossip Hub (Students) / Caretakers (Admins & Property Owners) */}
+            {(isAdminUser || userProfile?.category === 'Property Owner') ? (
+              <div 
+                id="pref-caretakers"
+                onClick={() => {
+                  setActiveTab('caretakers');
+                  setCurrentPage('details');
+                }}
+                className="bg-white dark:bg-slate-900 p-7 rounded-[32px] border border-slate-100 dark:border-slate-800/60 shadow-[6px_6px_14px_#cbd5e1,-6px_-6px_14px_#ffffff] dark:shadow-[6px_6px_14px_#020617,-6px_-6px_14px_#1e293b] hover:shadow-[10px_10px_20px_#cbd5e1,-10px_-10px_20px_#ffffff] dark:hover:shadow-[10px_10px_20px_#020617,-10px_-10px_20px_#111827] active:scale-[0.985] transition-all cursor-pointer group space-y-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-11 h-11 bg-indigo-50 dark:bg-indigo-950/55 rounded-2xl flex items-center justify-center border border-indigo-100/60 dark:border-indigo-900/60 group-hover:bg-indigo-600 dark:group-hover:bg-indigo-600 transition-colors duration-200">
+                    <Users className="w-5.5 h-5.5 text-indigo-600 dark:text-indigo-400 group-hover:text-white dark:group-hover:text-white transition-colors duration-200" />
+                  </div>
+                  <span className="text-[10px] bg-indigo-50 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 font-bold px-2.5 py-0.5 rounded-full font-mono">
+                    Admin System Tool
+                  </span>
                 </div>
-                {activeUserBookings.length > 0 ? (
-                  <span className="text-[10px] bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-bold px-2.5 py-0.5 rounded-full font-mono flex items-center gap-1 animate-pulse">
-                    🟢 Active Reservation
+                <div className="space-y-1">
+                  <h4 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-150">
+                    Caretakers Directory
+                  </h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
+                    Manage hostel wardens, update caretaker contact profiles, assign them to hostels, and send SMS broadcast messages.
+                  </p>
+                </div>
+                <div className="pt-2 text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 group-hover:underline flex items-center gap-1">
+                  Open Caretakers Terminal →
+                </div>
+              </div>
+            ) : (
+              <div 
+                id="pref-gossip"
+                onClick={() => {
+                  setActiveTab('news');
+                  setCurrentPage('details');
+                }}
+                className="bg-white dark:bg-slate-900 p-7 rounded-[32px] border border-slate-100 dark:border-slate-800/60 shadow-[6px_6px_14px_#cbd5e1,-6px_-6px_14px_#ffffff] dark:shadow-[6px_6px_14px_#020617,-6px_-6px_14px_#1e293b] hover:shadow-[10px_10px_20px_#cbd5e1,-10px_-10px_20px_#ffffff] dark:hover:shadow-[10px_10px_20px_#020617,-10px_-10px_20px_#111827] active:scale-[0.985] transition-all cursor-pointer group space-y-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-11 h-11 bg-indigo-50 dark:bg-indigo-950/55 rounded-2xl flex items-center justify-center border border-indigo-100/60 dark:border-indigo-900/60 group-hover:bg-indigo-600 dark:group-hover:bg-indigo-600 transition-colors duration-200">
+                    <Newspaper className="w-5.5 h-5.5 text-indigo-600 dark:text-indigo-400 group-hover:text-white dark:group-hover:text-white transition-colors duration-200" />
+                  </div>
+                  <span className="text-[10px] bg-orange-50 dark:bg-orange-950/80 text-orange-800 dark:text-orange-300 font-bold px-2.5 py-0.5 rounded-full font-mono flex items-center gap-1 animate-pulse">
+                    🔥 Hot Gossip Hub
                   </span>
-                ) : (
-                  <span className="text-[10px] bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold px-2.5 py-0.5 rounded-full font-mono">
-                    No active bookings
-                  </span>
-                )}
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-150">
+                    KSH Gossip Hub
+                  </h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
+                    Get real-time updates and hot tea from campus comrades. Post anonymously, read discussions, and rate the latest happenings.
+                  </p>
+                </div>
+                <div className="pt-2 text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 group-hover:underline flex items-center gap-1">
+                  Open Gossip Feed →
+                </div>
               </div>
-              <div className="space-y-1">
-                <h4 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-150">
-                  My Bookings & Invoices
-                </h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
-                  Access your reserved bed space data, check rent payment token balances, verify receipts, view virtual tour links, and rate landlords.
-                </p>
-              </div>
-              <div className="pt-2 text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 group-hover:underline flex items-center gap-1">
-                View Rent Invoices →
-              </div>
-            </div>
+            )}
 
             {/* Preference Item 3: Services Hub */}
             <div 
@@ -4580,313 +4721,350 @@ export default function App() {
             </div>
           )}
 
-          {/* TAB 2: Bookings Logs & Lipa Na M-PESA Invoice Receipts */}
-          {activeTab === 'bookings' && (
-            !currentUser ? (
-              renderAuthGuard('Bookings & Invoices', 'To view your registered room reservations, generate official M-PESA payment receipts, and manage active tenancies, please log in.')
+          {/* TAB 2: Caretakers Directory & Management Terminal */}
+          {activeTab === 'caretakers' && (
+            !currentUser || (!isAdminUser && userProfile?.category !== 'Property Owner') ? (
+              renderAuthGuard('Caretakers Terminal', 'Access Denied: You must be logged in as an administrator or property caretaker to access the Caretakers Directory and Management Panel.')
             ) : (
-              <div className="space-y-6 animate-in fade-in duration-300">
-              
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-                <div>
-                  <h2 className="text-2xl font-bold font-sans text-slate-900 tracking-tight glow-title">Your Hostel Bookings & Invoices</h2>
-                  <p className="text-xs text-slate-500 text-slate-500 mt-1">
-                    Direct access to official tenancy receipts, payment paybill gateways, and safe checkout releases.
-                  </p>
-                </div>
-              </div>
-
-              {bookings.length === 0 ? (
-                <div className="bg-white rounded-3xl p-12 text-center text-slate-500 border border-dashed border-slate-300 py-16 space-y-4">
-                  <Receipt className="w-12 h-12 text-slate-400 mx-auto" />
-                  <div className="space-y-1">
-                    <p className="text-lg font-bold">You have no active hostel bookings registered.</p>
-                    <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                      Browse standard campus lodges on the Explore tab to submit a reservation and generate initial invoice tallies.
+              <div className="space-y-8 animate-in fade-in duration-300">
+                
+                {/* 1. Header / Hero Section */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
+                  <div>
+                    <h2 className="text-2xl font-black font-sans text-slate-900 dark:text-white tracking-tight glow-title flex items-center gap-2">
+                      <Users className="w-7 h-7 text-indigo-600 dark:text-indigo-400 stroke-[2.25]" />
+                      Caretakers Management Terminal
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 max-w-xl">
+                      Central terminal for registering property managers, updating contact phone logs, pairing them to listed hostels, and broadcasting text updates.
                     </p>
                   </div>
-                  <button 
-                    onClick={() => {
-                      setActiveTab('explore');
-                      setCurrentPage('details');
-                    }}
-                    className="bg-indigo-600 text-white font-bold text-xs py-3 px-5 rounded-xl transition hover:bg-indigo-700 cursor-pointer"
-                  >
-                    Browse Hostels Now
-                  </button>
                 </div>
-              ) : (
-                <div className="space-y-6">
-                  {bookings.map((b) => {
-                    const cautionDeposit = 3000;
-                    // Find actual rent from matched hostel or local storage
-                    const associatedHostel = hostels.find(h => h.id === b.hostelId);
-                    const associatedRoom = associatedHostel?.rooms.find(r => r.id === b.roomId);
-                    const rentAmount = associatedRoom ? associatedRoom.priceKes : 9500;
-                    const combinedInvoiced = rentAmount + cautionDeposit;
 
-                    const isCheckedOut = b.status === 'Checked Out';
+                {/* 2. Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-5 rounded-3xl shadow-sm flex items-center gap-4">
+                    <div className="p-3 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-2xl">
+                      <Users className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Caretakers</p>
+                      <h4 className="text-2xl font-black text-slate-900 dark:text-white font-mono mt-0.5">
+                        {registeredUsers.filter(u => u.category === 'Property Owner').length}
+                      </h4>
+                    </div>
+                  </div>
 
-                    if (b.isVirtualTour) {
-                      const isCompleted = b.status === 'Virtual Tour Completed';
+                  <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-5 rounded-3xl shadow-sm flex items-center gap-4">
+                    <div className="p-3 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+                      <Building className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Assigned Hostels</p>
+                      <h4 className="text-2xl font-black text-slate-900 dark:text-white font-mono mt-0.5">
+                        {hostels.filter(h => h.landlordPhone).length} / {hostels.length}
+                      </h4>
+                    </div>
+                  </div>
 
-                      return (
-                        <div 
-                          key={b.id}
-                          id={`booking-panel-${b.id}`}
-                          className={`bg-white rounded-3xl border p-6 md:p-8 flex flex-col md:flex-row gap-6 justify-between items-start transition-all cursor-default ${
-                            isCompleted 
-                              ? 'border-slate-200 opacity-60 bg-slate-50/50' 
-                              : 'border-indigo-200 ring-2 ring-indigo-500/5 shadow-sm'
-                          }`}
+                  <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-5 rounded-3xl shadow-sm flex items-center gap-4">
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-2xl">
+                      <Hammer className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Active Maintenance Tasks</p>
+                      <h4 className="text-2xl font-black text-slate-900 dark:text-white font-mono mt-0.5">
+                        {maintenance.filter(m => m.status !== 'Completed').length}
+                      </h4>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Action Panel: Add Caretaker, Assign to Hostel, Broadcast SMS */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  
+                  {/* Form A: Add Caretaker */}
+                  <form onSubmit={handleAddCaretakerSubmit} className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-3xl shadow-sm space-y-4">
+                    <div>
+                      <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <UserPlus className="w-4 h-4 text-indigo-500" />
+                        Register Caretaker
+                      </h3>
+                      <p className="text-[10px] text-slate-500 mt-0.5">Add a new property manager / landlord profile.</p>
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="block space-y-1">
+                        <span className="text-[9px] font-mono font-bold text-slate-500 uppercase">Caretaker Name</span>
+                        <input
+                          type="text"
+                          required
+                          value={caretakerName}
+                          onChange={(e) => setCaretakerName(e.target.value)}
+                          placeholder="e.g. Stephen Nyabuto"
+                          className="w-full text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:ring-1 focus:ring-indigo-500 focus:outline-none font-semibold"
+                        />
+                      </label>
+
+                      <label className="block space-y-1">
+                        <span className="text-[9px] font-mono font-bold text-slate-500 uppercase">Email Address</span>
+                        <input
+                          type="email"
+                          required
+                          value={caretakerEmail}
+                          onChange={(e) => setCaretakerEmail(e.target.value)}
+                          placeholder="e.g. stephen@landlord.co.ke"
+                          className="w-full text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:ring-1 focus:ring-indigo-500 focus:outline-none font-semibold"
+                        />
+                      </label>
+
+                      <label className="block space-y-1">
+                        <span className="text-[9px] font-mono font-bold text-slate-500 uppercase">Phone Number</span>
+                        <input
+                          type="text"
+                          required
+                          value={caretakerPhone}
+                          onChange={(e) => setCaretakerPhone(e.target.value)}
+                          placeholder="e.g. 0724889900"
+                          className="w-full text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:ring-1 focus:ring-indigo-500 focus:outline-none font-semibold"
+                        />
+                      </label>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition duration-200 shadow-sm"
+                    >
+                      Save Caretaker Profile
+                    </button>
+                  </form>
+
+                  {/* Form B: Assign to Hostel */}
+                  <form onSubmit={handleAssignCaretakerSubmit} className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-3xl shadow-sm space-y-4">
+                    <div>
+                      <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <Settings className="w-4 h-4 text-emerald-500" />
+                        Assign to Hostel
+                      </h3>
+                      <p className="text-[10px] text-slate-500 mt-0.5">Link a registered caretaker to a specific estate building.</p>
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="block space-y-1">
+                        <span className="text-[9px] font-mono font-bold text-slate-500 uppercase">Select Hostel</span>
+                        <select
+                          required
+                          value={assignHostelId}
+                          onChange={(e) => setAssignHostelId(e.target.value)}
+                          className="w-full text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:ring-1 focus:ring-indigo-500 focus:outline-none font-bold"
                         >
-                          {/* Lease Details block */}
-                          <div className="space-y-4 flex-1 w-full">
-                            <div className="flex flex-wrap items-center gap-2.5">
-                              <span className="text-[10px] font-mono font-bold tracking-wider uppercase bg-indigo-50 text-indigo-700 border border-indigo-100 px-2.5 py-1 rounded">
-                                📹 VIRTUAL TOUR RESERVATION
-                              </span>
-                              
-                              <span className={`text-[10px] font-black uppercase tracking-wider py-1 px-2.5 rounded ${
-                                isCompleted
-                                  ? 'bg-slate-200 text-slate-600'
-                                  : 'bg-indigo-100 text-indigo-800 animate-pulse'
-                              }`}>
-                                {b.status}
-                              </span>
-                            </div>
+                          <option value="">-- Choose Hostel --</option>
+                          {hostels.map(h => (
+                            <option key={h.id} value={h.id}>{h.name} ({h.area})</option>
+                          ))}
+                        </select>
+                      </label>
 
-                            <div>
-                              <h3 className="font-sans font-extrabold text-xl text-slate-900 leading-snug flex items-center gap-2">
-                                <span>{b.hostelName}</span>
-                                <span className="text-sm font-normal text-slate-400">• Online Video Walkthrough</span>
-                              </h3>
-                              
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2.5 gap-x-4 mt-3 text-xs text-slate-600 bg-slate-50 border border-slate-200 p-4 rounded-2xl">
-                                <p className="flex items-center gap-1.5">
-                                  <span>📅</span> Scheduled Date: <b className="text-slate-900 font-bold">{b.tourTime || 'Tomorrow at 2:00 PM (EAT)'}</b>
-                                </p>
-                                <p className="flex items-center gap-1.5">
-                                  <span>?</span> Platform: <b className="text-slate-900 font-bold">{b.tourPlatform}</b>
-                                </p>
-                                <p className="flex items-center gap-1.5 font-mono">
-                                  👤 Contact Caretaker: <b className="text-slate-900 font-bold">{associatedHostel?.landlordPhone || '+254795858929'}</b>
-                                </p>
-                              </div>
-                            </div>
+                      <label className="block space-y-1">
+                        <span className="text-[9px] font-mono font-bold text-slate-500 uppercase">Select Caretaker</span>
+                        <select
+                          required
+                          value={assignCaretakerPhone}
+                          onChange={(e) => setAssignCaretakerPhone(e.target.value)}
+                          className="w-full text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:ring-1 focus:ring-indigo-500 focus:outline-none font-bold"
+                        >
+                          <option value="">-- Choose Caretaker --</option>
+                          {registeredUsers.filter(u => u.category === 'Property Owner').map(u => (
+                            <option key={u.uid} value={u.phone}>{u.displayName} ({u.phone})</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
 
-                            {!isCompleted && (
-                              <div className="bg-gradient-to-r from-indigo-50 to-slate-50 border border-indigo-100/60 p-4 rounded-2xl space-y-2">
-                                <h4 className="text-xs uppercase font-mono tracking-wider font-bold text-indigo-800 flex items-center gap-1.5">
-                                  <Video className="w-4 h-4 text-indigo-600" />
-                                  Ready to join your Live walk?
-                                </h4>
-                                <p className="text-[11px] text-indigo-700 leading-normal">
-                                  Your Comrade Landlord caretaker has scheduled this automated walkthrough tour. Click the direct link below to start/join the live stream.
-                                </p>
-                                <div className="pt-1 flex flex-wrap gap-2">
-                                  <a 
-                                    href={b.tourLink} 
-                                    target="_blank" 
-                                    rel="noreferrer" 
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded-lg hover:bg-indigo-700 transition active:scale-95 cursor-pointer"
-                                  >
-                                    <span>Join Video Call Now 🚀</span>
-                                  </a>
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                    <button
+                      type="submit"
+                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition duration-200 shadow-sm"
+                    >
+                      Update Hostel Assignment
+                    </button>
+                  </form>
 
-                          {/* Invoice details & actions */}
-                          <div className="w-full md:w-64 bg-slate-50 p-5 rounded-2xl border border-slate-300 flex flex-col justify-between self-stretch gap-4">
-                            <div className="space-y-2.5">
-                              <h4 className="text-xs uppercase font-mono tracking-wider font-bold text-slate-500 flex items-center gap-1 pb-1 border-b border-slate-200">
-                                Walkthrough Status
-                              </h4>
-                              
-                              <p className="text-xs text-slate-500 leading-relaxed">
-                                {!isCompleted 
-                                  ? "This tour is active and scheduled. You can mark it completed when your landlord guides you through the hostel video stream."
-                                  : "This virtual walkthrough session was marked as completed. Happy house hunting Comrade!"
-                                }
-                              </p>
-                            </div>
+                  {/* Form C: SMS Broadcast */}
+                  <form onSubmit={handleBroadcastCaretakerSMS} className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-3xl shadow-sm space-y-4">
+                    <div>
+                      <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <Send className="w-4 h-4 text-amber-500" />
+                        Caretaker SMS Broadcast
+                      </h3>
+                      <p className="text-[10px] text-slate-500 mt-0.5">Send a simulated SMS alert to all registered caretakers at once.</p>
+                    </div>
 
-                            {!isCompleted ? (
-                              <div className="space-y-2">
-                                <button
-                                  onClick={() => {
-                                    const updatedBk = { ...b, status: 'Virtual Tour Completed' as const };
-                                    setBookings(bookings.map(book => book.id === b.id ? updatedBk : book));
-                                    (async () => {
-                                      try {
-                                        await setDoc(doc(db, 'bookings', b.id), updatedBk);
-                                      } catch (err) {
-                                        console.warn('Failed to update virtual tour booking in Firestore:', err);
-                                      }
-                                    })();
-                                    showFeedback(`Awesome! Virtual walkthrough marked as completed for ${b.hostelName}.`, 'success');
-                                  }}
-                                  className="w-full text-center text-[11px] font-bold py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition active:scale-95 cursor-pointer"
-                                >
-                                  Mark as Completed
-                                </button>
+                    <div className="space-y-3">
+                      <label className="block space-y-1">
+                        <span className="text-[9px] font-mono font-bold text-slate-500 uppercase">SMS Broadcast Message</span>
+                        <textarea
+                          required
+                          rows={3}
+                          value={caretakerBroadcastMsg}
+                          onChange={(e) => setCaretakerBroadcastMsg(e.target.value)}
+                          placeholder="e.g. Comrade Caretakers, please review pending water logs before the Friday inspection session."
+                          className="w-full text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:ring-1 focus:ring-indigo-500 focus:outline-none font-medium"
+                        ></textarea>
+                      </label>
+                    </div>
 
-                                <button
-                                  onClick={() => {
-                                    if(confirm("Comrade, are you sure you want to cancel this scheduled virtual tour?")) {
-                                      setBookings(bookings.filter(book => book.id !== b.id));
-                                      (async () => {
-                                        try {
-                                          await deleteDoc(doc(db, 'bookings', b.id));
-                                        } catch (err) {
-                                          console.warn('Failed to delete virtual tour booking in Firestore:', err);
-                                        }
-                                      })();
-                                      showFeedback("Virtual walkthrough tour cancelled.", "info");
-                                    }
-                                  }}
-                                  className="w-full text-center text-[10px] font-semibold py-1.5 border border-slate-200 text-slate-500 rounded-lg hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition active:scale-95 cursor-pointer"
-                                >
-                                  Cancel Virtual Tour
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="text-center text-[11px] font-mono text-slate-400 block uppercase font-bold">
-                                Session Finished
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    }
+                    <button
+                      type="submit"
+                      className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl text-xs font-bold transition duration-200 shadow-sm"
+                    >
+                      Broadcast SMS Alert
+                    </button>
+                  </form>
 
-                    return (
-                      <div 
-                        key={b.id}
-                        id={`booking-panel-${b.id}`}
-                        className={`bg-white rounded-3xl border p-6 md:p-8 flex flex-col md:flex-row gap-6 justify-between items-start transition-all cursor-default ${
-                          isCheckedOut 
-                            ? 'border-slate-200 opacity-60 bg-slate-50/50' 
-                            : 'border-slate-200 hover:border-slate-400 shadow-sm'
-                        }`}
-                      >
-                        {/* Lease Details block */}
-                        <div className="space-y-4 flex-1">
-                          <div className="flex flex-wrap items-center gap-2.5">
-                            <span className="text-[10px] font-mono font-bold tracking-wider uppercase bg-slate-100 text-slate-600 px-2.5 py-1 rounded">
-                              BOOKING ID: {b.id.toUpperCase()}
-                            </span>
-                            
-                            <span className={`text-[10px] font-black uppercase tracking-wider py-1 px-2.5 rounded ${
-                              b.status === 'Fully Confirmed'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : b.status === 'Deposit Paid'
-                                  ? 'bg-blue-100 text-blue-800 animate-pulse'
-                                  : b.status === 'Checked Out'
-                                    ? 'bg-slate-200 text-slate-600'
-                                    : 'bg-amber-100 text-amber-805 text-amber-800 animate-pulse'
-                            }`}>
-                              {b.status}
-                            </span>
-                          </div>
+                </div>
 
-                          <div>
-                            <h3 className="font-sans font-extrabold text-xl text-slate-900 leading-snug">
-                              {b.hostelName} — Room {b.roomNumber}
-                            </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4 mt-2 text-xs text-slate-600">
-                              <p className="flex items-center gap-1">
-                                <BookOpen className="w-3.5 h-3.5 text-slate-400" /> Target Term: <b className="text-slate-900">{b.semester}</b>
-                              </p>
-                              <p className="flex items-center gap-1 font-mono">
-                                📞 Contact Student: <b className="text-slate-900">{b.studentPhone}</b>
-                              </p>
-                              <p className="flex items-center gap-1">
-                                👤 Registered Tenant: <b className="text-slate-900">{b.studentName} ({b.studentReg})</b>
-                              </p>
-                              <p className="flex items-center gap-1 font-mono text-[10px]">
-                                📅 Booked Date: {new Date(b.bookedAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* MPESA Payment paybill instruction */}
-                          {!isCheckedOut && b.status !== 'Fully Confirmed' && (
-                            <div className="bg-emerald-50/70 border border-emerald-100 p-4 rounded-xl space-y-2">
-                              <h4 className="text-xs uppercase font-mono tracking-wider font-bold text-emerald-800 flex items-center gap-1">
-                                <Sparkles className="w-4 h-4 text-emerald-600" />
-                                M-PESA lipa na paybill process (LNM)
-                              </h4>
-                              <p className="text-[11px] text-emerald-700 leading-normal">
-                                1. Go to your M-PESA Mobile Menu.<br />
-                                2. Select Paybill, enter business number <b>403020</b> (Kisii Student Accommodation Board).<br />
-                                3. Enter Reference Account: <b>{b.roomNumber}-{b.studentReg.split('/')[1] || 'ROOM'}</b><br />
-                                4. Settle amount: <b>KES {combinedInvoiced.toLocaleString()}</b>
-                              </p>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Invoice details & actions */}
-                        <div className="w-full md:w-64 bg-slate-50 p-5 rounded-2xl border border-slate-300 flex flex-col justify-between self-stretch gap-4">
-                          <div className="space-y-2.5">
-                            <h4 className="text-xs uppercase font-mono tracking-wider font-bold text-slate-500 flex items-center gap-1 pb-1 border-b border-slate-200">
-                              Official Bill Statement
-                            </h4>
-                            
-                            <div className="space-y-1.5 text-xs text-slate-600">
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Monthly Rent:</span>
-                                <span className="font-mono font-semibold text-slate-900">KES {rentAmount.toLocaleString()}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-slate-500">Caution Fee:</span>
-                                <span className="font-mono font-semibold text-slate-900">KES {cautionDeposit.toLocaleString()}</span>
-                              </div>
-                              <div className="border-t border-slate-200 pt-2 flex justify-between items-baseline font-bold mt-1.5">
-                                <span className="text-slate-800">Total Invoice:</span>
-                                <span className="font-mono text-slate-900">KES {combinedInvoiced.toLocaleString()}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {!isCheckedOut && (
-                            <div className="space-y-2">
-                              {b.status !== 'Fully Confirmed' && (
-                                <button
-                                  id={`pay-simulation-btn-${b.id}`}
-                                  onClick={() => handleSimulatePayment(b.id)}
-                                  className="w-full text-center text-[11px] font-bold py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
-                                >
-                                  {b.status === 'Pending Approval' ? 'Simulate M-PESA Deposit' : 'Confirm Full Settlement'}
-                                </button>
-                              )}
-
-                              <button
-                                id={`checkout-simulation-btn-${b.id}`}
-                                onClick={() => handleCheckoutBooking(b.id)}
-                                className="w-full text-center text-[10px] font-semibold py-1.5 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-100 hover:text-rose-600 transition"
-                              >
-                                Request Check-Out
-                              </button>
-                            </div>
-                          )}
-
-                          {isCheckedOut && (
-                            <span className="text-center text-[11px] font-mono text-slate-500 block uppercase font-bold text-slate-400">
-                              Spot Released
-                            </span>
-                          )}
-
+                {/* 4. Directory & SMS Log Terminal split */}
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                  
+                  {/* Left Column: Caretakers Directory */}
+                  <div className="xl:col-span-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+                      <div>
+                        <h3 className="text-base font-black text-slate-950 dark:text-white">Caretakers Directory</h3>
+                        <p className="text-[11px] text-slate-500">List of managers registered in the database.</p>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        {/* Search input */}
+                        <div className="relative">
+                          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="text"
+                            value={caretakerSearchQuery}
+                            onChange={(e) => setCaretakerSearchQuery(e.target.value)}
+                            placeholder="Search name/phone..."
+                            className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-xs rounded-xl pl-9 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-44 font-semibold"
+                          />
                         </div>
                       </div>
-                    );
-                  })}
+                    </div>
+
+                    <div className="space-y-3.5 max-h-[500px] overflow-y-auto pr-1">
+                      {(() => {
+                        const owners = registeredUsers.filter(u => u.category === 'Property Owner');
+                        const filtered = owners.filter(u => {
+                          const query = caretakerSearchQuery.toLowerCase();
+                          return u.displayName.toLowerCase().includes(query) || u.phone.includes(query) || u.email.toLowerCase().includes(query);
+                        });
+
+                        if (filtered.length === 0) {
+                          return (
+                            <div className="text-center py-12 text-slate-400">
+                              <Users className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                              <p className="text-xs font-bold">No caretakers match your criteria.</p>
+                            </div>
+                          );
+                        }
+
+                        return filtered.map((owner) => {
+                          const assignedHostels = hostels.filter(h => h.landlordPhone === owner.phone);
+                          return (
+                            <div key={owner.uid} className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-indigo-200 dark:hover:border-indigo-900 transition duration-150">
+                              <div className="flex items-start gap-3.5">
+                                <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-black rounded-xl flex items-center justify-center text-sm font-sans shrink-0">
+                                  {owner.displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                                </div>
+                                <div className="space-y-1">
+                                  <h4 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                    {owner.displayName}
+                                    <span className="text-[8px] bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 font-mono font-bold px-2 py-0.5 rounded-md uppercase">
+                                      Warden Caretaker
+                                    </span>
+                                  </h4>
+                                  <div className="text-xs text-slate-500 dark:text-slate-400 space-y-0.5">
+                                    <p>📧 {owner.email}</p>
+                                    <p className="font-mono">📞 {owner.phone}</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col sm:items-end gap-2.5 shrink-0">
+                                <div className="space-y-1 text-left sm:text-right">
+                                  <p className="text-[9px] font-mono font-bold uppercase text-slate-400">Assigned Properties</p>
+                                  {assignedHostels.length === 0 ? (
+                                    <span className="text-[10px] text-amber-600 font-medium italic block">No hostels paired</span>
+                                  ) : (
+                                    <div className="flex flex-wrap sm:justify-end gap-1">
+                                      {assignedHostels.map(h => (
+                                        <span key={h.id} className="text-[9px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md font-extrabold">
+                                          {h.name}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="flex gap-2">
+                                  <a
+                                    href={`https://wa.me/${owner.phone.replace(/[^0-9]/g, '')}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1"
+                                  >
+                                    WhatsApp
+                                  </a>
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(owner.phone);
+                                      showFeedback('Caretaker phone copied to clipboard!', 'info');
+                                    }}
+                                    className="px-2.5 py-1 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-[10px] font-bold transition flex items-center gap-1"
+                                  >
+                                    Copy Phone
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Right Column: SMS Transmission Log Terminal */}
+                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-sm space-y-4 self-start text-white w-full">
+                    <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
+                      <div>
+                        <h3 className="text-xs font-mono font-bold tracking-wider text-slate-400 uppercase">SMS Transmission Log</h3>
+                        <p className="text-[9px] font-mono text-slate-500">Live simulation feed of caretaker broadcasts.</p>
+                      </div>
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    </div>
+
+                    <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1 font-mono text-[10px] leading-relaxed">
+                      {caretakerSmsLogs.length === 0 ? (
+                        <div className="text-slate-600 text-center py-16">
+                          <p>&gt;_ No transmission events logged</p>
+                          <p className="text-[8px] mt-1 text-slate-700">Submit the broadcast SMS form above to trigger log events.</p>
+                        </div>
+                      ) : (
+                        caretakerSmsLogs.map((log) => (
+                          <div key={log.id} className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-1.5">
+                            <div className="flex justify-between text-slate-500 text-[8px]">
+                              <span>TIME: {log.timestamp}</span>
+                              <span className="text-emerald-500">STATUS: OK</span>
+                            </div>
+                            <p className="text-indigo-400 font-bold">RECIPIENT: {log.recipient} ({log.phone})</p>
+                            <p className="text-slate-300 pl-2 border-l border-slate-800 italic">"{log.message}"</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
                 </div>
-              )}
-            </div>
+
+              </div>
             )
           )}
 
@@ -7495,29 +7673,28 @@ export default function App() {
               <span className="font-sans text-[10px] tracking-tight">Explore</span>
             </button>
 
-            {/* 2. Bookings Tab */}
-            <button
-              id="bottom-tab-bookings"
-              onClick={() => {
-                setActiveTab('bookings');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              aria-current={activeTab === 'bookings' ? 'page' : undefined}
-              aria-label="My bookings"
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl text-[10px] font-bold transition-all duration-250 cursor-pointer ${
-                activeTab === 'bookings'
-                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 border border-indigo-100/30 dark:border-indigo-900/30 shadow-sm scale-110 -translate-y-1'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300'
-              }`}
-            >
-              <div className="relative" aria-hidden="true">
-                <Receipt className="w-5 h-5 stroke-[2.25]" />
-                {activeUserBookings.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-orange-500 ring-2 ring-white dark:ring-slate-950 animate-pulse" />
-                )}
-              </div>
-              <span className="font-sans text-[10px] tracking-tight">Bookings</span>
-            </button>
+            {/* 2. Caretakers Tab (Admins & Property Owners) */}
+            {(isAdminUser || userProfile?.category === 'Property Owner') && (
+              <button
+                id="bottom-tab-caretakers"
+                onClick={() => {
+                  setActiveTab('caretakers');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                aria-current={activeTab === 'caretakers' ? 'page' : undefined}
+                aria-label="Caretakers terminal"
+                className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl text-[10px] font-bold transition-all duration-250 cursor-pointer ${
+                  activeTab === 'caretakers'
+                    ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 border border-indigo-100/30 dark:border-indigo-900/30 shadow-sm scale-110 -translate-y-1'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300'
+                }`}
+              >
+                <div className="relative" aria-hidden="true">
+                  <Users className="w-5 h-5 stroke-[2.25]" />
+                </div>
+                <span className="font-sans text-[10px] tracking-tight">Caretakers</span>
+              </button>
+            )}
 
             {/* 3. Services Hub Tab */}
             <button
