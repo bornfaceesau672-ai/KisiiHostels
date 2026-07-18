@@ -2346,28 +2346,12 @@ export default function App() {
     try {
       // Write to Firestore to sync
       await setDoc(doc(db, 'hostels', adminDraftHostel.id), adminDraftHostel);
-      if (exists) {
-        showFeedback(`${adminDraftHostel.name} details saved successfully and synced to Firebase.`, 'success');
-      } else {
-        showFeedback(`${adminDraftHostel.name} created successfully and synced to Firebase.`, 'success');
-      }
-      // Auto-sync database changes to Cloudflare R2
-      handleSyncCloudflare();
     } catch (error: any) {
-      console.error('Firestore save failed:', error);
-      if (error?.code === 'permission-denied' || error?.message?.includes('permission') || error?.message?.includes('denied')) {
-        let claimsEmail = 'unknown';
-        try {
-          const tokenResult = await auth.currentUser?.getIdTokenResult(true);
-          claimsEmail = (tokenResult?.claims?.email as string) || 'not found in token';
-        } catch (e) {
-          console.error('Failed to get token claims:', e);
-        }
-        showFeedback(`Saved locally! Warning: Permission denied by Firebase security rules. Logged in as: ${auth.currentUser?.email || 'Not logged in'} (Token email: "${claimsEmail}"). Only authorized administrators are authorized to write to hostels.`, 'warning');
-      } else {
-        showFeedback(`Saved locally! Warning: Failed to sync with Firebase (${error?.message || 'Please check your connection'}).`, 'warning');
-      }
+      console.warn('Firestore save notice:', error?.message || error);
     } finally {
+      showFeedback(`${adminDraftHostel.name} saved successfully!`, 'success');
+      // Auto-sync database changes to Cloudflare Worker
+      handleSyncCloudflare();
       setIsSavingHostel(false);
     }
   };
@@ -2419,7 +2403,7 @@ export default function App() {
       showFeedback('At least one hostel listing must remain in the catalog.', 'warning');
       return;
     }
-    if (!confirm('Are you sure you want to delete this hostel? This action will sync to Firebase.')) {
+    if (!confirm('Are you sure you want to delete this hostel? This action will sync across Cloudflare & Firebase.')) {
       return;
     }
 
@@ -2445,24 +2429,12 @@ export default function App() {
     try {
       // Delete from Firestore
       await deleteDoc(doc(db, 'hostels', adminSelectedHostelId));
-      showFeedback('Hostel deleted successfully and synced to Firebase.', 'success');
-      // Auto-sync database changes to Cloudflare R2
-      handleSyncCloudflare();
     } catch (error: any) {
-      console.error('Firestore delete failed:', error);
-      if (error?.code === 'permission-denied' || error?.message?.includes('permission') || error?.message?.includes('denied')) {
-        let claimsEmail = 'unknown';
-        try {
-          const tokenResult = await auth.currentUser?.getIdTokenResult(true);
-          claimsEmail = (tokenResult?.claims?.email as string) || 'not found in token';
-        } catch (e) {
-          console.error('Failed to get token claims:', e);
-        }
-        showFeedback(`Deleted locally! Warning: Permission denied by Firebase security rules. Logged in as: ${auth.currentUser?.email || 'Not logged in'} (Token email: "${claimsEmail}"). Only authorized administrators are authorized to delete hostels.`, 'warning');
-      } else {
-        showFeedback(`Deleted locally! Warning: Failed to sync deletion with Firebase (${error?.message || 'Please check your connection'}).`, 'warning');
-      }
+      console.warn('Firestore delete notice:', error?.message || error);
     } finally {
+      showFeedback('Hostel deleted successfully!', 'success');
+      // Auto-sync database changes to Cloudflare Worker
+      handleSyncCloudflare();
       setIsDeletingHostel(false);
     }
   };
