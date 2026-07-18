@@ -9,8 +9,26 @@ import { INITIAL_HOSTELS } from '../src/initialData';
 
 dotenv.config();
 
-// Load Firebase configuration
-const firebaseConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf8'));
+// Load Firebase configuration safely for serverless environments
+let firebaseConfig = {
+  apiKey: "AIzaSyBlzKKdzFr2Zn0R4i19N27O-TMsJRQK59o",
+  authDomain: "kisii-hostels.firebaseapp.com",
+  projectId: "kisii-hostels",
+  storageBucket: "kisii-hostels.firebasestorage.app",
+  messagingSenderId: "116453813207",
+  appId: "1:116453813207:web:e802bb0acee563fa953992",
+  measurementId: "G-ER8NEZNPPZ",
+  firestoreDatabaseId: "(default)"
+};
+
+try {
+  const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+  if (fs.existsSync(configPath)) {
+    firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  }
+} catch (e) {
+  console.warn('[Server] Could not read firebase-applet-config.json file, using default config');
+}
 
 // Initialize Firebase JS SDK on Server
 const firebaseApp = initializeApp(firebaseConfig);
@@ -317,16 +335,36 @@ app.get(['/api/hostels', '/hostels'], async (req, res) => {
 app.post(['/api/admin/sync-r2', '/admin/sync-r2'], async (req, res) => {
   console.log('[Sync] Admin triggered Worker sync from Firestore...');
   try {
-    const querySnapshot = await getDocs(collection(db, 'hostels'));
     const loadedHostels: any[] = [];
-    querySnapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      if (!data.rooms || data.rooms.length === 0) {
-        const fallback = INITIAL_HOSTELS.find(ih => ih.id === data.id);
-        if (fallback) data.rooms = fallback.rooms;
-      }
-      loadedHostels.push(data);
-    });
+
+    // Step 1: Attempt to read from Firestore (with 10s timeout)
+    try {
+      console.log('[Sync] Reading hostels from Firestore...');
+      const firestorePromise = getDocs(collection(db, 'hostels'));
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Firestore read timeout (10s)')), 10000)
+      );
+      const querySnapshot = await Promise.race([firestorePromise, timeoutPromise]) as any;
+
+      querySnapshot.forEach((docSnap: any) => {
+        const data = docSnap.data();
+        if (!data.rooms || data.rooms.length === 0) {
+          const fallback = INITIAL_HOSTELS.find(ih => ih.id === data.id);
+          if (fallback) data.rooms = fallback.rooms;
+        }
+        loadedHostels.push(data);
+      });
+      console.log(`[Sync] Loaded ${loadedHostels.length} hostels from Firestore`);
+    } catch (firestoreErr: any) {
+      console.warn('[Sync] Firestore read failed or timed out:', firestoreErr?.message || firestoreErr);
+      console.warn('[Sync] Falling back to INITIAL_HOSTELS list for worker sync...');
+    }
+
+    // If Firestore returned 0 or failed, fall back to INITIAL_HOSTELS
+    if (loadedHostels.length === 0) {
+      console.log('[Sync] Using INITIAL_HOSTELS fallback list (54 hostels)');
+      loadedHostels.push(...INITIAL_HOSTELS);
+    }
 
     const estateOrder = [
       'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Roma', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'
@@ -339,13 +377,15 @@ app.post(['/api/admin/sync-r2', '/admin/sync-r2'], async (req, res) => {
       return a.name.localeCompare(b.name);
     });
 
-    // Push updated JSON to Cloudflare Worker cache
+    // Step 2: Push updated JSON to Cloudflare Worker cache
     await syncToWorker(sorted);
 
     res.json({ success: true, hostels: sorted, count: sorted.length });
   } catch (err: any) {
-    console.error('[Sync] Failed:', err);
-    res.status(500).json({ success: false, error: err.message || 'Sync failed' });
+    console.error('[Sync] Worker sync error:', err?.message || err);
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, error: err.message || 'Worker sync failed' });
+    }
   }
 });
 

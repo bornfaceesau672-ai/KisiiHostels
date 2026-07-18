@@ -12,8 +12,26 @@ import { INITIAL_HOSTELS } from './src/initialData';
 // Load environment variables
 dotenv.config();
 
-// Load Firebase configuration
-const firebaseConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf8'));
+// Load Firebase configuration safely
+let firebaseConfig = {
+  apiKey: "AIzaSyBlzKKdzFr2Zn0R4i19N27O-TMsJRQK59o",
+  authDomain: "kisii-hostels.firebaseapp.com",
+  projectId: "kisii-hostels",
+  storageBucket: "kisii-hostels.firebasestorage.app",
+  messagingSenderId: "116453813207",
+  appId: "1:116453813207:web:e802bb0acee563fa953992",
+  measurementId: "G-ER8NEZNPPZ",
+  firestoreDatabaseId: "(default)"
+};
+
+try {
+  const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+  if (fs.existsSync(configPath)) {
+    firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  }
+} catch (e) {
+  console.warn('[Server] Could not read firebase-applet-config.json, using default config');
+}
 
 // Initialize Firebase JS SDK on Server
 const firebaseApp = initializeApp(firebaseConfig);
@@ -379,21 +397,10 @@ Ask me any question about curfew hours, security, price estimates, or local rule
       try {
         const firestoreReadPromise = getDocs(collection(db, 'hostels'));
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Firestore read timed out after 15 seconds')), 15000)
+          setTimeout(() => reject(new Error('Firestore read timed out after 10 seconds')), 10000)
         );
         querySnapshot = await Promise.race([firestoreReadPromise, timeoutPromise]) as any;
-      } catch (firestoreErr: any) {
-        console.error('[Sync] FIRESTORE READ FAILED:', firestoreErr?.message || firestoreErr);
-        console.error('[Sync] Full error:', JSON.stringify(firestoreErr, Object.getOwnPropertyNames(firestoreErr || {})));
-        return res.status(500).json({
-          success: false,
-          error: `Firestore read failed: ${firestoreErr.message || firestoreErr}`,
-          stage: 'firestore-read'
-        });
-      }
 
-      const loadedHostels: any[] = [];
-      try {
         querySnapshot.forEach((docSnap: any) => {
           const data = docSnap.data();
           if (!data.rooms || data.rooms.length === 0) {
@@ -402,19 +409,15 @@ Ask me any question about curfew hours, security, price estimates, or local rule
           }
           loadedHostels.push(data);
         });
-      } catch (parseErr: any) {
-        console.error('[Sync] Error processing Firestore documents:', parseErr);
-        return res.status(500).json({
-          success: false,
-          error: `Error processing Firestore documents: ${parseErr.message}`,
-          stage: 'firestore-parse'
-        });
+        console.log(`[Sync] Step 1 complete: loaded ${loadedHostels.length} hostels from Firestore`);
+      } catch (firestoreErr: any) {
+        console.warn('[Sync] FIRESTORE READ FAILED OR TIMED OUT:', firestoreErr?.message || firestoreErr);
+        console.warn('[Sync] Falling back to INITIAL_HOSTELS for worker sync...');
       }
-      console.log(`[Sync] Step 1 complete: loaded ${loadedHostels.length} hostels from Firestore`);
 
-      // If Firestore returned 0 documents, fall back to INITIAL_HOSTELS
+      // If Firestore returned 0 documents or failed, fall back to INITIAL_HOSTELS
       if (loadedHostels.length === 0) {
-        console.warn('[Sync] Firestore returned 0 hostels — using INITIAL_HOSTELS fallback');
+        console.warn('[Sync] Using INITIAL_HOSTELS fallback list (54 hostels)');
         loadedHostels.push(...INITIAL_HOSTELS);
       }
 
