@@ -393,6 +393,7 @@ Ask me any question about curfew hours, security, price estimates, or local rule
       // Step 1: Read from Firestore (with timeout to prevent hanging)
       console.log('[Sync] Step 1: Reading hostels from Firestore...');
       console.log('[Sync] Firebase project:', firebaseConfig.projectId);
+      const loadedHostels: any[] = [];
       let querySnapshot;
       try {
         const firestoreReadPromise = getDocs(collection(db, 'hostels'));
