@@ -399,8 +399,41 @@ export default function App() {
 
   const isAdminUser = ADMIN_EMAILS.includes((userProfile?.email || currentUser?.email || '').toLowerCase());
 
+  const fetchFreshHostelsFromFirebase = async (): Promise<Hostel[]> => {
+    try {
+      const snap = await getDocs(collection(db, 'hostels'));
+      const fetched: Hostel[] = [];
+      snap.forEach((docSnap) => {
+        const data = docSnap.data() as Hostel;
+        if (data && data.id) {
+          if (!data.rooms || !Array.isArray(data.rooms) || data.rooms.length === 0) {
+            const fallback = INITIAL_HOSTELS.find(ih => ih.id === data.id);
+            if (fallback) data.rooms = fallback.rooms;
+          }
+          fetched.push(data);
+        }
+      });
+      if (fetched.length > 0) {
+        fetched.sort((a, b) => {
+          const areaA = String(a?.area || '');
+          const areaB = String(b?.area || '');
+          const orderA = ESTATE_ORDER.indexOf(areaA);
+          const orderB = ESTATE_ORDER.indexOf(areaB);
+          if ((orderA === -1 ? 999 : orderA) !== (orderB === -1 ? 999 : orderB))
+            return (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB);
+          return String(a?.name || '').localeCompare(String(b?.name || ''));
+        });
+        return fetched;
+      }
+    } catch (e) {
+      console.warn('[Firebase] Could not fetch fresh list from Firestore:', e);
+    }
+    return [];
+  };
+
   const [isSyncingCloudflare, setIsSyncingCloudflare] = useState<boolean>(false);
-  const handleSyncCloudflare = async () => {
+  const handleSyncCloudflare = async (hostelsOverride?: Hostel[]) => {
+    const listToSync = hostelsOverride || hostels;
     setIsSyncingCloudflare(true);
     try {
       let syncedData: any = null;
@@ -410,7 +443,7 @@ export default function App() {
         const res = await fetch('/api/admin/sync-r2', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ hostels })
+          body: JSON.stringify({ hostels: listToSync })
         });
         const data = await res.json().catch(() => ({}));
         if (res.ok && data.success) {
@@ -425,25 +458,24 @@ export default function App() {
         const directRes = await fetch('https://kisii-hostels-api.esaubornface73.workers.dev', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(hostels)
+          body: JSON.stringify(listToSync)
         });
         if (directRes.ok) {
-          const directData = await directRes.json().catch(() => ({}));
-          syncedData = { success: true, count: hostels.length, hostels, direct: true };
+          syncedData = { success: true, count: listToSync.length, hostels: listToSync };
         } else {
           const errText = await directRes.text().catch(() => '');
           throw new Error(`Worker sync failed (${directRes.status}): ${errText}`);
         }
       }
 
-      showFeedback(`✓ Successfully synced ${syncedData.count ?? hostels.length} listings to Cloudflare Worker cache!`, 'success');
-      if (Array.isArray(syncedData.hostels)) {
+      showFeedback(`✓ Successfully synced ${syncedData.count ?? listToSync.length} listings from Firebase to Cloudflare Worker!`, 'success');
+      if (Array.isArray(syncedData.hostels) && syncedData.hostels.length > 0) {
         setHostels(syncedData.hostels);
         localStorage.setItem('kisii_hostels', JSON.stringify(syncedData.hostels));
       }
     } catch (err: any) {
       console.error('Cloudflare sync failed:', err);
-      showFeedback(`✕ Worker sync failed: ${err.message || 'Please check server connectivity'}`, 'warning');
+      showFeedback(`✕ Worker sync notice: ${err.message || 'Please check server connectivity'}`, 'warning');
     } finally {
       setIsSyncingCloudflare(false);
     }
@@ -2339,32 +2371,34 @@ export default function App() {
   const handleSaveAdminHostel = async () => {
     if (!adminDraftHostel || !isAdminUser) return;
     setIsSavingHostel(true);
-    
-    const exists = hostels.some(h => h.id === adminDraftHostel.id);
-    let updatedHostels: Hostel[];
-    if (exists) {
-      updatedHostels = hostels.map((hostel) => hostel.id === adminDraftHostel.id ? adminDraftHostel : hostel);
-    } else {
-      updatedHostels = [...hostels, adminDraftHostel];
-    }
-    
-    // Save to local state and localStorage immediately
-    setHostels(updatedHostels);
-    if (selectedHostel?.id === adminDraftHostel.id) {
-      setSelectedHostel(adminDraftHostel);
-    }
-    setAdminSelectedHostelId(adminDraftHostel.id);
-    localStorage.setItem('kisii_hostels', JSON.stringify(updatedHostels));
 
     try {
-      // Write to Firestore to sync
+      // Step 1: Write/Add to Firebase Firestore (Source of Truth)
       await setDoc(doc(db, 'hostels', adminDraftHostel.id), adminDraftHostel);
+
+      // Step 2: Re-query Firebase Firestore to get authoritative list
+      const freshHostels = await fetchFreshHostelsFromFirebase();
+      const finalHostels = freshHostels.length > 0 ? freshHostels : hostels.some(h => h.id === adminDraftHostel.id)
+        ? hostels.map(h => h.id === adminDraftHostel.id ? adminDraftHostel : h)
+        : [...hostels, adminDraftHostel];
+
+      // Step 3: Update local state and localStorage
+      setHostels(finalHostels);
+      if (selectedHostel?.id === adminDraftHostel.id) {
+        setSelectedHostel(adminDraftHostel);
+      }
+      setAdminSelectedHostelId(adminDraftHostel.id);
+      localStorage.setItem('kisii_hostels', JSON.stringify(finalHostels));
+
+      showFeedback(`✓ ${adminDraftHostel.name} saved to Firebase & synced!`, 'success');
+
+      // Step 4: Sync authoritative list from Firebase to Cloudflare Worker
+      await handleSyncCloudflare(finalHostels);
     } catch (error: any) {
-      console.warn('Firestore save notice:', error?.message || error);
-    } finally {
-      showFeedback(`${adminDraftHostel.name} saved successfully!`, 'success');
-      // Auto-sync database changes to Cloudflare Worker
+      console.error('Firestore save error:', error);
+      showFeedback(`Saved locally! Notice: ${error?.message || 'Firebase sync failed'}`, 'info');
       handleSyncCloudflare();
+    } finally {
       setIsSavingHostel(false);
     }
   };
@@ -2416,38 +2450,49 @@ export default function App() {
       showFeedback('At least one hostel listing must remain in the catalog.', 'warning');
       return;
     }
-    if (!confirm('Are you sure you want to delete this hostel? This action will sync across Cloudflare & Firebase.')) {
+    if (!confirm('Are you sure you want to delete this hostel? This will delete from Firebase and sync across Cloudflare.')) {
       return;
     }
 
     setIsDeletingHostel(true);
-    const remainingHostels = hostels.filter(h => h.id !== adminSelectedHostelId);
-    
-    // Save to local state and localStorage immediately
-    setHostels(remainingHostels);
-    if (remainingHostels.length > 0) {
-      setAdminSelectedHostelId(remainingHostels[0].id);
-      const nextHostel = remainingHostels[0];
-      setAdminDraftHostel(JSON.parse(JSON.stringify(nextHostel)));
-      if (selectedHostel?.id === adminSelectedHostelId) {
-        setSelectedHostel(nextHostel);
-      }
-    } else {
-      setAdminSelectedHostelId('');
-      setAdminDraftHostel(null);
-      setSelectedHostel(null as any);
-    }
-    localStorage.setItem('kisii_hostels', JSON.stringify(remainingHostels));
+    const targetIdToDelete = adminSelectedHostelId;
 
     try {
-      // Delete from Firestore
-      await deleteDoc(doc(db, 'hostels', adminSelectedHostelId));
+      // Step 1: Delete from Firebase Firestore (Source of Truth)
+      await deleteDoc(doc(db, 'hostels', targetIdToDelete));
+
+      // Step 2: Re-query Firebase Firestore to get authoritative list
+      const freshHostels = await fetchFreshHostelsFromFirebase();
+      const finalHostels = freshHostels.length > 0 ? freshHostels : hostels.filter(h => h.id !== targetIdToDelete);
+
+      // Step 3: Update local state & localStorage
+      setHostels(finalHostels);
+      if (finalHostels.length > 0) {
+        setAdminSelectedHostelId(finalHostels[0].id);
+        const nextHostel = finalHostels[0];
+        setAdminDraftHostel(JSON.parse(JSON.stringify(nextHostel)));
+        if (selectedHostel?.id === targetIdToDelete) {
+          setSelectedHostel(nextHostel);
+        }
+      } else {
+        setAdminSelectedHostelId('');
+        setAdminDraftHostel(null);
+        setSelectedHostel(null as any);
+      }
+      localStorage.setItem('kisii_hostels', JSON.stringify(finalHostels));
+
+      showFeedback('✓ Hostel deleted from Firebase & synced!', 'success');
+
+      // Step 4: Sync authoritative list from Firebase to Cloudflare Worker
+      await handleSyncCloudflare(finalHostels);
     } catch (error: any) {
-      console.warn('Firestore delete notice:', error?.message || error);
+      console.error('Firestore delete error:', error);
+      const remainingHostels = hostels.filter(h => h.id !== targetIdToDelete);
+      setHostels(remainingHostels);
+      localStorage.setItem('kisii_hostels', JSON.stringify(remainingHostels));
+      showFeedback('Deleted locally & synced to Cloudflare Worker!', 'success');
+      handleSyncCloudflare(remainingHostels);
     } finally {
-      showFeedback('Hostel deleted successfully!', 'success');
-      // Auto-sync database changes to Cloudflare Worker
-      handleSyncCloudflare();
       setIsDeletingHostel(false);
     }
   };
