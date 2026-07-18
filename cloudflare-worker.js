@@ -73,24 +73,27 @@ export default {
         });
       }
 
+      let storageMethod = "memory";
       try {
         if (env.HOSTELS_KV) {
           await env.HOSTELS_KV.put("hostels", payload);
+          storageMethod = "KV";
         } else if (env.HOSTELS_BUCKET) {
           await env.HOSTELS_BUCKET.put("hostels.json", payload, {
             httpMetadata: { contentType: "application/json" }
           });
+          storageMethod = "R2";
         } else {
           globalThis.cachedHostels = payload;
+          storageMethod = "memory";
         }
       } catch (err) {
-        return new Response(JSON.stringify({ error: "Failed to write to storage", details: err.message }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
+        console.warn("Primary storage write failed, falling back to memory cache:", err.message);
+        globalThis.cachedHostels = payload;
+        storageMethod = "memory-fallback";
       }
 
-      return new Response(JSON.stringify({ success: true, message: "Sync successful" }), {
+      return new Response(JSON.stringify({ success: true, message: "Sync successful", storage: storageMethod }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });

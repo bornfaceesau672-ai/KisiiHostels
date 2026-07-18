@@ -43,25 +43,38 @@ const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabas
 const CF_WORKER_URL = process.env.CLOUDFLARE_WORKER_URL || 'https://kisii-hostels-api.esaubornface73.workers.dev';
 const CF_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN || '';
 
-// Push updated hostels JSON to the Cloudflare Worker cache
+// Push updated hostels JSON to the Cloudflare Worker cache with 10s timeout
 async function syncToWorker(hostelsList: any[]) {
   console.log(`[Server Sync] POSTing ${hostelsList.length} hostels to Worker: ${CF_WORKER_URL}`);
   const headers: any = { 'Content-Type': 'application/json' };
   if (CF_API_TOKEN) headers['Authorization'] = `Bearer ${CF_API_TOKEN}`;
 
-  const res = await fetch(CF_WORKER_URL, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(hostelsList)
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-  if (!res.ok) {
-    const errText = await res.text();
-    let errMsg = errText;
-    try { errMsg = JSON.parse(errText)?.error || errText; } catch (e) { /* ignore */ }
-    throw new Error(`Worker POST failed (${res.status}): ${errMsg}`);
+  try {
+    const res = await fetch(CF_WORKER_URL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(hostelsList),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      const errText = await res.text();
+      let errMsg = errText;
+      try { errMsg = JSON.parse(errText)?.error || JSON.parse(errText)?.message || errText; } catch (e) { /* ignore */ }
+      throw new Error(`Worker POST failed (${res.status}): ${errMsg}`);
+    }
+    console.log('[Server Sync] Successfully synced to Cloudflare Worker!');
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error('Cloudflare Worker request timed out after 10 seconds');
+    }
+    throw err;
   }
-  console.log('[Server Sync] Successfully synced to Cloudflare Worker!');
 }
 
 
@@ -402,14 +415,18 @@ Ask me any question about curfew hours, security, price estimates, or local rule
         );
         querySnapshot = await Promise.race([firestoreReadPromise, timeoutPromise]) as any;
 
-        querySnapshot.forEach((docSnap: any) => {
-          const data = docSnap.data();
-          if (!data.rooms || data.rooms.length === 0) {
-            const fallback = INITIAL_HOSTELS.find(ih => ih.id === data.id);
-            if (fallback) data.rooms = fallback.rooms;
-          }
-          loadedHostels.push(data);
-        });
+        if (querySnapshot && typeof querySnapshot.forEach === 'function') {
+          querySnapshot.forEach((docSnap: any) => {
+            const data = docSnap.data();
+            if (data) {
+              if (!data.rooms || !Array.isArray(data.rooms) || data.rooms.length === 0) {
+                const fallback = INITIAL_HOSTELS.find(ih => ih.id === data.id);
+                if (fallback) data.rooms = fallback.rooms;
+              }
+              loadedHostels.push(data);
+            }
+          });
+        }
         console.log(`[Sync] Step 1 complete: loaded ${loadedHostels.length} hostels from Firestore`);
       } catch (firestoreErr: any) {
         console.warn('[Sync] FIRESTORE READ FAILED OR TIMED OUT:', firestoreErr?.message || firestoreErr);
@@ -426,11 +443,13 @@ Ask me any question about curfew hours, security, price estimates, or local rule
         'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Roma', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'
       ];
       const sorted = loadedHostels.sort((a, b) => {
-        const orderA = estateOrder.indexOf(a.area);
-        const orderB = estateOrder.indexOf(b.area);
+        const areaA = String(a?.area || '');
+        const areaB = String(b?.area || '');
+        const orderA = estateOrder.indexOf(areaA);
+        const orderB = estateOrder.indexOf(areaB);
         if ((orderA === -1 ? 999 : orderA) !== (orderB === -1 ? 999 : orderB))
           return (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB);
-        return a.name.localeCompare(b.name);
+        return String(a?.name || '').localeCompare(String(b?.name || ''));
       });
 
       // Step 2: Push updated JSON to Cloudflare Worker cache

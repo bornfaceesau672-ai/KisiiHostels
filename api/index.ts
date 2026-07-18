@@ -40,28 +40,53 @@ const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabas
 const CF_WORKER_URL = process.env.CLOUDFLARE_WORKER_URL || 'https://kisii-hostels-api.esaubornface73.workers.dev';
 const CF_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN || '';
 
-// Push updated hostels JSON to the Cloudflare Worker cache
+// Push updated hostels JSON to the Cloudflare Worker cache with 10s timeout
 async function syncToWorker(hostelsList: any[]) {
   console.log(`[Server Sync] POSTing ${hostelsList.length} hostels to Worker: ${CF_WORKER_URL}`);
   const headers: any = { 'Content-Type': 'application/json' };
   if (CF_API_TOKEN) headers['Authorization'] = `Bearer ${CF_API_TOKEN}`;
 
-  const res = await fetch(CF_WORKER_URL, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(hostelsList)
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-  if (!res.ok) {
-    const errText = await res.text();
-    let errMsg = errText;
-    try { errMsg = JSON.parse(errText)?.error || errText; } catch (e) { /* ignore */ }
-    throw new Error(`Worker POST failed (${res.status}): ${errMsg}`);
+  try {
+    const res = await fetch(CF_WORKER_URL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(hostelsList),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      const errText = await res.text();
+      let errMsg = errText;
+      try { errMsg = JSON.parse(errText)?.error || JSON.parse(errText)?.message || errText; } catch (e) { /* ignore */ }
+      throw new Error(`Worker POST failed (${res.status}): ${errMsg}`);
+    }
+    console.log('[Server Sync] Successfully synced to Cloudflare Worker!');
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error('Cloudflare Worker request timed out after 10 seconds');
+    }
+    throw err;
   }
-  console.log('[Server Sync] Successfully synced to Cloudflare Worker!');
 }
 
 const app = express();
+
+// Enable CORS for Vercel functions and cross-origin frontend requests
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
 app.use(express.json({ limit: '12mb' }));
 
 const postImageUploadAttempts = new Map<string, { count: number; resetAt: number }>();
@@ -331,60 +356,82 @@ app.get(['/api/hostels', '/hostels'], async (req, res) => {
   }
 });
 
-// API: Admin sync — read Firestore → push to Cloudflare Worker cache
+// API: Admin sync — read Firestore / request payload → push to Cloudflare Worker cache
 app.post(['/api/admin/sync-r2', '/admin/sync-r2'], async (req, res) => {
-  console.log('[Sync] Admin triggered Worker sync from Firestore...');
+  console.log('[Sync] Admin triggered Worker sync...');
   try {
-    const loadedHostels: any[] = [];
+    let loadedHostels: any[] = [];
 
-    // Step 1: Attempt to read from Firestore (with 10s timeout)
-    try {
-      console.log('[Sync] Reading hostels from Firestore...');
-      const firestorePromise = getDocs(collection(db, 'hostels'));
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Firestore read timeout (10s)')), 10000)
-      );
-      const querySnapshot = await Promise.race([firestorePromise, timeoutPromise]) as any;
-
-      querySnapshot.forEach((docSnap: any) => {
-        const data = docSnap.data();
-        if (!data.rooms || data.rooms.length === 0) {
-          const fallback = INITIAL_HOSTELS.find(ih => ih.id === data.id);
-          if (fallback) data.rooms = fallback.rooms;
-        }
-        loadedHostels.push(data);
-      });
-      console.log(`[Sync] Loaded ${loadedHostels.length} hostels from Firestore`);
-    } catch (firestoreErr: any) {
-      console.warn('[Sync] Firestore read failed or timed out:', firestoreErr?.message || firestoreErr);
-      console.warn('[Sync] Falling back to INITIAL_HOSTELS list for worker sync...');
+    // Priority 1: Use hostels passed directly in request body payload
+    if (req.body && Array.isArray(req.body.hostels) && req.body.hostels.length > 0) {
+      console.log(`[Sync] Using ${req.body.hostels.length} hostels provided in request payload`);
+      loadedHostels = req.body.hostels;
     }
 
-    // If Firestore returned 0 or failed, fall back to INITIAL_HOSTELS
+    // Priority 2: Attempt to read from Firestore (with 5s timeout) if payload wasn't provided
+    if (loadedHostels.length === 0) {
+      try {
+        console.log('[Sync] Reading hostels from Firestore...');
+        const firestorePromise = getDocs(collection(db, 'hostels'));
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Firestore read timeout (5s)')), 5000)
+        );
+        const querySnapshot = await Promise.race([firestorePromise, timeoutPromise]) as any;
+
+        if (querySnapshot && typeof querySnapshot.forEach === 'function') {
+          querySnapshot.forEach((docSnap: any) => {
+            const data = docSnap.data();
+            if (data) {
+              if (!data.rooms || !Array.isArray(data.rooms) || data.rooms.length === 0) {
+                const fallback = INITIAL_HOSTELS.find(ih => ih.id === data.id);
+                if (fallback) data.rooms = fallback.rooms;
+              }
+              loadedHostels.push(data);
+            }
+          });
+        }
+        console.log(`[Sync] Loaded ${loadedHostels.length} hostels from Firestore`);
+      } catch (firestoreErr: any) {
+        console.warn('[Sync] Firestore read failed or timed out:', firestoreErr?.message || firestoreErr);
+      }
+    }
+
+    // Priority 3: Fall back to INITIAL_HOSTELS static dataset if 0 hostels loaded
     if (loadedHostels.length === 0) {
       console.log('[Sync] Using INITIAL_HOSTELS fallback list (54 hostels)');
-      loadedHostels.push(...INITIAL_HOSTELS);
+      loadedHostels = [...INITIAL_HOSTELS];
     }
 
     const estateOrder = [
       'On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Roma', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'
     ];
     const sorted = loadedHostels.sort((a, b) => {
-      const orderA = estateOrder.indexOf(a.area);
-      const orderB = estateOrder.indexOf(b.area);
+      const areaA = String(a?.area || '');
+      const areaB = String(b?.area || '');
+      const orderA = estateOrder.indexOf(areaA);
+      const orderB = estateOrder.indexOf(areaB);
       if ((orderA === -1 ? 999 : orderA) !== (orderB === -1 ? 999 : orderB))
         return (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB);
-      return a.name.localeCompare(b.name);
+      return String(a?.name || '').localeCompare(String(b?.name || ''));
     });
 
     // Step 2: Push updated JSON to Cloudflare Worker cache
-    await syncToWorker(sorted);
+    try {
+      await syncToWorker(sorted);
+    } catch (workerErr: any) {
+      console.error('[Sync] Cloudflare Worker push failed:', workerErr?.message || workerErr);
+      return res.status(500).json({
+        success: false,
+        error: `Cloudflare Worker sync failed: ${workerErr.message || workerErr}`,
+        stage: 'worker-post'
+      });
+    }
 
-    res.json({ success: true, hostels: sorted, count: sorted.length });
+    return res.status(200).json({ success: true, hostels: sorted, count: sorted.length });
   } catch (err: any) {
     console.error('[Sync] Worker sync error:', err?.message || err);
     if (!res.headersSent) {
-      res.status(500).json({ success: false, error: err.message || 'Worker sync failed' });
+      return res.status(500).json({ success: false, error: err.message || 'Worker sync failed', stage: 'server-internal' });
     }
   }
 });

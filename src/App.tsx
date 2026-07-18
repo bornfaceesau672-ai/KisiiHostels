@@ -405,13 +405,19 @@ export default function App() {
     try {
       const res = await fetch('/api/admin/sync-r2', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hostels })
       });
-      // Parse body first to get actual error details
-      const data = await res.json().catch(() => ({}));
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        data = {};
+      }
       if (!res.ok) {
-        const stage = data?.stage ? ` [${data.stage}]` : '';
-        throw new Error(data?.error || `Server returned status ${res.status}${stage}`);
+        const stage = data?.stage ? ` [stage: ${data.stage}]` : '';
+        const errMsg = data?.error || data?.message || `Server returned status ${res.status}${stage}`;
+        throw new Error(errMsg);
       }
       if (data.success) {
         showFeedback(`✓ Successfully synced ${data.count ?? data.hostels?.length ?? ''} listings to Cloudflare Worker cache!`, 'success');
@@ -3070,9 +3076,11 @@ export default function App() {
               setAuthModalMode('signin');
               setIsAuthModalOpen(true);
             } else {
-              setCurrentPage('details');
-              setActiveTab('explore');
-              setExploreView('catalog');
+              React.startTransition(() => {
+                setCurrentPage('details');
+                setActiveTab('explore');
+                setExploreView('catalog');
+              });
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }
           }}
@@ -7720,7 +7728,9 @@ export default function App() {
               <button
                 id="bottom-tab-admin"
                 onClick={() => {
-                  setActiveTab('admin');
+                  React.startTransition(() => {
+                    setActiveTab('admin');
+                  });
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 aria-current={activeTab === 'admin' ? 'page' : undefined}
