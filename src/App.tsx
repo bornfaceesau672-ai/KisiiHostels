@@ -403,30 +403,43 @@ export default function App() {
   const handleSyncCloudflare = async () => {
     setIsSyncingCloudflare(true);
     try {
-      const res = await fetch('/api/admin/sync-r2', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ hostels })
-      });
-      let data: any = {};
+      let syncedData: any = null;
+
+      // Attempt 1: Call Vercel API endpoint
       try {
-        data = await res.json();
-      } catch (parseErr) {
-        data = {};
-      }
-      if (!res.ok) {
-        const stage = data?.stage ? ` [stage: ${data.stage}]` : '';
-        const errMsg = data?.error || data?.message || `Server returned status ${res.status}${stage}`;
-        throw new Error(errMsg);
-      }
-      if (data.success) {
-        showFeedback(`✓ Successfully synced ${data.count ?? data.hostels?.length ?? ''} listings to Cloudflare Worker cache!`, 'success');
-        if (Array.isArray(data.hostels)) {
-          setHostels(data.hostels);
-          localStorage.setItem('kisii_hostels', JSON.stringify(data.hostels));
+        const res = await fetch('/api/admin/sync-r2', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hostels })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+          syncedData = data;
         }
-      } else {
-        throw new Error(data.error || 'Sync failed');
+      } catch (e) {
+        console.warn('Vercel API sync endpoint failed, trying direct Worker fallback:', e);
+      }
+
+      // Attempt 2: Direct fallback to Cloudflare Worker endpoint if Attempt 1 didn't succeed
+      if (!syncedData) {
+        const directRes = await fetch('https://kisii-hostels-api.esaubornface73.workers.dev', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(hostels)
+        });
+        if (directRes.ok) {
+          const directData = await directRes.json().catch(() => ({}));
+          syncedData = { success: true, count: hostels.length, hostels, direct: true };
+        } else {
+          const errText = await directRes.text().catch(() => '');
+          throw new Error(`Worker sync failed (${directRes.status}): ${errText}`);
+        }
+      }
+
+      showFeedback(`✓ Successfully synced ${syncedData.count ?? hostels.length} listings to Cloudflare Worker cache!`, 'success');
+      if (Array.isArray(syncedData.hostels)) {
+        setHostels(syncedData.hostels);
+        localStorage.setItem('kisii_hostels', JSON.stringify(syncedData.hostels));
       }
     } catch (err: any) {
       console.error('Cloudflare sync failed:', err);

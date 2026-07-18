@@ -1,6 +1,8 @@
 {
   "version": 2,
   "rewrites": [
+    { "source": "/api/admin/sync-r2", "destination": "/api/admin/sync-r2" },
+    { "source": "/api/hostels", "destination": "/api/hostels" },
     { "source": "/api/:path*", "destination": "/api/index.ts" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
