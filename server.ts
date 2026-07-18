@@ -372,13 +372,19 @@ Ask me any question about curfew hours, security, price estimates, or local rule
   app.post('/api/admin/sync-r2', async (req, res) => {
     console.log('[Sync] Admin triggered Worker sync from Firestore...');
     try {
-      // Step 1: Read from Firestore
+      // Step 1: Read from Firestore (with timeout to prevent hanging)
       console.log('[Sync] Step 1: Reading hostels from Firestore...');
+      console.log('[Sync] Firebase project:', firebaseConfig.projectId);
       let querySnapshot;
       try {
-        querySnapshot = await getDocs(collection(db, 'hostels'));
+        const firestoreReadPromise = getDocs(collection(db, 'hostels'));
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Firestore read timed out after 15 seconds')), 15000)
+        );
+        querySnapshot = await Promise.race([firestoreReadPromise, timeoutPromise]) as any;
       } catch (firestoreErr: any) {
-        console.error('[Sync] FIRESTORE READ FAILED:', firestoreErr);
+        console.error('[Sync] FIRESTORE READ FAILED:', firestoreErr?.message || firestoreErr);
+        console.error('[Sync] Full error:', JSON.stringify(firestoreErr, Object.getOwnPropertyNames(firestoreErr || {})));
         return res.status(500).json({
           success: false,
           error: `Firestore read failed: ${firestoreErr.message || firestoreErr}`,
@@ -387,14 +393,23 @@ Ask me any question about curfew hours, security, price estimates, or local rule
       }
 
       const loadedHostels: any[] = [];
-      querySnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        if (!data.rooms || data.rooms.length === 0) {
-          const fallback = INITIAL_HOSTELS.find(ih => ih.id === data.id);
-          if (fallback) data.rooms = fallback.rooms;
-        }
-        loadedHostels.push(data);
-      });
+      try {
+        querySnapshot.forEach((docSnap: any) => {
+          const data = docSnap.data();
+          if (!data.rooms || data.rooms.length === 0) {
+            const fallback = INITIAL_HOSTELS.find(ih => ih.id === data.id);
+            if (fallback) data.rooms = fallback.rooms;
+          }
+          loadedHostels.push(data);
+        });
+      } catch (parseErr: any) {
+        console.error('[Sync] Error processing Firestore documents:', parseErr);
+        return res.status(500).json({
+          success: false,
+          error: `Error processing Firestore documents: ${parseErr.message}`,
+          stage: 'firestore-parse'
+        });
+      }
       console.log(`[Sync] Step 1 complete: loaded ${loadedHostels.length} hostels from Firestore`);
 
       // If Firestore returned 0 documents, fall back to INITIAL_HOSTELS
@@ -419,7 +434,7 @@ Ask me any question about curfew hours, security, price estimates, or local rule
       try {
         await syncToWorker(sorted);
       } catch (workerErr: any) {
-        console.error('[Sync] CLOUDFLARE WORKER POST FAILED:', workerErr);
+        console.error('[Sync] CLOUDFLARE WORKER POST FAILED:', workerErr?.message || workerErr);
         return res.status(500).json({
           success: false,
           error: `Cloudflare Worker sync failed: ${workerErr.message || workerErr}`,
@@ -430,8 +445,12 @@ Ask me any question about curfew hours, security, price estimates, or local rule
       console.log(`[Sync] Success! Synced ${sorted.length} hostels to Cloudflare Worker.`);
       res.json({ success: true, hostels: sorted, count: sorted.length });
     } catch (err: any) {
-      console.error('[Sync] Unexpected error:', err);
-      res.status(500).json({ success: false, error: err.message || 'Sync failed' });
+      console.error('[Sync] Unexpected top-level error:', err?.message || err);
+      console.error('[Sync] Stack:', err?.stack);
+      // Ensure we ALWAYS send a JSON response, never crash without one
+      if (!res.headersSent) {
+        res.status(500).json({ success: false, error: err.message || 'Sync failed', stage: 'unexpected' });
+      }
     }
   });
 
