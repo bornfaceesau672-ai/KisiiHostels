@@ -1504,6 +1504,15 @@ export default function App() {
   const [catalogScrollPos, setCatalogScrollPos] = useState<number>(0);
   const [selectedHostel, setSelectedHostel] = useState<Hostel>(hostels[0]);
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
+
+  // Keep selectedHostel in sync whenever the hostels array is updated (e.g. after an admin save)
+  useEffect(() => {
+    if (!selectedHostel) return;
+    const updated = hostels.find(h => h.id === selectedHostel.id);
+    if (updated) {
+      setSelectedHostel(updated);
+    }
+  }, [hostels]);
   const [roomToBook, setRoomToBook] = useState<{ hostel: Hostel; room: Room } | null>(null);
 
   const [compareHostels, setCompareHostels] = useState<Hostel[]>([]);
@@ -2384,8 +2393,10 @@ export default function App() {
 
       // Step 3: Update local state and localStorage
       setHostels(finalHostels);
-      if (selectedHostel?.id === adminDraftHostel.id) {
-        setSelectedHostel(adminDraftHostel);
+      // Always refresh selectedHostel from the authoritative saved list so explore tab reflects changes immediately
+      const savedVersion = finalHostels.find(h => h.id === adminDraftHostel.id);
+      if (selectedHostel && savedVersion) {
+        setSelectedHostel(savedVersion);
       }
       setAdminSelectedHostelId(adminDraftHostel.id);
       localStorage.setItem('kisii_hostels', JSON.stringify(finalHostels));
