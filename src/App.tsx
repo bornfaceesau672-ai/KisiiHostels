@@ -2381,34 +2381,31 @@ export default function App() {
     if (!adminDraftHostel || !isAdminUser) return;
     setIsSavingHostel(true);
 
+    // Step 1: Compute updated local list immediately to guarantee instant, reliable UI sync
+    const finalHostels = hostels.some(h => h.id === adminDraftHostel.id)
+      ? hostels.map(h => h.id === adminDraftHostel.id ? adminDraftHostel : h)
+      : [...hostels, adminDraftHostel];
+
+    // Step 2: Update local state & localStorage synchronously
+    setHostels(finalHostels);
+    if (selectedHostel && selectedHostel.id === adminDraftHostel.id) {
+      setSelectedHostel(adminDraftHostel);
+    }
+    setAdminSelectedHostelId(adminDraftHostel.id);
+    localStorage.setItem('kisii_hostels', JSON.stringify(finalHostels));
+
     try {
-      // Step 1: Write/Add to Firebase Firestore (Source of Truth)
+      // Step 3: Write/Add to Firebase Firestore (Source of Truth)
       await setDoc(doc(db, 'hostels', adminDraftHostel.id), adminDraftHostel);
-
-      // Step 2: Re-query Firebase Firestore to get authoritative list
-      const freshHostels = await fetchFreshHostelsFromFirebase();
-      const finalHostels = freshHostels.length > 0 ? freshHostels : hostels.some(h => h.id === adminDraftHostel.id)
-        ? hostels.map(h => h.id === adminDraftHostel.id ? adminDraftHostel : h)
-        : [...hostels, adminDraftHostel];
-
-      // Step 3: Update local state and localStorage
-      setHostels(finalHostels);
-      // Always refresh selectedHostel from the authoritative saved list so explore tab reflects changes immediately
-      const savedVersion = finalHostels.find(h => h.id === adminDraftHostel.id);
-      if (selectedHostel && savedVersion) {
-        setSelectedHostel(savedVersion);
-      }
-      setAdminSelectedHostelId(adminDraftHostel.id);
-      localStorage.setItem('kisii_hostels', JSON.stringify(finalHostels));
-
-      showFeedback(`✓ ${adminDraftHostel.name} saved to Firebase & synced!`, 'success');
 
       // Step 4: Sync authoritative list from Firebase to Cloudflare Worker
       await handleSyncCloudflare(finalHostels);
+      showFeedback(`✓ ${adminDraftHostel.name} saved to Firebase & synced!`, 'success');
     } catch (error: any) {
       console.error('Firestore save error:', error);
       showFeedback(`Saved locally! Notice: ${error?.message || 'Firebase sync failed'}`, 'info');
-      handleSyncCloudflare();
+      // Sync local updates to Worker even if Firestore failed
+      handleSyncCloudflare(finalHostels);
     } finally {
       setIsSavingHostel(false);
     }
