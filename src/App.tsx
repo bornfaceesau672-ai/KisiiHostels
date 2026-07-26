@@ -5763,6 +5763,89 @@ export default function App() {
                           </label>
                         ))}
                       </div>
+
+                      {/* Gate Closing Time */}
+                      <label className="space-y-1">
+                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Gate Closing / Curfew Time</span>
+                        <input
+                          type="text"
+                          placeholder="e.g. 11:00 PM curfew limit"
+                          value={adminDraftHostel.gateClosingTime || ''}
+                          onChange={(e) => handleAdminHostelFieldChange('gateClosingTime', e.target.value || undefined)}
+                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
+                        />
+                      </label>
+
+                      {/* Deposit Refund Policy */}
+                      <label className="space-y-1">
+                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Deposit Refund Policy</span>
+                        <select
+                          value={adminDraftHostel.depositRefundable || ''}
+                          onChange={(e) => handleAdminHostelFieldChange('depositRefundable', e.target.value || undefined)}
+                          className="w-full min-h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
+                        >
+                          <option value="">— Select Policy —</option>
+                          <option value="Refundable">Refundable</option>
+                          <option value="Non-refundable">Non-refundable</option>
+                          <option value="50% Refundable">50% Refundable</option>
+                          <option value="Fully refundable on check-out">Fully refundable on check-out</option>
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* House Rules Editor */}
+                  <div className="border-t border-slate-100 dark:border-slate-800 pt-5 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h4 className="text-sm font-black text-slate-900 dark:text-slate-100">🏠 House Rules</h4>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">Edit or add rules shown to students on the hostel detail page.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentRules = adminDraftHostel.rules || [];
+                          setAdminDraftHostel(prev => prev ? { ...prev, rules: [...currentRules, ''] } : prev);
+                        }}
+                        className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black cursor-pointer active:scale-95 transition"
+                      >
+                        + Add Rule
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {(adminDraftHostel.rules && adminDraftHostel.rules.length > 0) ? (
+                        adminDraftHostel.rules.map((rule, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono font-bold text-indigo-500 w-6 shrink-0 text-right">#{idx + 1}</span>
+                            <input
+                              type="text"
+                              value={rule}
+                              placeholder={`House rule #${idx + 1}…`}
+                              onChange={(e) => {
+                                const updated = [...(adminDraftHostel.rules || [])];
+                                updated[idx] = e.target.value;
+                                setAdminDraftHostel(prev => prev ? { ...prev, rules: updated } : prev);
+                              }}
+                              className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = (adminDraftHostel.rules || []).filter((_, i) => i !== idx);
+                                setAdminDraftHostel(prev => prev ? { ...prev, rules: updated } : prev);
+                              }}
+                              className="p-2 rounded-lg bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/40 transition active:scale-95 cursor-pointer"
+                              title="Remove rule"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-slate-400 italic border border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-3 text-center">
+                          No custom rules set — default system rules will be shown. Click <strong>+ Add Rule</strong> to define custom rules.
+                        </p>
+                      )}
                     </div>
                   </div>
 
