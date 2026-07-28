@@ -4302,51 +4302,46 @@ export default function App() {
                               </div>
 
                               {/* 6. Rules including deposits, curfews and roommate policies */}
-                              <div className="border border-slate-200 bg-slate-50/50 rounded-2xl p-5 space-y-4">
-                                <h4 className="text-xs font-mono font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                              <div className="space-y-3">
+                                <h4 className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2 px-1">
                                   📋 Official House Rules & Curfew Information
                                 </h4>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                                  <div className="bg-white p-3 border border-slate-200 rounded-xl space-y-1">
-                                    <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider font-semibold">Security Gate Closing Time</span>
-                                    <p className="font-bold text-slate-800 flex items-center gap-1.5 font-sans">
-                                      🔒 {detailedCurfew}
-                                    </p>
-                                    <p className="text-[9.5px] text-slate-500 font-normal leading-normal">
-                                      Gate is locked securely for peace of mind. Key card access disabled during late hours.
-                                    </p>
+                                <div className="ruled-paper handwritten-text">
+                                  {/* Paper Header / Title */}
+                                  <div className="font-extrabold text-sm mb-4 border-b border-indigo-200/30 dark:border-slate-700/60 pb-1 text-indigo-700 dark:text-indigo-400 font-sans tracking-wide uppercase">
+                                    📜 Hostel Tenancy Guidelines
                                   </div>
 
-                                  <div className="bg-white p-3 border border-slate-200 rounded-xl space-y-1">
-                                    <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider font-semibold">Deposit Refund Policy</span>
-                                    <p className="font-bold text-slate-800 flex items-center gap-1.5 font-sans">
-                                      💰 {selectedHostel.depositPaymentTiming === 'No deposit' ? 'No Deposit Required' : detailedDeposit}
-                                    </p>
-                                    <p className="text-[9.5px] text-slate-500 font-normal leading-normal">
-                                      {selectedHostel.depositPaymentTiming === 'No deposit'
-                                        ? 'No security deposit is required upfront to reserve or check into this hostel.'
-                                        : 'Your deposit secures the room and is returned smoothly upon normal lease exit.'}
-                                    </p>
-                                  </div>
-                                </div>
-
-                                <div className="space-y-2 pt-2 border-t border-slate-200/70">
-                                  <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider font-semibold block">Tenancy Code of Conduct</span>
-                                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
+                                  {/* Rules Content */}
+                                  <ul className="space-y-2.5 list-none pl-0">
+                                    <li className="flex items-start gap-2">
+                                      <span className="font-extrabold text-red-500 shrink-0 select-none">1.</span>
+                                      <span>
+                                        <strong>Curfew:</strong> Gate locks strictly at {detailedCurfew}. Key card access is disabled during late night hours.
+                                      </span>
+                                    </li>
+                                    <li className="flex items-start gap-2">
+                                      <span className="font-extrabold text-red-500 shrink-0 select-none">2.</span>
+                                      <span>
+                                        <strong>Deposit Policy:</strong> {selectedHostel.depositPaymentTiming === 'No deposit' ? 'No Deposit Required' : detailedDeposit}.{' '}
+                                        {selectedHostel.depositPaymentTiming === 'No deposit'
+                                          ? 'No security deposit is required upfront to reserve or check into this hostel.'
+                                          : 'Your deposit secures the room and is returned smoothly upon normal lease exit.'}
+                                      </span>
+                                    </li>
                                     {detailedRules.map((r, i) => (
-                                      <li key={i} className="flex items-start gap-2 bg-white px-3 py-2 rounded-lg border border-slate-100/70">
-                                        <span className="text-indigo-600 font-bold"># {i + 1}</span>
+                                      <li key={i} className="flex items-start gap-2">
+                                        <span className="font-extrabold text-indigo-600 dark:text-indigo-400 shrink-0 select-none">{i + 3}.</span>
                                         <span>{r}</span>
                                       </li>
                                     ))}
-                                    <li className="flex items-start gap-2 bg-white px-3 py-2 rounded-lg border border-slate-100/70">
-                                      <span className="text-indigo-600 font-bold"># {detailedRules.length + 1}</span>
-                                      <span>Observe standard university guidelines</span>
+                                    <li className="flex items-start gap-2">
+                                      <span className="font-extrabold text-indigo-600 dark:text-indigo-400 shrink-0 select-none">{detailedRules.length + 3}.</span>
+                                      <span>Observe standard university conduct guidelines at all times.</span>
                                     </li>
                                   </ul>
                                 </div>
-
                               </div>
 
                             </div>

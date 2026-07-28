@@ -9,6 +9,7 @@
  */
 
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Caveat:wght@500;700&display=swap');
 
 @variant dark (&:where(.dark, .dark *));
 
@@ -510,6 +511,54 @@ object {
   body.print-shield-active * {
     display: none !important;
   }
+}
+
+/* Ruled Paper Style for Rules and Curfew */
+.ruled-paper {
+  background-color: #fdfbf7; /* Warm cream paper color */
+  background-image: 
+    linear-gradient(rgba(147, 197, 253, 0.4) 1px, transparent 1px); /* Soft blue ruled line */
+  background-size: 100% 2.3rem; /* spacing between lines */
+  line-height: 2.3rem;
+  padding: 1.5rem 1.5rem 1.5rem 3.5rem; /* padding left accounts for margin line */
+  position: relative;
+  border-radius: 1.25rem;
+  border: 1px solid #ebdcb9;
+  box-shadow: 0 4px 8px -2px rgba(0, 0, 0, 0.05);
+}
+
+.ruled-paper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 2.5rem; /* vertical red margin line position */
+  width: 1px;
+  background-color: rgba(239, 68, 68, 0.4); /* light red vertical margin line */
+}
+
+/* Handwritten Text Style */
+.handwritten-text {
+  font-family: 'Architects Daughter', 'Caveat', 'Comic Sans MS', cursive;
+  font-size: 0.95rem;
+  color: #1e3a8a; /* deep blue ink color */
+  letter-spacing: 0.3px;
+}
+
+/* Dark mode compatibility */
+.dark .ruled-paper {
+  background-color: #1e2530; /* darker warm paper */
+  background-image: 
+    linear-gradient(rgba(71, 85, 105, 0.4) 1px, transparent 1px);
+  border-color: #334155;
+}
+
+.dark .ruled-paper::before {
+  background-color: rgba(248, 113, 113, 0.3);
+}
+
+.dark .handwritten-text {
+  color: #93c5fd; /* lighter blue ink */
 }
 
 
