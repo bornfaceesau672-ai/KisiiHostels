@@ -561,6 +561,61 @@ object {
   color: #93c5fd; /* lighter blue ink */
 }
 
+/* Glitter / Shimmer highlight for key policy words */
+@keyframes glitter-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.glitter-text {
+  background: linear-gradient(
+    90deg,
+    #10b981 0%,
+    #34d399 20%,
+    #fbbf24 40%,
+    #f59e0b 50%,
+    #34d399 60%,
+    #10b981 80%,
+    #059669 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: glitter-shimmer 3s linear infinite;
+  font-weight: 800;
+}
+
+.dark .glitter-text {
+  background: linear-gradient(
+    90deg,
+    #6ee7b7 0%,
+    #a7f3d0 20%,
+    #fde68a 40%,
+    #fcd34d 50%,
+    #a7f3d0 60%,
+    #6ee7b7 80%,
+    #34d399 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Keyword highlight underline for important terms */
+.keyword-highlight {
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: rgba(239, 68, 68, 0.5);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
 
 
 

@@ -4318,13 +4318,14 @@ export default function App() {
                                     <li className="flex items-start gap-2">
                                       <span className="font-extrabold text-red-500 shrink-0 select-none">1.</span>
                                       <span>
-                                        <strong>Curfew:</strong> Gate locks strictly at {detailedCurfew}. Key card access is disabled during late night hours.
+                                        <strong className="keyword-highlight">Curfew:</strong> Gate locks strictly at <span className="keyword-highlight">{detailedCurfew}</span>. <span className="keyword-highlight">Key card access</span> is disabled during late night hours.
                                       </span>
                                     </li>
                                     <li className="flex items-start gap-2">
                                       <span className="font-extrabold text-red-500 shrink-0 select-none">2.</span>
                                       <span>
-                                        <strong>Deposit Policy:</strong> {selectedHostel.depositPaymentTiming === 'No deposit' ? 'No Deposit Required' : detailedDeposit}.{' '}
+                                        <strong className="keyword-highlight">Deposit Policy:</strong>{' '}
+                                        <span className="glitter-text">{selectedHostel.depositPaymentTiming === 'No deposit' ? '✨ No Deposit Required ✨' : `💰 ${detailedDeposit}`}</span>.{' '}
                                         {selectedHostel.depositPaymentTiming === 'No deposit'
                                           ? 'No security deposit is required upfront to reserve or check into this hostel.'
                                           : 'Your deposit secures the room and is returned smoothly upon normal lease exit.'}
@@ -4338,7 +4339,7 @@ export default function App() {
                                     ))}
                                     <li className="flex items-start gap-2">
                                       <span className="font-extrabold text-indigo-600 dark:text-indigo-400 shrink-0 select-none">{detailedRules.length + 3}.</span>
-                                      <span>Observe standard university conduct guidelines at all times.</span>
+                                      <span>Observe standard <span className="keyword-highlight">university conduct guidelines</span> at all times.</span>
                                     </li>
                                   </ul>
                                 </div>
