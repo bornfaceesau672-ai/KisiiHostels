@@ -5065,7 +5065,7 @@ export default function App() {
                                   <button
                                     onClick={() => {
                                       navigator.clipboard.writeText(owner.phone);
-                                      showFeedback('Caretaker phone copied to clipboard!', 'info');
+                                      showFeedback('Agent phone copied to clipboard!', 'info');
                                     }}
                                     className="px-2.5 py-1 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-[10px] font-bold transition flex items-center gap-1"
                                   >
@@ -5750,7 +5750,7 @@ export default function App() {
                         <input type="number" min={1} max={5} value={adminDraftHostel.securityRating} onChange={(e) => handleAdminHostelFieldChange('securityRating', Number(e.target.value))} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
                       </label>
                       <label className="space-y-1">
-                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Caretaker Phone</span>
+                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Agent's Phone Number</span>
                         <input value={adminDraftHostel.landlordPhone || ''} onChange={(e) => handleAdminHostelFieldChange('landlordPhone', e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
                       </label>
                       <label className="space-y-1">

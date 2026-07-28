@@ -82,9 +82,9 @@ export default function AvailabilityGrid({ hostel, onSelectBookRoom, activeBooki
               <Phone className="w-5 h-5 stroke-[2]" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-slate-900">Hostel Caretaker Contact</h4>
+              <h4 className="text-sm font-bold text-slate-900">Hostel Agent Contact</h4>
               <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                For room allocation inquiries, keys, and physical tenancy assistance, coordinate with the caretaker:
+                For room allocation inquiries, keys, and physical tenancy assistance, coordinate with the agent:
               </p>
             </div>
           </div>
