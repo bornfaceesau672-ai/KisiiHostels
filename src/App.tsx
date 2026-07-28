@@ -1194,9 +1194,9 @@ export default function App() {
 
       await setDoc(doc(db, 'admin_chats', messageId), newMsg);
       setNewAdminMessage('');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error sending message to admin:', err);
-      showFeedback('Failed to send message.', 'warning');
+      showFeedback(`Failed to send message: ${err?.message || err || 'Unknown error'}`, 'warning');
     } finally {
       setIsSendingAdminMessage(false);
     }
@@ -1240,7 +1240,7 @@ export default function App() {
         id: newPostId,
         authorName: isAdmin ? 'Admin' : 'Anonymous Comrade',
         authorInitials: isAdmin ? 'AD' : '👤',
-        authorEmail: currentUser.email || undefined,
+        authorEmail: currentUser.email || '',
         content: newPostContent.trim(),
         createdAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
         likes: 0,
@@ -1254,9 +1254,9 @@ export default function App() {
       setNewPostContent('');
       setPostAnonymously(false);
       showFeedback('✓ Gossip posted successfully!', 'success');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error posting news:', err);
-      showFeedback('Failed to post gossip.', 'warning');
+      showFeedback(`Failed to post gossip: ${err?.message || err || 'Unknown error'}`, 'warning');
     } finally {
       setIsPostingNews(false);
     }
@@ -1326,9 +1326,9 @@ export default function App() {
       setReplyContent('');
       setReplyInputPostId(null);
       showFeedback('✓ Reply posted successfully!', 'success');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error posting reply:', err);
-      showFeedback('Failed to post reply.', 'warning');
+      showFeedback(`Failed to post reply: ${err?.message || err || 'Unknown error'}`, 'warning');
     }
   };
 
