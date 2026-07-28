@@ -150,9 +150,9 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
         <div className="bg-gradient-to-r from-emerald-50/60 to-slate-50 dark:from-slate-950/30 dark:to-slate-900/10 border border-emerald-100/60 dark:border-emerald-950/40 rounded-2xl p-3 flex flex-col gap-1">
           <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono uppercase tracking-wider font-extrabold">Comrade Rental Rates</span>
           <div>
-            <span className="text-[9px] text-slate-500 dark:text-slate-400 block font-medium">Monthly Per Person</span>
+            <span className="text-[9px] text-slate-500 dark:text-slate-400 block font-medium">Rental Rate</span>
             <span className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono leading-none break-all">
-              {hostel.rentTiers && hostel.rentTiers.length > 1 ? formatRentTiers(hostel.rentTiers) : formatMonthlyRent(monthlyRent)}
+              {hostel.rentTiers && hostel.rentTiers.length > 0 ? formatRentTiers(hostel.rentTiers) : formatMonthlyRent(monthlyRent)}
             </span>
           </div>
         </div>

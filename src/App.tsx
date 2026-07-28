@@ -2567,7 +2567,7 @@ export default function App() {
     });
   };
 
-  const handleAdminRentTierChange = (index: number, field: 'label' | 'amount', value: string) => {
+  const handleAdminRentTierChange = (index: number, field: 'label' | 'amount' | 'period', value: string) => {
     setAdminDraftHostel((prev) => {
       if (!prev || !prev.rentTiers) return prev;
       const tiers = [...prev.rentTiers];
@@ -4281,19 +4281,19 @@ export default function App() {
                                   <div className="space-y-1.5">
                                     <div className="grid grid-cols-2 gap-2 px-3 py-1.5 text-[9px] font-mono font-bold uppercase text-emerald-700/70 border-b border-emerald-100">
                                       <div>Payment Plan</div>
-                                      <div className="text-right">Amount /mo</div>
+                                      <div className="text-right">Amount</div>
                                     </div>
                                     {selectedHostel.rentTiers.map((tier, idx) => (
                                       <div key={idx} className="grid grid-cols-2 gap-2 bg-white border border-emerald-50 px-3 py-2.5 rounded-xl items-center">
                                         <span className="text-xs font-semibold text-slate-700">{tier.label || 'Unnamed Plan'}</span>
-                                        <span className="text-right text-base font-black text-emerald-600 font-mono">{formatMonthlyRent(tier.amount)}</span>
+                                        <span className="text-right text-base font-black text-emerald-600 font-mono">{formatMonthlyRent(tier.amount, tier.period)}</span>
                                       </div>
                                     ))}
                                     <span className="text-[9px] text-slate-400 block mt-1 font-mono">Electricity and water inclusive</span>
                                   </div>
                                 ) : (
                                   <div className="bg-white border border-emerald-50 p-3 rounded-xl">
-                                    <span className="text-[10px] text-slate-500 block font-sans">Monthly Rate (Per Person)</span>
+                                    <span className="text-[10px] text-slate-500 block font-sans">Rental Rate (Per Person)</span>
                                     <span className="text-lg font-black text-emerald-600 font-mono break-all">{formatMonthlyRent(monthlyRent)}</span>
                                     <span className="text-[9px] text-slate-400 block mt-0.5 font-mono">Electricity and water inclusive</span>
                                   </div>
@@ -5776,27 +5776,56 @@ export default function App() {
                         </div>
                         {adminDraftHostel.rentTiers && adminDraftHostel.rentTiers.length > 0 ? (
                           <div className="space-y-2">
-                            <div className="grid grid-cols-[1fr_1fr_auto] gap-2 px-1 text-[9px] font-mono font-bold uppercase text-slate-400 dark:text-slate-500">
+                            <div className="grid grid-cols-[1fr_auto_1fr_auto] gap-2 px-1 text-[9px] font-mono font-bold uppercase text-slate-400 dark:text-slate-500">
                               <div>Payment Plan / Type</div>
-                              <div>Amount (KES/mo)</div>
+                              <div>Amount (KES)</div>
+                              <div>Billing Period</div>
                               <div>Action</div>
                             </div>
                             {adminDraftHostel.rentTiers.map((tier, idx) => (
-                              <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                              <div key={idx} className="grid grid-cols-[1fr_auto_1fr_auto] gap-2 items-center">
                                 <input
                                   type="text"
-                                  placeholder="e.g. Bedsitter, Single Room, Monthly..."
+                                  placeholder="e.g. Bedsitter, Single Room..."
                                   value={tier.label}
                                   onChange={(e) => handleAdminRentTierChange(idx, 'label', e.target.value)}
                                   className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
                                 />
                                 <input
-                                  type="number"
+                                  type="text"
                                   placeholder="e.g. 4500"
-                                  value={typeof tier.amount === 'number' ? tier.amount : tier.amount}
+                                  value={tier.amount}
                                   onChange={(e) => handleAdminRentTierChange(idx, 'amount', e.target.value)}
-                                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
+                                  className="w-28 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
                                 />
+                                <div className="flex gap-1">
+                                  <select
+                                    value={['per month','per semester','per year'].includes(tier.period || '') ? tier.period : (tier.period ? '__custom__' : '')}
+                                    onChange={(e) => {
+                                      if (e.target.value === '__custom__') return; // handled by text input below
+                                      handleAdminRentTierChange(idx, 'period', e.target.value);
+                                    }}
+                                    className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
+                                  >
+                                    <option value="">No period</option>
+                                    <option value="per month">per month</option>
+                                    <option value="per semester">per semester</option>
+                                    <option value="per year">per year</option>
+                                    {tier.period && !['per month','per semester','per year',''].includes(tier.period) && (
+                                      <option value={tier.period}>{tier.period}</option>
+                                    )}
+                                    <option value="__custom__">Custom…</option>
+                                  </select>
+                                  {tier.period && !['per month','per semester','per year',''].includes(tier.period) && (
+                                    <input
+                                      type="text"
+                                      placeholder="Custom period"
+                                      value={tier.period || ''}
+                                      onChange={(e) => handleAdminRentTierChange(idx, 'period', e.target.value)}
+                                      className="w-28 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
+                                    />
+                                  )}
+                                </div>
                                 <button
                                   type="button"
                                   onClick={() => handleAdminRemoveRentTier(idx)}
@@ -5942,8 +5971,8 @@ export default function App() {
                           <div>Floor</div>
                           <div>Occupants</div>
                           <div>Max Occ.</div>
-                          <div>Monthly Rent</div>
-                          <div>Monthly Rent</div>
+                          <div>Rent (Sem. Price)</div>
+                          <div>Rent (Monthly)</div>
                           <div>Action</div>
                         </div>
                       )}

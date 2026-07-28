@@ -8,7 +8,7 @@ export interface Room {
   maxOccupants: number;
   genderPreference: 'Male' | 'Female' | 'Mixed';
   priceKes: number; // Price in KES per semester
-  rentMonthlyKes?: string | number; // Optional price in KES per month
+  rentMonthlyKes?: string | number; // Optional price in KES (period determined by admin)
   isAvailable: boolean;
   amenities: string[];
 }
@@ -16,6 +16,7 @@ export interface Room {
 export interface RentTier {
   label: string;
   amount: number | string;
+  period?: string; // e.g. 'per month', 'per semester', 'per year', or any custom text
 }
 
 export interface Hostel {
@@ -36,7 +37,7 @@ export interface Hostel {
   depositRefundable?: 'Refundable' | 'Non-refundable' | '50% Refundable' | string; // Deposit refund policy
   depositPaymentTiming?: 'Paid upon entry' | 'No deposit'; // Deposit payment timing rule
   gateClosingTime?: string; // Gate curfew / closing time
-  rentMonthlyKes?: string | number; // Optional starting monthly rent for the entire hostel
+  rentMonthlyKes?: string | number; // Optional starting rent for the entire hostel (period determined by admin)
   rentTiers?: RentTier[]; // Multiple rent payment options/tiers
   rooms: Room[];
   externalLink?: string;

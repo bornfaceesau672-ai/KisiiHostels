@@ -5,24 +5,23 @@ export const getNumericRent = (rent: string | number | undefined, fallback: numb
   return match ? parseInt(match[0], 10) : fallback;
 };
 
-export const formatMonthlyRent = (rent: string | number | undefined): string => {
+export const formatMonthlyRent = (rent: string | number | undefined, period?: string): string => {
   if (rent === undefined || rent === null || rent === '') return 'N/A';
+  let display: string;
   if (typeof rent === 'number') {
-    return `KES ${rent.toLocaleString()}/mo`;
+    display = `KES ${rent.toLocaleString()}`;
+  } else {
+    const clean = String(rent).trim();
+    if (/^\d+$/.test(clean)) {
+      display = `KES ${Number(clean).toLocaleString()}`;
+    } else {
+      // If it already contains KES prefix, use as-is
+      display = clean.toLowerCase().includes('kes') ? clean : `KES ${clean}`;
+    }
   }
-  // If it is a string
-  const clean = String(rent).trim();
-  // Check if it's purely a number
-  if (/^\d+$/.test(clean)) {
-    return `KES ${Number(clean).toLocaleString()}/mo`;
-  }
-  // If it already contains currency or /mo
-  let display = clean;
-  if (!display.toLowerCase().includes('kes')) {
-    display = `KES ${display}`;
-  }
-  if (!display.toLowerCase().includes('/mo') && !display.toLowerCase().includes('month')) {
-    display = `${display}/mo`;
+  // Append period only if explicitly provided
+  if (period && period.trim()) {
+    display = `${display} ${period.trim()}`;
   }
   return display;
 };
@@ -41,11 +40,18 @@ export const getMaxRentFromTiers = (tiers: RentTier[]): number => {
 
 export const formatRentTiers = (tiers: RentTier[]): string => {
   if (!tiers || tiers.length === 0) return 'N/A';
-  if (tiers.length === 1) return formatMonthlyRent(tiers[0].amount);
+  if (tiers.length === 1) return formatMonthlyRent(tiers[0].amount, tiers[0].period);
   const min = getMinRentFromTiers(tiers);
   const max = getMaxRentFromTiers(tiers);
-  if (min === max) return `KES ${min.toLocaleString()}/mo`;
-  return `KES ${min.toLocaleString()} – ${max.toLocaleString()}/mo`;
+  // Check if all tiers share the same period
+  const periods = [...new Set(tiers.map(t => t.period?.trim() || ''))];
+  const sharedPeriod = periods.length === 1 ? periods[0] : '';
+  if (min === max) {
+    const p = sharedPeriod ? ` ${sharedPeriod}` : '';
+    return `KES ${min.toLocaleString()}${p}`;
+  }
+  const p = sharedPeriod ? ` ${sharedPeriod}` : '';
+  return `KES ${min.toLocaleString()} – ${max.toLocaleString()}${p}`;
 };
 
 export const getEffectiveMinRent = (hostel: Hostel): number | string => {
