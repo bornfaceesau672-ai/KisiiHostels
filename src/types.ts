@@ -29,6 +29,7 @@ export interface Hostel {
   landlordPhone?: string; // Optional landlord contact phone number
   rules?: string[]; // Standard house rules
   depositRefundable?: 'Refundable' | 'Non-refundable' | '50% Refundable' | string; // Deposit refund policy
+  depositPaymentTiming?: 'Paid upon entry' | 'No deposit'; // Deposit payment timing rule
   gateClosingTime?: string; // Gate curfew / closing time
   rentMonthlyKes?: string | number; // Optional starting monthly rent for the entire hostel
   rooms: Room[];

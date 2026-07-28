@@ -32,7 +32,7 @@ export default function BookRoomModal({ hostel, room, onClose, onSubmitBooking, 
   }, [userEmail, userName, userPhone, userReg]);
 
   // Pricing constants
-  const cautionDeposit = 3000; // Refundable caution fee standard in Kisii
+  const cautionDeposit = hostel.depositPaymentTiming === 'No deposit' ? 0 : 3000; // Refundable caution fee standard in Kisii
   const totalAmount = room.priceKes + cautionDeposit;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -105,7 +105,9 @@ export default function BookRoomModal({ hostel, room, onClose, onSubmitBooking, 
                   Caution Deposit (Refundable):
                   <span className="group relative cursor-pointer text-slate-400 font-mono text-[10px] bg-slate-100 px-1 rounded-full">?</span>
                 </span>
-                <span className="font-mono font-semibold text-slate-900">KES {cautionDeposit.toLocaleString()}</span>
+                <span className="font-mono font-semibold text-slate-900">
+                  {cautionDeposit === 0 ? 'KES 0 (No Deposit)' : `KES ${cautionDeposit.toLocaleString()}`}
+                </span>
               </div>
               <div className="border-t border-slate-200 pt-2 flex justify-between items-baseline mt-1.5">
                 <span className="font-bold text-slate-900 text-sm">Total Initial Invoice:</span>
@@ -229,7 +231,9 @@ export default function BookRoomModal({ hostel, room, onClose, onSubmitBooking, 
 
           {/* Guidelines warning */}
           <div className="text-[10px] text-slate-400 bg-slate-50 p-3 rounded-xl border border-dotted border-slate-250 leading-relaxed font-sans">
-            By reserving this spot, you declare that all credentials are correct. After booking is registered, a temporary lease contract holding for 48 hours is dispatched to your email for security deposit processing.
+            {cautionDeposit === 0 
+              ? "By reserving this spot, you declare that all credentials are correct. After booking is registered, your lease allocation contract will be dispatched to your email."
+              : "By reserving this spot, you declare that all credentials are correct. After booking is registered, a temporary lease contract holding for 48 hours is dispatched to your email for security deposit processing."}
           </div>
 
           {/* Action buttons */}

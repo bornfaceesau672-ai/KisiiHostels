@@ -417,8 +417,8 @@ export default function App() {
         fetched.sort((a, b) => {
           const areaA = String(a?.area || '');
           const areaB = String(b?.area || '');
-          const orderA = ESTATE_ORDER.indexOf(areaA);
-          const orderB = ESTATE_ORDER.indexOf(areaB);
+          const orderA = estateOrder.indexOf(areaA);
+          const orderB = estateOrder.indexOf(areaB);
           if ((orderA === -1 ? 999 : orderA) !== (orderB === -1 ? 999 : orderB))
             return (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB);
           return String(a?.name || '').localeCompare(String(b?.name || ''));
@@ -2429,6 +2429,7 @@ export default function App() {
       description: 'A beautiful newly listed student hostel lodging option situated close to Kisii University gate.',
       landlordPhone: '0795858929',
       rentMonthlyKes: 4500,
+      depositPaymentTiming: 'Paid upon entry',
 
       rooms: [
         {
@@ -4320,10 +4321,12 @@ export default function App() {
                                   <div className="bg-white p-3 border border-slate-200 rounded-xl space-y-1">
                                     <span className="text-[9px] font-mono text-slate-400 uppercase tracking-wider font-semibold">Deposit Refund Policy</span>
                                     <p className="font-bold text-slate-800 flex items-center gap-1.5 font-sans">
-                                      💰 {detailedDeposit}
+                                      💰 {selectedHostel.depositPaymentTiming === 'No deposit' ? 'No Deposit Required' : detailedDeposit}
                                     </p>
                                     <p className="text-[9.5px] text-slate-500 font-normal leading-normal">
-                                      Your deposit secures the room and is returned smoothly upon normal lease exit.
+                                      {selectedHostel.depositPaymentTiming === 'No deposit'
+                                        ? 'No security deposit is required upfront to reserve or check into this hostel.'
+                                        : 'Your deposit secures the room and is returned smoothly upon normal lease exit.'}
                                     </p>
                                   </div>
                                 </div>
@@ -5797,6 +5800,19 @@ export default function App() {
                           <option value="Non-refundable">Non-refundable</option>
                           <option value="50% Refundable">50% Refundable</option>
                           <option value="Fully refundable on check-out">Fully refundable on check-out</option>
+                        </select>
+                      </label>
+
+                      {/* Deposit Payment Timing */}
+                      <label className="space-y-1">
+                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Deposit Timing / Requirement</span>
+                        <select
+                          value={adminDraftHostel.depositPaymentTiming || 'Paid upon entry'}
+                          onChange={(e) => handleAdminHostelFieldChange('depositPaymentTiming', e.target.value as 'Paid upon entry' | 'No deposit')}
+                          className="w-full min-h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
+                        >
+                          <option value="Paid upon entry">Paid upon entry</option>
+                          <option value="No deposit">No deposit</option>
                         </select>
                       </label>
                     </div>
