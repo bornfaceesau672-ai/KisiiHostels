@@ -1,8 +1,9 @@
 import React from 'react';
 import { Hostel } from '../types';
-import { Shield, MapPin, Video, ArrowRight, BarChart2 } from 'lucide-react';
+import { MapPin, ArrowRight, BarChart2 } from 'lucide-react';
 import { getHostelImages } from '../utils/mediaHelper';
-import { getNumericRent, formatMonthlyRent, getEffectiveMinRent, formatRentTiers } from '../utils/rentHelper';
+import { formatMonthlyRent, getEffectiveMinRent, formatRentTiers } from '../utils/rentHelper';
+
 
 interface HostelCardProps {
   key?: string;
