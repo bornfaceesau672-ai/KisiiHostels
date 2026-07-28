@@ -169,14 +169,7 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
           </div>
         </div>
 
-        {/* Room Formats available */}
-        <div className="flex flex-wrap gap-1.5 pt-0.5">
-          {Array.from(new Set(rooms.map(r => r.roomFormat))).map(format => (
-            <span key={format} className="text-[9px] font-sans font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-lg border border-slate-200/30 dark:border-slate-800">
-              {format}
-            </span>
-          ))}
-        </div>
+
 
         {/* 5. See Details immediate page route button */}
         <div className="pt-1">
