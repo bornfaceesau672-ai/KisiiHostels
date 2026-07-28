@@ -12,6 +12,12 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasWifi: true,
     hasHotShower: true,
     imageKeyword: 'hilltop',
+    rentMonthlyKes: 4500,
+    rentTiers: [
+      { label: 'Single Room Monthly', amount: 4500 },
+      { label: 'One Bedroom Monthly', amount: 6000 },
+      { label: 'Two Bedroom Monthly', amount: 8000 }
+    ],
     rooms: [
       { id: 'ny-101', roomNumber: '101', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Male', priceKes: 18000, isAvailable: true, amenities: ['Study Desk', 'Built-in Closet', 'Balcony'] },
       { id: 'ny-102', roomNumber: '102', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 1, genderPreference: 'Male', priceKes: 18000, isAvailable: false, amenities: ['Study Desk', 'Built-in Closet'] },
@@ -32,6 +38,11 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasWifi: true,
     hasHotShower: true,
     imageKeyword: 'courtyard',
+    rentMonthlyKes: 3000,
+    rentTiers: [
+      { label: '4-Sharing Monthly', amount: 2000 },
+      { label: 'Double Room Monthly', amount: 3000 }
+    ],
     rooms: [
       { id: 'mw-101', roomNumber: '101', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 2, maxOccupants: 2, genderPreference: 'Male', priceKes: 9500, isAvailable: false, amenities: ['Shoe Rack', 'High-speed Wi-Fi Access'] },
       { id: 'mw-102', roomNumber: '102', roomType: 'Double', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 2, genderPreference: 'Male', priceKes: 9500, isAvailable: true, amenities: ['Shoe Rack', 'Window View'] },
@@ -51,6 +62,11 @@ export const INITIAL_HOSTELS: Hostel[] = [
     hasWifi: true,
     hasHotShower: true,
     imageKeyword: 'luxury',
+    rentMonthlyKes: 5500,
+    rentTiers: [
+      { label: 'Single Suite Monthly', amount: 5500 },
+      { label: 'Double Suite Monthly', amount: 4000 }
+    ],
     rooms: [
       { id: 'ml-101', roomNumber: 'A1', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 1, maxOccupants: 1, genderPreference: 'Mixed', priceKes: 22000, isAvailable: false, amenities: ['In-room Sink', 'Executive Chair', 'Instant Hot Water'] },
       { id: 'ml-102', roomNumber: 'A2', roomType: 'Single', roomFormat: 'Single Room', floor: 1, currentOccupants: 0, maxOccupants: 1, genderPreference: 'Female', priceKes: 22000, isAvailable: true, amenities: ['Executive Chair', 'Smart Socket', 'Private Kitchenette'] },

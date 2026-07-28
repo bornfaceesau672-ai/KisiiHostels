@@ -13,6 +13,11 @@ export interface Room {
   amenities: string[];
 }
 
+export interface RentTier {
+  label: string;
+  amount: number | string;
+}
+
 export interface Hostel {
   id: string;
   name: string;
@@ -32,6 +37,7 @@ export interface Hostel {
   depositPaymentTiming?: 'Paid upon entry' | 'No deposit'; // Deposit payment timing rule
   gateClosingTime?: string; // Gate curfew / closing time
   rentMonthlyKes?: string | number; // Optional starting monthly rent for the entire hostel
+  rentTiers?: RentTier[]; // Multiple rent payment options/tiers
   rooms: Room[];
   externalLink?: string;
 }

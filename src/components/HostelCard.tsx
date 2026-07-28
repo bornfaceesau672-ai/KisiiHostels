@@ -2,7 +2,7 @@ import React from 'react';
 import { Hostel } from '../types';
 import { Shield, MapPin, Video, ArrowRight, BarChart2 } from 'lucide-react';
 import { getHostelImages } from '../utils/mediaHelper';
-import { getNumericRent, formatMonthlyRent } from '../utils/rentHelper';
+import { getNumericRent, formatMonthlyRent, getEffectiveMinRent, formatRentTiers } from '../utils/rentHelper';
 
 interface HostelCardProps {
   key?: string;
@@ -25,25 +25,7 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
   }, 0);
 
   // Safe pricing calculation
-  const getMinMonthlyRent = () => {
-    if (hostel.rentMonthlyKes !== undefined && hostel.rentMonthlyKes !== null && hostel.rentMonthlyKes !== '') {
-      return hostel.rentMonthlyKes;
-    }
-    if (!hostel.rooms || hostel.rooms.length === 0) {
-      return 4500;
-    }
-    const definedRents = rooms.map(r => r.rentMonthlyKes).filter(Boolean);
-    if (definedRents.length > 0) {
-      return definedRents.reduce((min, current) => {
-        const minVal = getNumericRent(min, 999999);
-        const currVal = getNumericRent(current, 999999);
-        return currVal < minVal ? current : min;
-      }, definedRents[0]);
-    }
-    return rooms.length > 0 ? Math.min(...rooms.map(r => Math.round(r.priceKes / 4))) : 4500;
-  };
-
-  const monthlyRent = getMinMonthlyRent();
+  const monthlyRent = getEffectiveMinRent(hostel);
 
 
 
@@ -170,7 +152,7 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
           <div>
             <span className="text-[9px] text-slate-500 dark:text-slate-400 block font-medium">Monthly Per Person</span>
             <span className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono leading-none break-all">
-              {formatMonthlyRent(monthlyRent)}
+              {hostel.rentTiers && hostel.rentTiers.length > 1 ? formatRentTiers(hostel.rentTiers) : formatMonthlyRent(monthlyRent)}
             </span>
           </div>
         </div>

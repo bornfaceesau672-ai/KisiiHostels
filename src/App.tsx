@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Hostel, Room, Booking, MaintenanceRequest, HostelReview, RelocationRequest, NewsPost, AdminChatMessage } from './types';
+import { Hostel, Room, Booking, MaintenanceRequest, HostelReview, RelocationRequest, NewsPost, AdminChatMessage, RentTier } from './types';
 import { INITIAL_HOSTELS, INITIAL_BOOKINGS, INITIAL_MAINTENANCE, ClientUser, INITIAL_USERS, INITIAL_RELOCATIONS } from './initialData';
 import { INITIAL_REVIEWS } from './initialReviews';
 import HostelCard from './components/HostelCard';
@@ -12,7 +12,7 @@ import AuthModal from './components/AuthModal';
 import EditProfileModal from './components/EditProfileModal';
 import EstateLandingPage from './components/EstateLandingPage';
 import { getHostelImages, getHostelYoutubeEmbed } from './utils/mediaHelper';
-import { getNumericRent, formatMonthlyRent } from './utils/rentHelper';
+import { getNumericRent, formatMonthlyRent, getMinRentFromTiers, getMaxRentFromTiers, formatRentTiers, getEffectiveMinRent, getEffectiveMinRentNumeric } from './utils/rentHelper';
 
 // Firebase core logic imports
 import { auth, db, handleFirestoreError, OperationType, logAnalyticsEvent } from './lib/firebase';
@@ -2429,6 +2429,10 @@ export default function App() {
       description: 'A beautiful newly listed student hostel lodging option situated close to Kisii University gate.',
       landlordPhone: '0795858929',
       rentMonthlyKes: 4500,
+      rentTiers: [
+        { label: 'Bedsitter', amount: 4500 },
+        { label: 'Single Room', amount: 3500 }
+      ],
       depositPaymentTiming: 'Paid upon entry',
 
       rooms: [
@@ -2544,6 +2548,37 @@ export default function App() {
 
   const handleAdminRemoveRoom = (roomId: string) => {
     setAdminDraftHostel((prev) => prev ? { ...prev, rooms: prev.rooms.filter((room) => room.id !== roomId) } : prev);
+  };
+
+  const handleAdminAddRentTier = () => {
+    setAdminDraftHostel((prev) => {
+      if (!prev) return prev;
+      const tiers = prev.rentTiers ? [...prev.rentTiers] : [];
+      tiers.push({ label: '', amount: '' });
+      return { ...prev, rentTiers: tiers };
+    });
+  };
+
+  const handleAdminRemoveRentTier = (index: number) => {
+    setAdminDraftHostel((prev) => {
+      if (!prev || !prev.rentTiers) return prev;
+      const tiers = prev.rentTiers.filter((_, i) => i !== index);
+      return { ...prev, rentTiers: tiers.length > 0 ? tiers : undefined };
+    });
+  };
+
+  const handleAdminRentTierChange = (index: number, field: 'label' | 'amount', value: string) => {
+    setAdminDraftHostel((prev) => {
+      if (!prev || !prev.rentTiers) return prev;
+      const tiers = [...prev.rentTiers];
+      if (field === 'amount') {
+        const numVal = Number(value);
+        tiers[index] = { ...tiers[index], [field]: !isNaN(numVal) && value !== '' ? numVal : value };
+      } else {
+        tiers[index] = { ...tiers[index], [field]: value };
+      }
+      return { ...prev, rentTiers: tiers };
+    });
   };
 
   const uploadHostelImagesToPostImage = async (files: FileList | File[]) => {
@@ -3028,20 +3063,7 @@ export default function App() {
     const totalBeds = hostel.rooms.reduce((acc, room) => acc + room.maxOccupants, 0);
     const occupiedBeds = hostel.rooms.reduce((acc, room) => acc + room.currentOccupants, 0);
     const availableBeds = totalBeds - occupiedBeds;
-    const getMinMonthlyRent = () => {
-      if (hostel.rentMonthlyKes !== undefined && hostel.rentMonthlyKes !== null && hostel.rentMonthlyKes !== '') {
-        const parsed = typeof hostel.rentMonthlyKes === 'number' ? hostel.rentMonthlyKes : parseInt(String(hostel.rentMonthlyKes).match(/\d+/)?.[0] || '0', 10);
-        return parsed || 0;
-      }
-      return hostel.rooms.length > 0 ? Math.min(...hostel.rooms.map((room) => {
-        if (room.rentMonthlyKes) {
-          const val = typeof room.rentMonthlyKes === 'number' ? room.rentMonthlyKes : parseInt(String(room.rentMonthlyKes).match(/\d+/)?.[0] || '0', 10);
-          return val || Math.round(room.priceKes / 4);
-        }
-        return Math.round(room.priceKes / 4);
-      })) : 0;
-    };
-    const minRent = getMinMonthlyRent();
+    const minRent = getEffectiveMinRentNumeric(hostel);
     return {
       hostel,
       totalBeds,
@@ -4126,25 +4148,7 @@ export default function App() {
 
                   {/* Profile and Landlord detail card */}
                   {selectedHostel && (() => {
-                    const getMinMonthlyRent = () => {
-                      if (selectedHostel.rentMonthlyKes !== undefined && selectedHostel.rentMonthlyKes !== null && selectedHostel.rentMonthlyKes !== '') {
-                        return selectedHostel.rentMonthlyKes;
-                      }
-                      if (!selectedHostel.rooms || selectedHostel.rooms.length === 0) {
-                        return 4500;
-                      }
-                      const definedRents = selectedHostel.rooms.map(r => r.rentMonthlyKes).filter(Boolean);
-                      if (definedRents.length > 0) {
-                        return definedRents.reduce((min, current) => {
-                          const minVal = getNumericRent(min, 999999);
-                          const currVal = getNumericRent(current, 999999);
-                          return currVal < minVal ? current : min;
-                        }, definedRents[0]);
-                      }
-                      return Math.min(...selectedHostel.rooms.map(r => Math.round(r.priceKes / 4)));
-                    };
-
-                    const monthlyRent = getMinMonthlyRent();
+                    const monthlyRent = getEffectiveMinRent(selectedHostel);
 
 
 
@@ -4273,11 +4277,27 @@ export default function App() {
                                 <span className="text-[10px] font-mono tracking-wider font-bold text-emerald-800 uppercase block">
                                   💰 Active Rent & Pricing Schedule (Approved)
                                 </span>
-                                <div className="bg-white border border-emerald-50 p-3 rounded-xl">
-                                  <span className="text-[10px] text-slate-500 block font-sans">Monthly Rate (Per Person)</span>
-                                  <span className="text-lg font-black text-emerald-600 font-mono break-all">{formatMonthlyRent(monthlyRent)}</span>
-                                  <span className="text-[9px] text-slate-400 block mt-0.5 font-mono">Electricity and water inclusive</span>
-                                </div>
+                                {selectedHostel.rentTiers && selectedHostel.rentTiers.length > 0 ? (
+                                  <div className="space-y-1.5">
+                                    <div className="grid grid-cols-2 gap-2 px-3 py-1.5 text-[9px] font-mono font-bold uppercase text-emerald-700/70 border-b border-emerald-100">
+                                      <div>Payment Plan</div>
+                                      <div className="text-right">Amount /mo</div>
+                                    </div>
+                                    {selectedHostel.rentTiers.map((tier, idx) => (
+                                      <div key={idx} className="grid grid-cols-2 gap-2 bg-white border border-emerald-50 px-3 py-2.5 rounded-xl items-center">
+                                        <span className="text-xs font-semibold text-slate-700">{tier.label || 'Unnamed Plan'}</span>
+                                        <span className="text-right text-base font-black text-emerald-600 font-mono">{formatMonthlyRent(tier.amount)}</span>
+                                      </div>
+                                    ))}
+                                    <span className="text-[9px] text-slate-400 block mt-1 font-mono">Electricity and water inclusive</span>
+                                  </div>
+                                ) : (
+                                  <div className="bg-white border border-emerald-50 p-3 rounded-xl">
+                                    <span className="text-[10px] text-slate-500 block font-sans">Monthly Rate (Per Person)</span>
+                                    <span className="text-lg font-black text-emerald-600 font-mono break-all">{formatMonthlyRent(monthlyRent)}</span>
+                                    <span className="text-[9px] text-slate-400 block mt-0.5 font-mono">Electricity and water inclusive</span>
+                                  </div>
+                                )}
                               </div>
 
                               {/* Location & approximate distance from school */}
@@ -5749,10 +5769,48 @@ export default function App() {
                         <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Agent's Phone Number</span>
                         <input value={adminDraftHostel.landlordPhone || ''} onChange={(e) => handleAdminHostelFieldChange('landlordPhone', e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
                       </label>
-                      <label className="space-y-1">
-                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Monthly Rent From</span>
-                        <input type="text" value={adminDraftHostel.rentMonthlyKes || ''} onChange={(e) => handleAdminHostelFieldChange('rentMonthlyKes', e.target.value || undefined)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
-                      </label>
+                      <div className="space-y-2 md:col-span-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Rent Payment Options / Tiers</span>
+                          <button type="button" onClick={handleAdminAddRentTier} className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[10px] font-bold cursor-pointer hover:bg-emerald-700 transition-colors">+ Add Tier</button>
+                        </div>
+                        {adminDraftHostel.rentTiers && adminDraftHostel.rentTiers.length > 0 ? (
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-[1fr_1fr_auto] gap-2 px-1 text-[9px] font-mono font-bold uppercase text-slate-400 dark:text-slate-500">
+                              <div>Payment Plan / Type</div>
+                              <div>Amount (KES/mo)</div>
+                              <div>Action</div>
+                            </div>
+                            {adminDraftHostel.rentTiers.map((tier, idx) => (
+                              <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                                <input
+                                  type="text"
+                                  placeholder="e.g. Bedsitter, Single Room, Monthly..."
+                                  value={tier.label}
+                                  onChange={(e) => handleAdminRentTierChange(idx, 'label', e.target.value)}
+                                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
+                                />
+                                <input
+                                  type="number"
+                                  placeholder="e.g. 4500"
+                                  value={typeof tier.amount === 'number' ? tier.amount : tier.amount}
+                                  onChange={(e) => handleAdminRentTierChange(idx, 'amount', e.target.value)}
+                                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleAdminRemoveRentTier(idx)}
+                                  className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950 text-rose-600 text-[10px] font-black px-2 py-2 hover:bg-rose-100 cursor-pointer transition-colors"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-[11px] text-slate-400 dark:text-slate-500 italic py-2 px-1">No rent tiers defined. Click "+ Add Tier" to add payment options.</div>
+                        )}
+                      </div>
 
                       <label className="space-y-1 md:col-span-2">
                         <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Description</span>
@@ -7703,25 +7761,11 @@ export default function App() {
                   <tr>
                     <td className="p-4 border-b border-slate-100 dark:border-slate-800/50 font-bold text-slate-500 uppercase tracking-wider text-xs">Rent Starting At</td>
                     {compareHostels.map(hostel => {
-                      const getMinMonthlyRentForCompare = () => {
-                        if (hostel.rentMonthlyKes !== undefined && hostel.rentMonthlyKes !== null && hostel.rentMonthlyKes !== '') {
-                          return hostel.rentMonthlyKes;
-                        }
-                        if (!hostel.rooms || hostel.rooms.length === 0) {
-                          return 4500;
-                        }
-                        const definedRents = hostel.rooms.map(r => r.rentMonthlyKes).filter(Boolean);
-                        if (definedRents.length > 0) {
-                          return definedRents.reduce((min, current) => {
-                            const minVal = getNumericRent(min, 999999);
-                            const currVal = getNumericRent(current, 999999);
-                            return currVal < minVal ? current : min;
-                          }, definedRents[0]);
-                        }
-                        return hostel.rooms.length > 0 ? Math.min(...hostel.rooms.map(r => Math.round(r.priceKes / 4))) : 4500;
-                      };
-                      const rent = getMinMonthlyRentForCompare();
-                      return <td key={hostel.id} className="p-4 border-b border-slate-100 dark:border-slate-800/50 font-black text-emerald-600 text-lg break-all">{formatMonthlyRent(rent)}</td>;
+                      const rent = getEffectiveMinRent(hostel);
+                      const hasMultipleTiers = hostel.rentTiers && hostel.rentTiers.length > 1;
+                      return <td key={hostel.id} className="p-4 border-b border-slate-100 dark:border-slate-800/50 font-black text-emerald-600 text-lg break-all">
+                        {hasMultipleTiers ? formatRentTiers(hostel.rentTiers!) : formatMonthlyRent(rent)}
+                      </td>;
                     })}
                   </tr>
                   <tr>
