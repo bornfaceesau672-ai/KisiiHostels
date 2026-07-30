@@ -2511,7 +2511,21 @@ export default function App() {
   };
 
   const handleAdminHostelFieldChange = <K extends keyof Hostel>(field: K, value: Hostel[K]) => {
-    setAdminDraftHostel((prev) => prev ? { ...prev, [field]: value } : prev);
+    setAdminDraftHostel((prev) => {
+      if (!prev) return prev;
+      let updated = { ...prev, [field]: value };
+      if (field === 'area') {
+        if (value === 'On-Campus') {
+          if (!updated.externalLink) {
+            updated.externalLink = 'https://kisiiuniversity.ac.ke';
+          }
+        } else {
+          // If changed back to a normal area, clear the external link
+          delete updated.externalLink;
+        }
+      }
+      return updated;
+    });
   };
 
   const handleAdminRoomFieldChange = <K extends keyof Room>(roomId: string, field: K, value: Room[K]) => {
@@ -5697,257 +5711,292 @@ export default function App() {
                     </div>
 
                     <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <label className="space-y-1">
-                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Hostel Name</span>
-                        <input value={adminDraftHostel.name} onChange={(e) => handleAdminHostelFieldChange('name', e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
-                      </label>
-                      <label className="space-y-1">
-                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Area</span>
-                        <select value={adminDraftHostel.area} onChange={(e) => handleAdminHostelFieldChange('area', e.target.value as Hostel['area'])} className="w-full min-h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100">
-                          {estateOrder.map((area) => <option key={area} value={area}>{area}</option>)}
-                        </select>
-                      </label>
-                      <label className="space-y-1">
-                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Distance to Gate</span>
-                        <input type="number" value={adminDraftHostel.distanceMeters} onChange={(e) => handleAdminHostelFieldChange('distanceMeters', Number(e.target.value))} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
-                      </label>
-                      <label className="space-y-1">
-                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Security Rating</span>
-                        <input type="number" min={1} max={5} value={adminDraftHostel.securityRating} onChange={(e) => handleAdminHostelFieldChange('securityRating', Number(e.target.value))} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
-                      </label>
-                      <label className="space-y-1">
-                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Agent's Phone Number</span>
-                        <input value={adminDraftHostel.landlordPhone || ''} onChange={(e) => handleAdminHostelFieldChange('landlordPhone', e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
-                      </label>
-                      <div className="space-y-2 md:col-span-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Rent Payment Options / Tiers</span>
-                          <button type="button" onClick={handleAdminAddRentTier} className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[10px] font-bold cursor-pointer hover:bg-emerald-700 transition-colors">+ Add Tier</button>
-                        </div>
-                        {adminDraftHostel.rentTiers && adminDraftHostel.rentTiers.length > 0 ? (
-                          <div className="space-y-2">
-                            <div className="grid grid-cols-[1fr_auto_1fr_auto] gap-2 px-1 text-[9px] font-mono font-bold uppercase text-slate-400 dark:text-slate-500">
-                              <div>Payment Plan / Type</div>
-                              <div>Amount (KES)</div>
-                              <div>Billing Period</div>
-                              <div>Action</div>
+                      {adminDraftHostel.area === 'On-Campus' ? (
+                        <>
+                          <label className="space-y-1">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Hostel Name</span>
+                            <input value={adminDraftHostel.name} onChange={(e) => handleAdminHostelFieldChange('name', e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
+                          </label>
+                          <label className="space-y-1">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Area</span>
+                            <select value={adminDraftHostel.area} onChange={(e) => handleAdminHostelFieldChange('area', e.target.value as Hostel['area'])} className="w-full min-h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100">
+                              {estateOrder.map((area) => <option key={area} value={area}>{area}</option>)}
+                            </select>
+                          </label>
+                          <label className="space-y-1 md:col-span-2">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Official Portal Website Link</span>
+                            <input value={adminDraftHostel.externalLink || ''} onChange={(e) => handleAdminHostelFieldChange('externalLink', e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" placeholder="https://kisiiuniversity.ac.ke" />
+                          </label>
+                          
+                          <div className="md:col-span-2 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/60 rounded-2xl p-4 space-y-2">
+                            <span className="text-xs font-black text-indigo-700 dark:text-indigo-400 block">ℹ️ On-Campus Resident Hall Settings</span>
+                            <p className="text-[11px] text-indigo-650 dark:text-indigo-300 leading-relaxed font-semibold">
+                              On-Campus halls do not manage rooms, pricing tiers, descriptions, or specific house rules locally on this site.
+                              Students clicking this hostel will be redirected to the official Kisii University portal page linked above.
+                              You can upload/manage pictures on the left panel, and edit the name or portal website link.
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <label className="space-y-1">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Hostel Name</span>
+                            <input value={adminDraftHostel.name} onChange={(e) => handleAdminHostelFieldChange('name', e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
+                          </label>
+                          <label className="space-y-1">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Area</span>
+                            <select value={adminDraftHostel.area} onChange={(e) => handleAdminHostelFieldChange('area', e.target.value as Hostel['area'])} className="w-full min-h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100">
+                              {estateOrder.map((area) => <option key={area} value={area}>{area}</option>)}
+                            </select>
+                          </label>
+                          <label className="space-y-1">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Distance to Gate</span>
+                            <input type="number" value={adminDraftHostel.distanceMeters} onChange={(e) => handleAdminHostelFieldChange('distanceMeters', Number(e.target.value))} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
+                          </label>
+                          <label className="space-y-1">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Security Rating</span>
+                            <input type="number" min={1} max={5} value={adminDraftHostel.securityRating} onChange={(e) => handleAdminHostelFieldChange('securityRating', Number(e.target.value))} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
+                          </label>
+                          <label className="space-y-1">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Agent's Phone Number</span>
+                            <input value={adminDraftHostel.landlordPhone || ''} onChange={(e) => handleAdminHostelFieldChange('landlordPhone', e.target.value)} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100" />
+                          </label>
+                          <div className="space-y-2 md:col-span-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Rent Payment Options / Tiers</span>
+                              <button type="button" onClick={handleAdminAddRentTier} className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[10px] font-bold cursor-pointer hover:bg-emerald-700 transition-colors">+ Add Tier</button>
                             </div>
-                            {adminDraftHostel.rentTiers.map((tier, idx) => (
-                              <div key={idx} className="grid grid-cols-[1fr_auto_1fr_auto] gap-2 items-center">
-                                <input
-                                  type="text"
-                                  placeholder="e.g. Bedsitter, Single Room..."
-                                  value={tier.label}
-                                  onChange={(e) => handleAdminRentTierChange(idx, 'label', e.target.value)}
-                                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
-                                />
-                                <input
-                                  type="text"
-                                  placeholder="e.g. 4500"
-                                  value={tier.amount}
-                                  onChange={(e) => handleAdminRentTierChange(idx, 'amount', e.target.value)}
-                                  className="w-28 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
-                                />
-                                <div className="flex gap-1">
-                                  <select
-                                    value={['per month','per semester','per year'].includes(tier.period || '') ? tier.period : (tier.period ? '__custom__' : '')}
-                                    onChange={(e) => {
-                                      if (e.target.value === '__custom__') return; // handled by text input below
-                                      handleAdminRentTierChange(idx, 'period', e.target.value);
-                                    }}
-                                    className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
-                                  >
-                                    <option value="">No period</option>
-                                    <option value="per month">per month</option>
-                                    <option value="per semester">per semester</option>
-                                    <option value="per year">per year</option>
-                                    {tier.period && !['per month','per semester','per year',''].includes(tier.period) && (
-                                      <option value={tier.period}>{tier.period}</option>
-                                    )}
-                                    <option value="__custom__">Custom…</option>
-                                  </select>
-                                  {tier.period && !['per month','per semester','per year',''].includes(tier.period) && (
+                            {adminDraftHostel.rentTiers && adminDraftHostel.rentTiers.length > 0 ? (
+                              <div className="space-y-2">
+                                <div className="grid grid-cols-[1fr_auto_1fr_auto] gap-2 px-1 text-[9px] font-mono font-bold uppercase text-slate-400 dark:text-slate-500">
+                                  <div>Payment Plan / Type</div>
+                                  <div>Amount (KES)</div>
+                                  <div>Billing Period</div>
+                                  <div>Action</div>
+                                </div>
+                                {adminDraftHostel.rentTiers.map((tier, idx) => (
+                                  <div key={idx} className="grid grid-cols-[1fr_auto_1fr_auto] gap-2 items-center">
                                     <input
                                       type="text"
-                                      placeholder="Custom period"
-                                      value={tier.period || ''}
-                                      onChange={(e) => handleAdminRentTierChange(idx, 'period', e.target.value)}
-                                      className="w-28 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
+                                      placeholder="e.g. Bedsitter, Single Room..."
+                                      value={tier.label}
+                                      onChange={(e) => handleAdminRentTierChange(idx, 'label', e.target.value)}
+                                      className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
                                     />
-                                  )}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => handleAdminRemoveRentTier(idx)}
-                                  className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950 text-rose-600 text-[10px] font-black px-2 py-2 hover:bg-rose-100 cursor-pointer transition-colors"
-                                >
-                                  ✕
-                                </button>
+                                    <input
+                                      type="text"
+                                      placeholder="e.g. 4500"
+                                      value={tier.amount}
+                                      onChange={(e) => handleAdminRentTierChange(idx, 'amount', e.target.value)}
+                                      className="w-28 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
+                                    />
+                                    <div className="flex gap-1">
+                                      <select
+                                        value={['per month','per semester','per year'].includes(tier.period || '') ? tier.period : (tier.period ? '__custom__' : '')}
+                                        onChange={(e) => {
+                                          if (e.target.value === '__custom__') return; // handled by text input below
+                                          handleAdminRentTierChange(idx, 'period', e.target.value);
+                                        }}
+                                        className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
+                                      >
+                                        <option value="">No period</option>
+                                        <option value="per month">per month</option>
+                                        <option value="per semester">per semester</option>
+                                        <option value="per year">per year</option>
+                                        {tier.period && !['per month','per semester','per year',''].includes(tier.period) && (
+                                          <option value={tier.period}>{tier.period}</option>
+                                        )}
+                                        <option value="__custom__">Custom…</option>
+                                      </select>
+                                      {tier.period && !['per month','per semester','per year',''].includes(tier.period) && (
+                                        <input
+                                          type="text"
+                                          placeholder="Custom period"
+                                          value={tier.period || ''}
+                                          onChange={(e) => handleAdminRentTierChange(idx, 'period', e.target.value)}
+                                          className="w-28 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
+                                        />
+                                      )}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAdminRemoveRentTier(idx)}
+                                      className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950 text-rose-600 text-[10px] font-black px-2 py-2 hover:bg-rose-100 cursor-pointer transition-colors"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                ))}
                               </div>
+                            ) : (
+                              <div className="text-[11px] text-slate-400 dark:text-slate-500 italic py-2 px-1">No rent tiers defined. Click "+ Add Tier" to add payment options.</div>
+                            )}
+                          </div>
+
+                          <label className="space-y-1 md:col-span-2">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Description</span>
+                            <textarea value={adminDraftHostel.description} onChange={(e) => handleAdminHostelFieldChange('description', e.target.value)} rows={3} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-semibold text-slate-800 dark:text-slate-100" />
+                          </label>
+                          <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            {[
+                              ['hasWifi', 'Wi-Fi'],
+                              ['hasBorehole', 'Borehole'],
+                              ['hasHotShower', 'Hot Shower']
+                            ].map(([field, label]) => (
+                              <label key={field} className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                                <input type="checkbox" checked={Boolean(adminDraftHostel[field as keyof Hostel])} onChange={(e) => handleAdminHostelFieldChange(field as keyof Hostel, e.target.checked as never)} />
+                                {label}
+                              </label>
                             ))}
                           </div>
-                        ) : (
-                          <div className="text-[11px] text-slate-400 dark:text-slate-500 italic py-2 px-1">No rent tiers defined. Click "+ Add Tier" to add payment options.</div>
-                        )}
-                      </div>
 
-                      <label className="space-y-1 md:col-span-2">
-                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Description</span>
-                        <textarea value={adminDraftHostel.description} onChange={(e) => handleAdminHostelFieldChange('description', e.target.value)} rows={3} className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-semibold text-slate-800 dark:text-slate-100" />
-                      </label>
-                      <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        {[
-                          ['hasWifi', 'Wi-Fi'],
-                          ['hasBorehole', 'Borehole'],
-                          ['hasHotShower', 'Hot Shower']
-                        ].map(([field, label]) => (
-                          <label key={field} className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200">
-                            <input type="checkbox" checked={Boolean(adminDraftHostel[field as keyof Hostel])} onChange={(e) => handleAdminHostelFieldChange(field as keyof Hostel, e.target.checked as never)} />
-                            {label}
+                          {/* Gate Closing Time */}
+                          <label className="space-y-1">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Gate Closing / Curfew Time</span>
+                            <input
+                              type="text"
+                              placeholder="e.g. 11:00 PM curfew limit"
+                              value={adminDraftHostel.gateClosingTime || ''}
+                              onChange={(e) => handleAdminHostelFieldChange('gateClosingTime', e.target.value || undefined)}
+                              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
+                            />
                           </label>
-                        ))}
-                      </div>
 
-                      {/* Gate Closing Time */}
-                      <label className="space-y-1">
-                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Gate Closing / Curfew Time</span>
-                        <input
-                          type="text"
-                          placeholder="e.g. 11:00 PM curfew limit"
-                          value={adminDraftHostel.gateClosingTime || ''}
-                          onChange={(e) => handleAdminHostelFieldChange('gateClosingTime', e.target.value || undefined)}
-                          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
-                        />
-                      </label>
+                          {/* Deposit Refund Policy */}
+                          <label className="space-y-1">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Deposit Refund Policy</span>
+                            <select
+                              value={adminDraftHostel.depositRefundable || ''}
+                              onChange={(e) => handleAdminHostelFieldChange('depositRefundable', e.target.value || undefined)}
+                              className="w-full min-h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
+                            >
+                              <option value="">— Select Policy —</option>
+                              <option value="Refundable">Refundable</option>
+                              <option value="Non-refundable">Non-refundable</option>
+                              <option value="50% Refundable">50% Refundable</option>
+                              <option value="Fully refundable on check-out">Fully refundable on check-out</option>
+                            </select>
+                          </label>
 
-                      {/* Deposit Refund Policy */}
-                      <label className="space-y-1">
-                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Deposit Refund Policy</span>
-                        <select
-                          value={adminDraftHostel.depositRefundable || ''}
-                          onChange={(e) => handleAdminHostelFieldChange('depositRefundable', e.target.value || undefined)}
-                          className="w-full min-h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
-                        >
-                          <option value="">— Select Policy —</option>
-                          <option value="Refundable">Refundable</option>
-                          <option value="Non-refundable">Non-refundable</option>
-                          <option value="50% Refundable">50% Refundable</option>
-                          <option value="Fully refundable on check-out">Fully refundable on check-out</option>
-                        </select>
-                      </label>
-
-                      {/* Deposit Payment Timing */}
-                      <label className="space-y-1">
-                        <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Deposit Timing / Requirement</span>
-                        <select
-                          value={adminDraftHostel.depositPaymentTiming || 'Paid upon entry'}
-                          onChange={(e) => handleAdminHostelFieldChange('depositPaymentTiming', e.target.value as 'Paid upon entry' | 'No deposit')}
-                          className="w-full min-h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
-                        >
-                          <option value="Paid upon entry">Paid upon entry</option>
-                          <option value="No deposit">No deposit</option>
-                        </select>
-                      </label>
+                          {/* Deposit Payment Timing */}
+                          <label className="space-y-1">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Deposit Timing / Requirement</span>
+                            <select
+                              value={adminDraftHostel.depositPaymentTiming || 'Paid upon entry'}
+                              onChange={(e) => handleAdminHostelFieldChange('depositPaymentTiming', e.target.value as 'Paid upon entry' | 'No deposit')}
+                              className="w-full min-h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100"
+                            >
+                              <option value="Paid upon entry">Paid upon entry</option>
+                              <option value="No deposit">No deposit</option>
+                            </select>
+                          </label>
+                        </>
+                      )}
                     </div>
                   </div>
 
                   {/* House Rules Editor */}
-                  <div className="border-t border-slate-100 dark:border-slate-800 pt-5 space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <h4 className="text-sm font-black text-slate-900 dark:text-slate-100">🏠 House Rules</h4>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">Edit or add rules shown to students on the hostel detail page.</p>
+                  {adminDraftHostel.area !== 'On-Campus' && (
+                    <div className="border-t border-slate-100 dark:border-slate-800 pt-5 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <h4 className="text-sm font-black text-slate-900 dark:text-slate-100">🏠 House Rules</h4>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">Edit or add rules shown to students on the hostel detail page.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentRules = adminDraftHostel.rules || [];
+                            setAdminDraftHostel(prev => prev ? { ...prev, rules: [...currentRules, ''] } : prev);
+                          }}
+                          className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black cursor-pointer active:scale-95 transition"
+                        >
+                          + Add Rule
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const currentRules = adminDraftHostel.rules || [];
-                          setAdminDraftHostel(prev => prev ? { ...prev, rules: [...currentRules, ''] } : prev);
-                        }}
-                        className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black cursor-pointer active:scale-95 transition"
-                      >
-                        + Add Rule
-                      </button>
+                      <div className="space-y-2">
+                        {(adminDraftHostel.rules && adminDraftHostel.rules.length > 0) ? (
+                          adminDraftHostel.rules.map((rule, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <span className="text-[10px] font-mono font-bold text-indigo-500 w-6 shrink-0 text-right">#{idx + 1}</span>
+                              <input
+                                type="text"
+                                value={rule}
+                                placeholder={`House rule #${idx + 1}…`}
+                                onChange={(e) => {
+                                  const updated = [...(adminDraftHostel.rules || [])];
+                                  updated[idx] = e.target.value;
+                                  setAdminDraftHostel(prev => prev ? { ...prev, rules: updated } : prev);
+                                }}
+                                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = (adminDraftHostel.rules || []).filter((_, i) => i !== idx);
+                                  setAdminDraftHostel(prev => prev ? { ...prev, rules: updated } : prev);
+                                }}
+                                className="p-2 rounded-lg bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/40 transition active:scale-95 cursor-pointer"
+                                title="Remove rule"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+                              </button>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-xs text-slate-400 italic border border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-3 text-center">
+                            No custom rules set — default system rules will be shown. Click <strong>+ Add Rule</strong> to define custom rules.
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      {(adminDraftHostel.rules && adminDraftHostel.rules.length > 0) ? (
-                        adminDraftHostel.rules.map((rule, idx) => (
-                          <div key={idx} className="flex items-center gap-2">
-                            <span className="text-[10px] font-mono font-bold text-indigo-500 w-6 shrink-0 text-right">#{idx + 1}</span>
-                            <input
-                              type="text"
-                              value={rule}
-                              placeholder={`House rule #${idx + 1}…`}
-                              onChange={(e) => {
-                                const updated = [...(adminDraftHostel.rules || [])];
-                                updated[idx] = e.target.value;
-                                setAdminDraftHostel(prev => prev ? { ...prev, rules: updated } : prev);
-                              }}
-                              className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = (adminDraftHostel.rules || []).filter((_, i) => i !== idx);
-                                setAdminDraftHostel(prev => prev ? { ...prev, rules: updated } : prev);
-                              }}
-                              className="p-2 rounded-lg bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/40 transition active:scale-95 cursor-pointer"
-                              title="Remove rule"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
-                            </button>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-xs text-slate-400 italic border border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-3 text-center">
-                          No custom rules set — default system rules will be shown. Click <strong>+ Add Rule</strong> to define custom rules.
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                  )}
 
-                  <div className="border-t border-slate-100 dark:border-slate-800 pt-5 space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <h4 className="text-sm font-black text-slate-900 dark:text-slate-100">Rooms</h4>
-                      <button onClick={handleAdminAddRoom} className="px-3 py-2 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950 text-[10px] font-black cursor-pointer">Add Room</button>
+                  {/* Rooms Editor */}
+                  {adminDraftHostel.area !== 'On-Campus' && (
+                    <div className="border-t border-slate-100 dark:border-slate-800 pt-5 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <h4 className="text-sm font-black text-slate-900 dark:text-slate-100">Rooms</h4>
+                        <button onClick={handleAdminAddRoom} className="px-3 py-2 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950 text-[10px] font-black cursor-pointer">Add Room</button>
+                      </div>
+                      <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                        {/* Header Row for Room Inputs (Visible on Desktop) */}
+                        {adminDraftHostel.rooms.length > 0 && (
+                          <div className="hidden lg:grid grid-cols-9 gap-2 px-3 text-[10px] font-mono font-bold uppercase text-slate-400 dark:text-slate-500">
+                            <div>Room No.</div>
+                            <div>Type</div>
+                            <div>Format</div>
+                            <div>Floor</div>
+                            <div>Occupants</div>
+                            <div>Max Occ.</div>
+                            <div>Rent (Sem. Price)</div>
+                            <div>Rent (Monthly)</div>
+                            <div>Action</div>
+                          </div>
+                        )}
+                        {adminDraftHostel.rooms.map((room) => (
+                          <div key={room.id} className="grid grid-cols-2 lg:grid-cols-9 gap-2 rounded-xl border border-slate-100 dark:border-slate-800 p-3">
+                            <input aria-label="Room number" value={room.roomNumber} onChange={(e) => handleAdminRoomFieldChange(room.id, 'roomNumber', e.target.value)} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
+                            <select aria-label="Room type" value={room.roomType} onChange={(e) => handleAdminRoomFieldChange(room.id, 'roomType', e.target.value as Room['roomType'])} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100">
+                              <option>Single</option><option>Double</option><option>4-Sharing</option>
+                            </select>
+                            <select aria-label="Room layout format" value={room.roomFormat || 'Single Room'} onChange={(e) => handleAdminRoomFieldChange(room.id, 'roomFormat', e.target.value as Room['roomFormat'])} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100">
+                              <option value="Single Room">Single Room</option>
+                              <option value="Bedsitter">Bedsitter</option>
+                              <option value="One Bedroom">One Bedroom</option>
+                              <option value="Two Bedroom">Two Bedroom</option>
+                            </select>
+                            <input aria-label="Floor" type="number" value={room.floor} onChange={(e) => handleAdminRoomFieldChange(room.id, 'floor', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
+                            <input aria-label="Occupants" type="number" value={room.currentOccupants} onChange={(e) => handleAdminRoomFieldChange(room.id, 'currentOccupants', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
+                            <input aria-label="Max occupants" type="number" value={room.maxOccupants} onChange={(e) => handleAdminRoomFieldChange(room.id, 'maxOccupants', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
+                            <input aria-label="Monthly rent" type="number" value={room.priceKes} onChange={(e) => handleAdminRoomFieldChange(room.id, 'priceKes', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
+                            <input aria-label="Monthly rent" type="text" value={room.rentMonthlyKes || ''} onChange={(e) => handleAdminRoomFieldChange(room.id, 'rentMonthlyKes', e.target.value || undefined)} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
+                            <button onClick={() => handleAdminRemoveRoom(room.id)} className="rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-[10px] font-black hover:bg-rose-100 cursor-pointer">Remove</button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-                      {/* Header Row for Room Inputs (Visible on Desktop) */}
-                      {adminDraftHostel.rooms.length > 0 && (
-                        <div className="hidden lg:grid grid-cols-9 gap-2 px-3 text-[10px] font-mono font-bold uppercase text-slate-400 dark:text-slate-500">
-                          <div>Room No.</div>
-                          <div>Type</div>
-                          <div>Format</div>
-                          <div>Floor</div>
-                          <div>Occupants</div>
-                          <div>Max Occ.</div>
-                          <div>Rent (Sem. Price)</div>
-                          <div>Rent (Monthly)</div>
-                          <div>Action</div>
-                        </div>
-                      )}
-                      {adminDraftHostel.rooms.map((room) => (
-                        <div key={room.id} className="grid grid-cols-2 lg:grid-cols-9 gap-2 rounded-xl border border-slate-100 dark:border-slate-800 p-3">
-                          <input aria-label="Room number" value={room.roomNumber} onChange={(e) => handleAdminRoomFieldChange(room.id, 'roomNumber', e.target.value)} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
-                          <select aria-label="Room type" value={room.roomType} onChange={(e) => handleAdminRoomFieldChange(room.id, 'roomType', e.target.value as Room['roomType'])} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100">
-                            <option>Single</option><option>Double</option><option>4-Sharing</option>
-                          </select>
-                          <select aria-label="Room layout format" value={room.roomFormat || 'Single Room'} onChange={(e) => handleAdminRoomFieldChange(room.id, 'roomFormat', e.target.value as Room['roomFormat'])} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100">
-                            <option value="Single Room">Single Room</option>
-                            <option value="Bedsitter">Bedsitter</option>
-                            <option value="One Bedroom">One Bedroom</option>
-                            <option value="Two Bedroom">Two Bedroom</option>
-                          </select>
-                          <input aria-label="Floor" type="number" value={room.floor} onChange={(e) => handleAdminRoomFieldChange(room.id, 'floor', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
-                          <input aria-label="Occupants" type="number" value={room.currentOccupants} onChange={(e) => handleAdminRoomFieldChange(room.id, 'currentOccupants', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
-                          <input aria-label="Max occupants" type="number" value={room.maxOccupants} onChange={(e) => handleAdminRoomFieldChange(room.id, 'maxOccupants', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
-                          <input aria-label="Monthly rent" type="number" value={room.priceKes} onChange={(e) => handleAdminRoomFieldChange(room.id, 'priceKes', Number(e.target.value))} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
-                          <input aria-label="Monthly rent" type="text" value={room.rentMonthlyKes || ''} onChange={(e) => handleAdminRoomFieldChange(room.id, 'rentMonthlyKes', e.target.value || undefined)} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 text-xs font-bold text-slate-800 dark:text-slate-100" />
-                          <button onClick={() => handleAdminRemoveRoom(room.id)} className="rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-[10px] font-black hover:bg-rose-100 cursor-pointer">Remove</button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  )}
                 </div>
               )}
 
