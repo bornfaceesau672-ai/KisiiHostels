@@ -34,8 +34,14 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
   const cardImage = getHostelImages(hostel.id, hostel.imageUrl, hostel.imageUrls)[0];
 
   if (hostel.externalLink || hostel.area === 'On-Campus') {
-    const displayLink = "kisiiuniversity.ac.ke";
-    const absoluteLink = "https://kisiiuniversity.ac.ke";
+    const absoluteLink = hostel.externalLink || "https://kisiiuniversity.ac.ke";
+    let displayLink = "kisiiuniversity.ac.ke";
+    try {
+      const url = new URL(absoluteLink);
+      displayLink = url.hostname.replace('www.', '');
+    } catch (e) {
+      // fallback
+    }
 
     return (
       <div 
@@ -44,7 +50,7 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
         onClick={() => window.open(absoluteLink, '_blank', 'noopener,noreferrer')}
       >
         {/* 1. Hostel Image Section */}
-        <div className="relative h-56 bg-slate-100 dark:bg-slate-950 overflow-hidden animate-in fade-in duration-300 watermarked-image-container flex-1">
+        <div className="h-44 bg-slate-100 dark:bg-slate-950 relative overflow-hidden animate-in fade-in duration-300 watermarked-image-container">
           <img 
             src={cardImage} 
             alt={hostel.name} 
@@ -52,19 +58,60 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
             referrerPolicy="no-referrer"
             draggable={false}
           />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/45 pointer-events-none" />
+          
+          <div className="absolute top-3 left-3 right-3 flex justify-between items-start text-white">
+            <span className="text-[8px] bg-indigo-600 border border-indigo-400/30 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider font-mono shadow-sm">
+              🏫 Official Residence
+            </span>
+          </div>
         </div>
 
-        {/* 2. Link Section */}
-        <div className="p-4 bg-slate-50 dark:bg-slate-900/60 border-t border-slate-100 dark:border-slate-800/80 text-center">
-          <a
-            href={absoluteLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400 hover:underline tracking-tight"
-          >
-            {displayLink}
-          </a>
+        <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+          <div className="space-y-3">
+            {/* 2. Hostel Name & Badge */}
+            <div>
+              <h3 className="font-sans font-extrabold text-base text-slate-900 dark:text-slate-100 leading-snug tracking-tight transition-colors">
+                {hostel.name}
+              </h3>
+              <p className="mt-0.5 text-[10px] text-indigo-600 dark:text-indigo-400 font-mono font-bold uppercase tracking-wider">
+                {hostel.area === 'On-Campus' ? 'Kisii University Hall' : 'Partner Residence'}
+              </p>
+            </div>
+
+            {/* 3. Portal Information Section */}
+            <div className="bg-gradient-to-r from-indigo-50/60 to-slate-50 dark:from-slate-950/30 dark:to-slate-900/10 border border-indigo-100/60 dark:border-indigo-950/40 rounded-2xl p-3 flex flex-col gap-1">
+              <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono uppercase tracking-wider font-extrabold">External Booking</span>
+              <div>
+                <span className="text-[9px] text-slate-500 dark:text-slate-400 block font-medium">Official Portal Link</span>
+                <span className="text-xs font-black text-indigo-600 dark:text-indigo-400 font-mono leading-none break-all underline">
+                  {displayLink}
+                </span>
+              </div>
+            </div>
+
+            {/* 4. Quick Estate & Camp Proximity Parameters */}
+            <div className="grid grid-cols-2 gap-2 text-[10px] font-semibold text-slate-700 dark:text-slate-300">
+              <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 p-2 rounded-xl">
+                <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
+                <span className="truncate">{hostel.area}</span>
+              </div>
+              <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 p-2 rounded-xl">
+                <span>⚡</span>
+                <span className="truncate">Instant Apply</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 5. Visit Portal button */}
+          <div className="pt-3">
+            <button
+              className="w-full flex items-center justify-center gap-1.5 text-xs font-bold py-2.5 px-3.5 rounded-xl border border-indigo-700 bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 transition duration-200 cursor-pointer active:scale-[0.98] select-none"
+            >
+              <span>Go to Student Portal</span>
+              <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+            </button>
+          </div>
         </div>
       </div>
     );

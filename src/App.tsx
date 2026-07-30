@@ -4063,29 +4063,50 @@ export default function App() {
               ) : (
                 // DEDICATED ROOM EXPLORER & HOUSE TOUR PAGE FOR SELECTED HOSTEL
                 selectedHostel.externalLink || selectedHostel.area === 'On-Campus' ? (
-                  <div className="space-y-6 animate-in fade-in duration-300">
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm p-6 md:p-8 space-y-6 max-w-2xl mx-auto text-center">
-                      <div className="relative h-64 md:h-96 w-full bg-slate-950 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
-                        <img
-                          src={getHostelImages(selectedHostel.id, selectedHostel.imageUrl, selectedHostel.imageUrls)[0]}
-                          alt={selectedHostel.name}
-                          className="w-full h-full object-cover"
-                          referrerPolicy="no-referrer"
-                        />
-                      </div>
+                  (() => {
+                    const absoluteLink = selectedHostel.externalLink || "https://kisiiuniversity.ac.ke";
+                    let displayLink = "kisiiuniversity.ac.ke";
+                    try {
+                      const url = new URL(absoluteLink);
+                      displayLink = url.hostname.replace('www.', '');
+                    } catch (e) {
+                      // fallback
+                    }
+                    return (
+                      <div className="space-y-6 animate-in fade-in duration-300">
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm p-6 md:p-8 space-y-6 max-w-2xl mx-auto text-center">
+                          <div>
+                            <h3 className="font-sans font-extrabold text-2xl text-slate-900 dark:text-slate-100 leading-snug tracking-tight">
+                              {selectedHostel.name}
+                            </h3>
+                            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                              This is an official On-Campus Resident Hall. Room bookings and student registration are conducted externally via the university portal.
+                            </p>
+                          </div>
 
-                      <div className="py-4">
-                        <a
-                          href="https://kisiiuniversity.ac.ke"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-2 text-base font-bold py-3 px-6 rounded-2xl border border-indigo-700 bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 transition duration-200 cursor-pointer active:scale-98"
-                        >
-                          <span className="underline">kisiiuniversity.ac.ke</span>
-                        </a>
+                          <div className="relative h-64 md:h-96 w-full bg-slate-950 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
+                            <img
+                              src={getHostelImages(selectedHostel.id, selectedHostel.imageUrl, selectedHostel.imageUrls)[0]}
+                              alt={selectedHostel.name}
+                              className="w-full h-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                          </div>
+
+                          <div className="py-4">
+                            <a
+                              href={absoluteLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center gap-2 text-base font-bold py-3 px-6 rounded-2xl border border-indigo-700 bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 transition duration-200 cursor-pointer active:scale-98"
+                            >
+                              <span className="underline">{displayLink}</span>
+                            </a>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    );
+                  })()
                 ) : (
                   <div className="space-y-6 animate-in fade-in duration-300">
                     {/* Action Nav header */}
