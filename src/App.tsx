@@ -4036,7 +4036,7 @@ export default function App() {
                                 const hostelsInEstate = groupedHostels[estateKey];
                                 if (!hostelsInEstate || hostelsInEstate.length === 0) return null;
 
-                                const info = { label: `${estateKey} Estates`, icon: '�?', description: 'Student community apartments.' };
+                                const info = { label: `${estateKey} Estates`, icon: '?', description: 'Student community apartments.' };
                                 return renderHostelGrid(estateKey, hostelsInEstate, info);
                               })}
                             </div>
@@ -4050,24 +4050,6 @@ export default function App() {
                 // DEDICATED ROOM EXPLORER & HOUSE TOUR PAGE FOR SELECTED HOSTEL
                 selectedHostel.externalLink || selectedHostel.area === 'On-Campus' ? (
                   <div className="space-y-6 animate-in fade-in duration-300">
-                    {/* Action Nav header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            setExploreView('catalog');
-                            setTimeout(() => {
-                              window.scrollTo({ top: catalogScrollPos, behavior: 'auto' });
-                            }, 10);
-                          }}
-                          className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-650 dark:hover:text-indigo-400 transition bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-4 py-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700 font-mono tracking-wider cursor-pointer"
-                        >
-                          <ArrowLeft className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                          BACK TO ALL HOSTELS
-                        </button>
-                      </div>
-                    </div>
-
                     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm p-6 md:p-8 space-y-6 max-w-2xl mx-auto text-center">
                       <div className="relative h-64 md:h-96 w-full bg-slate-950 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
                         <img
@@ -4093,39 +4075,26 @@ export default function App() {
                 ) : (
                   <div className="space-y-6 animate-in fade-in duration-300">
                     {/* Action Nav header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            setExploreView('catalog');
-                            setTimeout(() => {
-                              window.scrollTo({ top: catalogScrollPos, behavior: 'auto' });
-                            }, 10);
-                          }}
-                          className="flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-indigo-600 transition bg-slate-100 hover:bg-slate-200 px-4 py-2.5 rounded-xl border border-slate-200/80 font-mono tracking-wider cursor-pointer"
-                        >
-                          <ArrowLeft className="w-4 h-4 text-slate-600" />
-                          BACK TO ALL HOSTELS
-                        </button>
-
+                        {selectedHostel && (
+                          <button
+                            onClick={() => handleShareHostel(selectedHostel)}
+                            className="flex items-center gap-1.5 text-xs font-bold text-indigo-650 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/40 transition bg-indigo-50 dark:bg-indigo-950/20 px-3.5 py-2.5 rounded-xl border border-indigo-100/60 dark:border-indigo-900/40 cursor-pointer"
+                            title="Share Direct Link for this Hostel"
+                          >
+                            <Share2 className="w-3.5 h-3.5" />
+                            <span>SHARE WEBSITE</span>
+                          </button>
+                        )}
+                      </div>
+                      
                       {selectedHostel && (
-                        <button
-                          onClick={() => handleShareHostel(selectedHostel)}
-                          className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-100 transition bg-indigo-50 px-3.5 py-2.5 rounded-xl border border-indigo-100/60 cursor-pointer"
-                          title="Share Direct Link for this Hostel"
-                        >
-                          <Share2 className="w-3.5 h-3.5" />
-                          <span>SHARE WEBSITE</span>
-                        </button>
+                        <div className="flex items-center gap-2 text-[10.5px] uppercase font-mono tracking-wider font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/40 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                          🏢 {selectedHostel.area} Estate • {selectedHostel.distanceMeters}M from Campus Gate
+                        </div>
                       )}
                     </div>
-                    
-                    {selectedHostel && (
-                      <div className="flex items-center gap-2 text-[10.5px] uppercase font-mono tracking-wider font-bold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-                        �? {selectedHostel.area} Estate • {selectedHostel.distanceMeters}M from Campus Gate
-                      </div>
-                    )}
-                  </div>
 
                   {/* Profile and Landlord detail card */}
                   {selectedHostel && (() => {
