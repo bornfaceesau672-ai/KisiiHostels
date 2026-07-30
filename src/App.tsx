@@ -4066,9 +4066,6 @@ export default function App() {
                           BACK TO ALL HOSTELS
                         </button>
                       </div>
-                      <div className="flex items-center gap-2 text-[10.5px] uppercase font-mono tracking-wider font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/40 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800">
-                        🏢 On-Campus Resident Halls
-                      </div>
                     </div>
 
                     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm p-6 md:p-8 space-y-6 max-w-2xl mx-auto text-center">
@@ -4079,13 +4076,6 @@ export default function App() {
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
-                        <div className="absolute bottom-6 left-6 right-6 text-white text-left">
-                          <h2 className="text-xl md:text-2xl font-black font-sans tracking-tight">
-                            {selectedHostel.name}
-                          </h2>
-                          <p className="text-xs text-indigo-300 font-mono font-bold uppercase tracking-widest mt-1">Official On-Campus Accommodation</p>
-                        </div>
                       </div>
 
                       <div className="py-4">
@@ -4093,11 +4083,9 @@ export default function App() {
                           href="https://kisiiuniversity.ac.ke"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-2.5 text-base font-bold py-3.5 px-8 rounded-2xl border border-indigo-700 bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 transition duration-200 cursor-pointer active:scale-98"
+                          className="inline-flex items-center justify-center gap-2 text-base font-bold py-3 px-6 rounded-2xl border border-indigo-700 bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 transition duration-200 cursor-pointer active:scale-98"
                         >
                           <span className="underline">kisiiuniversity.ac.ke</span>
-                          <span className="text-indigo-200 font-normal">| See More</span>
-                          <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                         </a>
                       </div>
                     </div>

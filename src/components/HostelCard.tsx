@@ -44,7 +44,7 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
         onClick={() => window.open(absoluteLink, '_blank', 'noopener,noreferrer')}
       >
         {/* 1. Hostel Image Section */}
-        <div className="relative h-48 bg-slate-100 dark:bg-slate-950 overflow-hidden animate-in fade-in duration-300 watermarked-image-container flex-1">
+        <div className="relative h-56 bg-slate-100 dark:bg-slate-950 overflow-hidden animate-in fade-in duration-300 watermarked-image-container flex-1">
           <img 
             src={cardImage} 
             alt={hostel.name} 
@@ -52,36 +52,19 @@ export default function HostelCard({ hostel, onSelect, isSelected, isCompared, o
             referrerPolicy="no-referrer"
             draggable={false}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-          
-          <div className="absolute top-3 left-3">
-            <span className="text-[8px] bg-amber-500 border border-amber-400/20 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider font-mono shadow-sm text-white">
-              🏢 On-Campus Hall
-            </span>
-          </div>
-
-          <div className="absolute bottom-3 left-3 right-3 text-white">
-            <h3 className="font-sans font-extrabold text-base leading-snug tracking-tight mb-1 text-white">
-              {hostel.name}
-            </h3>
-            <p className="text-[10px] text-slate-300 font-mono">Official Accommodation</p>
-          </div>
         </div>
 
         {/* 2. Link Section */}
-        <div className="p-4 bg-slate-50 dark:bg-slate-900/60 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+        <div className="p-4 bg-slate-50 dark:bg-slate-900/60 border-t border-slate-100 dark:border-slate-800/80 text-center">
           <a
             href={absoluteLink}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline tracking-tight"
+            className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400 hover:underline tracking-tight"
           >
             {displayLink}
           </a>
-          <span className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
-            See More <ArrowRight className="w-3.5 h-3.5 text-indigo-500" />
-          </span>
         </div>
       </div>
     );
