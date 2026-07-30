@@ -466,7 +466,7 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageUrl: '/src/assets/images/kisii_oncampus_hostel_1779545601491.png',
     imageUrls: ['/src/assets/images/kisii_oncampus_hostel_1779545601491.png'],
     rooms: [],
-    externalLink: 'https://myskuulkenya.com/kisii-university-accomodation/'
+    externalLink: 'https://kisiiuniversity.ac.ke'
   },
   {
     id: 'hostel-cz-blackhouse',
@@ -482,7 +482,7 @@ export const INITIAL_HOSTELS: Hostel[] = [
     imageUrl: '/src/assets/images/kisii_oncampus_hostel_1779545601491.png',
     imageUrls: ['/src/assets/images/kisii_oncampus_hostel_1779545601491.png'],
     rooms: [],
-    externalLink: 'https://myskuulkenya.com/kisii-university-accomodation/'
+    externalLink: 'https://kisiiuniversity.ac.ke'
   },
   {
     id: 'hostel-kerubo-apartments',

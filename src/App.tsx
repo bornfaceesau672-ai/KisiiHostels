@@ -4048,10 +4048,10 @@ export default function App() {
                 </>
               ) : (
                 // DEDICATED ROOM EXPLORER & HOUSE TOUR PAGE FOR SELECTED HOSTEL
-                selectedHostel.externalLink ? (
+                selectedHostel.externalLink || selectedHostel.area === 'On-Campus' ? (
                   <div className="space-y-6 animate-in fade-in duration-300">
                     {/* Action Nav header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => {
@@ -4060,52 +4060,45 @@ export default function App() {
                               window.scrollTo({ top: catalogScrollPos, behavior: 'auto' });
                             }, 10);
                           }}
-                          className="flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-indigo-600 transition bg-slate-100 hover:bg-slate-200 px-4 py-2.5 rounded-xl border border-slate-200/80 font-mono tracking-wider cursor-pointer"
+                          className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-650 dark:hover:text-indigo-400 transition bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-4 py-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700 font-mono tracking-wider cursor-pointer"
                         >
-                          <ArrowLeft className="w-4 h-4 text-slate-600" />
+                          <ArrowLeft className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                           BACK TO ALL HOSTELS
                         </button>
                       </div>
-                      <div className="flex items-center gap-2 text-[10.5px] uppercase font-mono tracking-wider font-bold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                      <div className="flex items-center gap-2 text-[10.5px] uppercase font-mono tracking-wider font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/40 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800">
                         🏢 On-Campus Resident Halls
                       </div>
                     </div>
 
                     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm p-6 md:p-8 space-y-6 max-w-2xl mx-auto text-center">
-                      <div className="relative h-64 md:h-80 w-full bg-slate-950 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-850">
+                      <div className="relative h-64 md:h-96 w-full bg-slate-950 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
                         <img
                           src={getHostelImages(selectedHostel.id, selectedHostel.imageUrl, selectedHostel.imageUrls)[0]}
                           alt={selectedHostel.name}
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10 pointer-events-none" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
                         <div className="absolute bottom-6 left-6 right-6 text-white text-left">
                           <h2 className="text-xl md:text-2xl font-black font-sans tracking-tight">
                             {selectedHostel.name}
                           </h2>
-                          <span className="text-xs text-indigo-300 font-mono font-bold uppercase tracking-widest mt-1 inline-block">
-                            Official On-Campus Accommodation
-                          </span>
+                          <p className="text-xs text-indigo-300 font-mono font-bold uppercase tracking-widest mt-1">Official On-Campus Accommodation</p>
                         </div>
                       </div>
 
-                      <div className="space-y-4 py-4">
-                        <p className="text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-                          All rooms, reservations, and payment details for on-campus student resident halls are managed directly through the official university portal.
-                        </p>
-                        
-                        <div className="pt-2">
-                          <a
-                            href={selectedHostel.externalLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center gap-2 text-sm font-bold py-3 px-6 rounded-2xl border border-indigo-700 bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 transition duration-200 cursor-pointer active:scale-98"
-                          >
-                            <span>Open Official Accommodation Link</span>
-                            <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-                          </a>
-                        </div>
+                      <div className="py-4">
+                        <a
+                          href="https://kisiiuniversity.ac.ke"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-2.5 text-base font-bold py-3.5 px-8 rounded-2xl border border-indigo-700 bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 transition duration-200 cursor-pointer active:scale-98"
+                        >
+                          <span className="underline">kisiiuniversity.ac.ke</span>
+                          <span className="text-indigo-200 font-normal">| See More</span>
+                          <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                        </a>
                       </div>
                     </div>
                   </div>
