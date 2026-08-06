@@ -1,4 +1,4 @@
-import { Hostel, Booking, MaintenanceRequest, RelocationRequest } from './types';
+import { Hostel, Booking, MaintenanceRequest, RelocationRequest, Estate } from './types';
 
 export const INITIAL_HOSTELS: Hostel[] = [
   {
@@ -1093,6 +1093,149 @@ export const INITIAL_RELOCATIONS: RelocationRequest[] = [
     allocatedMover: 'Mkokoteni Express (Handcart)',
     notes: 'Agreed on KES 800 price. Scheduled for 2:30 PM.',
     createdAt: '2026-06-18T11:15:00Z'
+  }
+];
+
+export const DEFAULT_ESTATES: Estate[] = [
+  {
+    id: 'On-Campus',
+    label: 'On-Campus Resident Halls',
+    icon: 'Campus',
+    description: 'Inside the university compound, closest to lecture rooms.',
+    gradient: 'linear-gradient(135deg, #7c3aed, #9333ea, #4338ca)',
+    accentColor: 'bg-violet-500',
+    badge: 'Best Convenience',
+    emoji: '🎓',
+    distance: '0 - 50 meters',
+    walkTime: '1 - 2 mins walk',
+    securityScore: '5.0/5 (Warden Patrol)',
+    alert: 'Inside the main campus compound. Strict security lockups apply at night.'
+  },
+  {
+    id: 'Mwembe',
+    label: 'Mwembe (Main Gate Area)',
+    icon: 'Gate',
+    description: 'Highly active housing right near the main gate entrance.',
+    gradient: 'linear-gradient(135deg, #2563eb, #0891b2, #0369a1)',
+    accentColor: 'bg-blue-500',
+    badge: 'Most Popular',
+    emoji: '🚪',
+    distance: '150 - 300 meters',
+    walkTime: '3 - 6 mins walk',
+    securityScore: '4.2/5 (Caretaker Armed)',
+    alert: 'Highly active neighborhood right outside the main gate. Highly social, busy and accessible.'
+  },
+  {
+    id: 'Nyanchwa',
+    label: 'Nyanchwa Hills',
+    icon: 'Hills',
+    description: 'Breezy and peaceful highlands with high security guards.',
+    gradient: 'linear-gradient(135deg, #0d9488, #059669, #15803d)',
+    accentColor: 'bg-teal-500',
+    badge: 'Most Scenic',
+    emoji: '⛰️',
+    distance: '350 - 650 meters',
+    walkTime: '8 - 14 mins walk',
+    securityScore: '4.6/5 (Safe Highlands)',
+    alert: 'Tranquil student highlands with panoramic town and campus views. High security presence.'
+  },
+  {
+    id: 'Milimani',
+    label: 'Milimani (Executive)',
+    icon: 'Executive',
+    description: 'Prestige residences for graduate study or peaceful living.',
+    gradient: 'linear-gradient(135deg, #4338ca, #1d4ed8, #0369a1)',
+    accentColor: 'bg-indigo-500',
+    badge: 'Premium Class',
+    emoji: '💎',
+    distance: '400 - 800 meters',
+    walkTime: '9 - 18 mins walk',
+    securityScore: '4.8/5 (Premium Guarded)',
+    alert: 'Upscale residential neighborhood with top-tier quietude for intensive studying sessions.'
+  },
+  {
+    id: 'Jogoo',
+    label: 'Jogoo Estate',
+    icon: 'Home',
+    description: 'Economical, social, and student-friendly residential suburb.',
+    gradient: 'linear-gradient(135deg, #0284c7, #2563eb, #0891b2)',
+    accentColor: 'bg-sky-500',
+    badge: 'Best Value',
+    emoji: '🏘️',
+    distance: '500 - 900 meters',
+    walkTime: '10 - 20 mins walk',
+    securityScore: '4.0/5 (Comrade Populated)',
+    alert: 'Pocket friendly, highly populated student suburb. Safe walking in comrade batches after dusk.'
+  },
+  {
+    id: 'Roma',
+    label: 'Roma Estate',
+    icon: 'Shops',
+    description: 'Closer to shops, cyber cafes, and commercial printing centers.',
+    gradient: 'linear-gradient(135deg, #0891b2, #0d9488, #1d4ed8)',
+    accentColor: 'bg-cyan-500',
+    badge: 'Commercial Hub',
+    emoji: '🛒',
+    distance: '300 - 550 meters',
+    walkTime: '6 - 12 mins walk',
+    securityScore: '4.3/5 (CCTV & Security Fenced)',
+    alert: 'Perfect proximity to commercial centers, cyber cafes, copy services, and organic market stands.'
+  },
+  {
+    id: 'Nyaura',
+    label: 'Nyaura Outpost',
+    icon: 'Green',
+    description: 'Tranquil student apartments nestled along lush natural breeze.',
+    gradient: 'linear-gradient(135deg, #1d4ed8, #4338ca, #6d28d9)',
+    accentColor: 'bg-blue-600',
+    badge: 'Nature-Rich',
+    emoji: '🌳',
+    distance: '650 - 950 meters',
+    walkTime: '12 - 22 mins walk',
+    securityScore: '4.1/5 (Active Tenancy)',
+    alert: 'Quiet green nature-rich valley apartments. Offers very competitive rent indexes.'
+  },
+  {
+    id: 'Canaan',
+    label: 'Canaan Estate',
+    icon: 'Quiet',
+    description: 'Serene, secure, and clean environment popular for student residency.',
+    gradient: 'linear-gradient(135deg, #0369a1, #1d4ed8, #3730a3)',
+    accentColor: 'bg-sky-600',
+    badge: 'Most Secure',
+    emoji: '🏛️',
+    distance: '450 - 755 meters',
+    walkTime: '10 - 17 mins walk',
+    securityScore: '4.4/5 (Perimeter Walled)',
+    alert: 'Modern secure layout. High water consistency with backup local borehole shafts.'
+  },
+  {
+    id: 'Kisumu ndogo',
+    label: 'Kisumu Ndogo',
+    icon: 'Quiet',
+    description: 'Vibrant student neighborhood with active local business and close transport access.',
+    gradient: 'linear-gradient(135deg, #d97706, #ea580c, #b91c1c)',
+    accentColor: 'bg-amber-500',
+    badge: 'Very Vibrant',
+    emoji: '🏡',
+    distance: '500 - 850 meters',
+    walkTime: '10 - 18 mins walk',
+    securityScore: '4.3/5 (Caretaker Guarded)',
+    alert: 'Vibrant student neighborhood with active local business and close transport access.'
+  },
+  {
+    id: 'Fanta',
+    label: 'Fanta Estate',
+    icon: 'Quiet',
+    description: 'Popular student area known for affordable housing and community living.',
+    gradient: 'linear-gradient(135deg, #f59e0b, #d97706, #b45309)',
+    accentColor: 'bg-orange-500',
+    badge: 'Affordable',
+    emoji: '🏘️',
+    distance: '200 - 450 meters',
+    walkTime: '5 - 10 mins walk',
+    securityScore: '4.1/5 (Caretaker Guarded)',
+    alert: 'Accessible neighborhood with diverse student housing options.'
   }
 ];
 

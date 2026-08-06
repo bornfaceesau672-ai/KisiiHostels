@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Hostel } from '../types';
+import { Hostel, Estate } from '../types';
+import { DEFAULT_ESTATES } from '../initialData';
 import {
   MapPin,
   Building,
@@ -24,6 +25,7 @@ import {
 
 interface EstateLandingPageProps {
   hostels: Hostel[];
+  estates?: Estate[];
   onViewEstate: (estate: string) => void;
   onViewHostel: (hostel: Hostel) => void;
   onEnterPortal: () => void;
@@ -31,117 +33,30 @@ interface EstateLandingPageProps {
   onSignInClick: () => void;
 }
 
-const ESTATE_META: Record<string, {
-  label: string;
-  icon: string;
-  gradient: string;
-  accentColor: string;
-  description: string;
-  badge: string;
-  emoji: string;
-}> = {
-  'On-Campus': {
-    label: 'On-Campus',
-    icon: 'GraduationCap',
-    gradient: 'from-violet-600 via-purple-600 to-indigo-700',
-    accentColor: 'bg-violet-500',
-    description: 'Inside the university compound. Closest to lecture rooms & all facilities.',
-    badge: 'Best Convenience',
-    emoji: '🎓',
-  },
-  'Mwembe': {
-    label: 'Mwembe',
-    icon: 'Door',
-    gradient: 'from-blue-600 via-cyan-600 to-sky-700',
-    accentColor: 'bg-blue-500',
-    description: 'Highly active housing right near the main gate entrance.',
-    badge: 'Most Popular',
-    emoji: '🚪',
-  },
-  'Nyanchwa': {
-    label: 'Nyanchwa Hills',
-    icon: 'Mountain',
-    gradient: 'from-teal-600 via-emerald-600 to-green-700',
-    accentColor: 'bg-teal-500',
-    description: 'Breezy, peaceful highlands with panoramic views & high security.',
-    badge: 'Most Scenic',
-    emoji: '⛰️',
-  },
-  'Milimani': {
-    label: 'Milimani',
-    icon: 'Diamond',
-    gradient: 'from-indigo-600 via-blue-700 to-sky-800',
-    accentColor: 'bg-indigo-500',
-    description: 'Upscale residences — prestige, quiet & ideal for intensive study.',
-    badge: 'Premium Class',
-    emoji: '💎',
-  },
-  'Jogoo': {
-    label: 'Jogoo Estate',
-    icon: 'Home',
-    gradient: 'from-sky-600 via-blue-600 to-cyan-700',
-    accentColor: 'bg-sky-500',
-    description: 'Economical, social, and student-friendly residential suburb.',
-    badge: 'Best Value',
-    emoji: '🏘️',
-  },
-  'Roma': {
-    label: 'Roma',
-    icon: 'Shop',
-    gradient: 'from-cyan-600 via-teal-600 to-blue-700',
-    accentColor: 'bg-cyan-500',
-    description: 'Closer to shops, cyber cafes, and commercial printing centers.',
-    badge: 'Commercial Hub',
-    emoji: '🛒',
-  },
-  'Nyaura': {
-    label: 'Nyaura Outpost',
-    icon: 'Tree',
-    gradient: 'from-blue-700 via-indigo-600 to-violet-700',
-    accentColor: 'bg-blue-600',
-    description: 'Tranquil student apartments nestled along lush natural breeze.',
-    badge: 'Nature-Rich',
-    emoji: '🌳',
-  },
-  'Canaan': {
-    label: 'Canaan Estate',
-    icon: 'Building',
-    gradient: 'from-sky-700 via-blue-700 to-indigo-700',
-    accentColor: 'bg-sky-600',
-    description: 'Serene, secure & clean environment popular for student residency.',
-    badge: 'Most Secure',
-    emoji: '🏛️',
-  },
-  'Kisumu ndogo': {
-    label: 'Kisumu Ndogo',
-    icon: 'MapPin',
-    gradient: 'from-amber-600 via-orange-600 to-red-700',
-    accentColor: 'bg-amber-500',
-    description: 'Vibrant student neighborhood with active local business and close transport access.',
-    badge: 'Very Vibrant',
-    emoji: '🏡',
-  },
-  'Fanta': {
-    label: 'Fanta Estate',
-    icon: 'Map',
-    gradient: 'from-orange-500 via-amber-500 to-yellow-600',
-    accentColor: 'bg-orange-500',
-    description: 'Popular student area known for affordable housing and community living.',
-    badge: 'Affordable',
-    emoji: '🏘️',
-  },
-};
-
-const ESTATE_ORDER = ['On-Campus', 'Mwembe', 'Nyanchwa', 'Milimani', 'Jogoo', 'Roma', 'Nyaura', 'Canaan', 'Kisumu ndogo', 'Fanta'];
-
 const EstateLandingPage: React.FC<EstateLandingPageProps> = ({
   hostels,
+  estates,
   onViewEstate,
   onViewHostel,
   onEnterPortal,
   currentUser,
   onSignInClick,
 }) => {
+  const activeEstates = estates && estates.length > 0 ? estates : DEFAULT_ESTATES;
+  const estateOrder = activeEstates.map(e => e.id);
+  const estateMeta = activeEstates.reduce((acc, e) => {
+    acc[e.id] = {
+      label: e.label,
+      icon: e.icon,
+      gradient: e.gradient,
+      accentColor: e.accentColor,
+      description: e.description,
+      badge: e.badge,
+      emoji: e.emoji,
+    };
+    return acc;
+  }, {} as Record<string, { label: string; icon: string; gradient: string; accentColor: string; description: string; badge: string; emoji: string; }>);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [hoveredEstate, setHoveredEstate] = useState<string | null>(null);
   const [expandedEstate, setExpandedEstate] = useState<string | null>(null);
@@ -151,7 +66,7 @@ const EstateLandingPage: React.FC<EstateLandingPageProps> = ({
   // Animate counters on mount
   useEffect(() => {
     const totalHostels = hostels.length;
-    const totalEstates = ESTATE_ORDER.filter(e => hostels.some(h => h.area === e)).length;
+    const totalEstates = estateOrder.filter(e => hostels.some(h => h.area === e)).length;
     const totalBeds = hostels.reduce((acc, h) => acc + h.rooms.reduce((ra, r) => ra + r.maxOccupants, 0), 0);
 
     const duration = 1800;
@@ -182,15 +97,14 @@ const EstateLandingPage: React.FC<EstateLandingPageProps> = ({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Group hostels by estate
-  const hostelsByEstate = ESTATE_ORDER.reduce((acc, estate) => {
+  const hostelsByEstate = estateOrder.reduce((acc, estate) => {
     const filtered = hostels.filter((h) => h.area === estate);
     if (filtered.length > 0) acc[estate] = filtered;
     return acc;
   }, {} as Record<string, Hostel[]>);
 
   // Filter estates based on search
-  const filteredEstates = Object.entries(hostelsByEstate).filter(([estate, estateHostels]) => {
+  const filteredEstates = (Object.entries(hostelsByEstate) as [string, Hostel[]][]).filter(([estate, estateHostels]) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -395,8 +309,8 @@ const EstateLandingPage: React.FC<EstateLandingPageProps> = ({
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 380px), 1fr))', gap: '1.5rem' }}>
           {filteredEstates.map(([estate, estateHostels], idx) => {
-            const meta = ESTATE_META[estate] || {
-              label: estate, emoji: '🏠', gradient: 'from-blue-600 to-indigo-700',
+            const meta = estateMeta[estate] || {
+              label: estate, emoji: '🏠', gradient: 'linear-gradient(135deg, #2563eb, #4338ca)',
               description: 'Student housing estate.', badge: '', accentColor: 'bg-blue-500',
             };
             const isExpanded = expandedEstate === estate;
@@ -404,27 +318,13 @@ const EstateLandingPage: React.FC<EstateLandingPageProps> = ({
             const availableRooms = estateHostels.reduce((acc, h) => acc + h.rooms.filter((r) => r.isAvailable).length, 0);
             const cheapest = Math.min(...estateHostels.flatMap((h) => h.rooms.map((r) => r.priceKes)));
 
-            // Map gradient string to actual colors
-            const gradientMap: Record<string, string> = {
-              'On-Campus': 'linear-gradient(135deg, #7c3aed, #9333ea, #4338ca)',
-              'Mwembe': 'linear-gradient(135deg, #2563eb, #0891b2, #0369a1)',
-              'Nyanchwa': 'linear-gradient(135deg, #0d9488, #059669, #15803d)',
-              'Milimani': 'linear-gradient(135deg, #4338ca, #1d4ed8, #0369a1)',
-              'Jogoo': 'linear-gradient(135deg, #0284c7, #2563eb, #0891b2)',
-              'Roma': 'linear-gradient(135deg, #0891b2, #0d9488, #1d4ed8)',
-              'Nyaura': 'linear-gradient(135deg, #1d4ed8, #4338ca, #6d28d9)',
-              'Canaan': 'linear-gradient(135deg, #0369a1, #1d4ed8, #3730a3)',
-              'Kisumu ndogo': 'linear-gradient(135deg, #d97706, #ea580c, #b91c1c)',
-              'Fanta': 'linear-gradient(135deg, #f59e0b, #d97706, #b45309)',
-            };
-
             return (
               <div
                 key={estate}
                 id={`estate-card-${estate.toLowerCase().replace(/\s+/g, '-')}`}
                 style={{
                   position: 'relative', overflow: 'hidden', borderRadius: '1.5rem',
-                  background: gradientMap[estate] || 'linear-gradient(135deg, #2563eb, #4338ca)',
+                  background: meta.gradient || 'linear-gradient(135deg, #2563eb, #4338ca)',
                   boxShadow: isHovered ? '0 24px 60px rgba(59,130,246,0.4), 0 0 0 1px rgba(59,130,246,0.25)' : '0 8px 32px rgba(0,0,0,0.45)',
                   transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
                   transition: 'all 0.35s cubic-bezier(0.34,1.56,0.64,1)',

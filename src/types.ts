@@ -22,7 +22,7 @@ export interface RentTier {
 export interface Hostel {
   id: string;
   name: string;
-  area: 'Nyanchwa' | 'Mwembe' | 'Milimani' | 'Jogoo' | 'Roma' | 'Nyaura' | 'On-Campus' | 'Canaan' | 'Kisumu ndogo' | 'Fanta';
+  area: string;
   distanceMeters: number; // Distance from Kisii University campus gate
   description: string;
   securityRating: number; // 1-5 stars
@@ -152,6 +152,21 @@ export interface AdminChatMessage {
   text: string;
   timestamp: number;
   createdAt: string;
+}
+
+export interface Estate {
+  id: string;
+  label: string;
+  description: string;
+  icon: string;
+  gradient: string;
+  accentColor: string;
+  badge: string;
+  emoji: string;
+  distance: string;
+  walkTime: string;
+  securityScore: string;
+  alert: string;
 }
 
 

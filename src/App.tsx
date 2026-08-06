@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Hostel, Room, Booking, MaintenanceRequest, HostelReview, RelocationRequest, NewsPost, AdminChatMessage, RentTier } from './types';
-import { INITIAL_HOSTELS, INITIAL_BOOKINGS, INITIAL_MAINTENANCE, ClientUser, INITIAL_USERS, INITIAL_RELOCATIONS } from './initialData';
+import { Hostel, Room, Booking, MaintenanceRequest, HostelReview, RelocationRequest, NewsPost, AdminChatMessage, RentTier, Estate } from './types';
+import { INITIAL_HOSTELS, INITIAL_BOOKINGS, INITIAL_MAINTENANCE, ClientUser, INITIAL_USERS, INITIAL_RELOCATIONS, DEFAULT_ESTATES } from './initialData';
 import { INITIAL_REVIEWS } from './initialReviews';
 import HostelCard from './components/HostelCard';
 import AvailabilityGrid from './components/AvailabilityGrid';
@@ -80,134 +80,7 @@ import {
 } from 'lucide-react';
 
 
-const ESTATE_LABELS: Record<string, { label: string; icon: string; description: string }> = {
-  'On-Campus': {
-    label: 'On-Campus Resident Halls',
-    icon: 'Campus',
-    description: 'Inside the university compound, closest to lecture rooms.'
-  },
-  'Mwembe': {
-    label: 'Mwembe (Main Gate Area)',
-    icon: 'Gate',
-    description: 'Highly active housing right near the main gate entrance.'
-  },
-  'Nyanchwa': {
-    label: 'Nyanchwa Hills',
-    icon: 'Hills',
-    description: 'Breezy and peaceful highlands with high security guards.'
-  },
-  'Milimani': {
-    label: 'Milimani (Executive)',
-    icon: 'Executive',
-    description: 'Prestige residences for graduate study or peaceful living.'
-  },
-  'Jogoo': {
-    label: 'Jogoo Estate',
-    icon: 'Home',
-    description: 'Economical, social, and student-friendly residential suburb.'
-  },
-  'Roma': {
-    label: 'Roma Estate',
-    icon: 'Shops',
-    description: 'Closer to shops, cyber cafes, and commercial printing centers.'
-  },
-  'Nyaura': {
-    label: 'Nyaura Outpost',
-    icon: 'Green',
-    description: 'Tranquil student apartments nestled along lush natural breeze.'
-  },
-  'Canaan': {
-    label: 'Canaan Estate',
-    icon: 'Quiet',
-    description: 'Serene, secure, and clean environment popular for student residency.'
-  },
-  'Kisumu ndogo': {
-    label: 'Kisumu Ndogo',
-    icon: 'Quiet',
-    description: 'Vibrant student neighborhood with active local business and close transport access.'
-  },
-  'Fanta': {
-    label: 'Fanta Estate',
-    icon: 'Quiet',
-    description: 'Popular student area known for affordable housing and community living.'
-  }
-};
 
-const ESTATE_SCHOOL_INFO: Record<string, { distance: string; walkTime: string; securityScore: string; alert: string }> = {
-  'On-Campus': {
-    distance: '0 - 50 meters',
-    walkTime: '1 - 2 mins walk',
-    securityScore: '5.0/5 (Warden Patrol)',
-    alert: 'Inside the main campus compound. Strict security lockups apply at night.'
-  },
-  'Mwembe': {
-    distance: '150 - 300 meters',
-    walkTime: '3 - 6 mins walk',
-    securityScore: '4.2/5 (Caretaker Armed)',
-    alert: 'Highly active neighborhood right outside the main gate. Highly social, busy and accessible.'
-  },
-  'Nyanchwa': {
-    distance: '350 - 650 meters',
-    walkTime: '8 - 14 mins walk',
-    securityScore: '4.6/5 (Safe Highlands)',
-    alert: 'Tranquil student highlands with panoramic town and campus views. High security presence.'
-  },
-  'Milimani': {
-    distance: '400 - 800 meters',
-    walkTime: '9 - 18 mins walk',
-    securityScore: '4.8/5 (Premium Guarded)',
-    alert: 'Upscale residential neighborhood with top-tier quietude for intensive studying sessions.'
-  },
-  'Jogoo': {
-    distance: '500 - 900 meters',
-    walkTime: '10 - 20 mins walk',
-    securityScore: '4.0/5 (Comrade Populated)',
-    alert: 'Pocket friendly, highly populated student suburb. Safe walking in comrade batches after dusk.'
-  },
-  'Roma': {
-    distance: '300 - 550 meters',
-    walkTime: '6 - 12 mins walk',
-    securityScore: '4.3/5 (CCTV & Security Fenced)',
-    alert: 'Perfect proximity to commercial centers, cyber cafes, copy services, and organic market stands.'
-  },
-  'Nyaura': {
-    distance: '650 - 950 meters',
-    walkTime: '12 - 22 mins walk',
-    securityScore: '4.1/5 (Active Tenancy)',
-    alert: 'Quiet green nature-rich valley apartments. Offers very competitive rent indexes.'
-  },
-  'Canaan': {
-    distance: '450 - 755 meters',
-    walkTime: '10 - 17 mins walk',
-    securityScore: '4.4/5 (Perimeter Walled)',
-    alert: 'Modern secure layout. High water consistency with backup local borehole shafts.'
-  },
-  'Kisumu ndogo': {
-    distance: '500 - 850 meters',
-    walkTime: '10 - 18 mins walk',
-    securityScore: '4.3/5 (Caretaker Guarded)',
-    alert: 'Vibrant student neighborhood with active local business and close transport access.'
-  },
-  'Fanta': {
-    distance: '200 - 450 meters',
-    walkTime: '5 - 10 mins walk',
-    securityScore: '4.1/5 (Caretaker Guarded)',
-    alert: 'Accessible neighborhood with diverse student housing options.'
-  }
-};
-
-const estateOrder = [
-  'On-Campus',
-  'Mwembe',
-  'Nyanchwa',
-  'Milimani',
-  'Jogoo',
-  'Roma',
-  'Nyaura',
-  'Canaan',
-  'Kisumu ndogo',
-  'Fanta'
-];
 
 const ADMIN_EMAIL = 'esaubornface73@gmail.com';
 const ADMIN_EMAILS = ['esaubornface73@gmail.com', 'hillaryngari4@gmail.com'];
@@ -262,20 +135,49 @@ const getWhatsAppColor = (name: string) => {
 };
 
 export default function App() {
+  const [estates, setEstates] = useState<Estate[]>(() => {
+    try {
+      const saved = localStorage.getItem('ksh_estates');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error('Failed to parse cached estates:', e);
+    }
+    return DEFAULT_ESTATES;
+  });
+
+  const estateOrder = useMemo(() => estates.map((e) => e.id), [estates]);
+
+  const ESTATE_LABELS = useMemo(() => {
+    const record: Record<string, { label: string; icon: string; description: string }> = {};
+    estates.forEach((e) => {
+      record[e.id] = { label: e.label, icon: e.icon, description: e.description };
+    });
+    return record;
+  }, [estates]);
+
+  const ESTATE_SCHOOL_INFO = useMemo(() => {
+    const record: Record<string, { distance: string; walkTime: string; securityScore: string; alert: string }> = {};
+    estates.forEach((e) => {
+      record[e.id] = { distance: e.distance, walkTime: e.walkTime, securityScore: e.securityScore, alert: e.alert };
+    });
+    return record;
+  }, [estates]);
+
   // Local persistence states
   const [hostels, setHostels] = useState<Hostel[]>(() => {
-    const estateOrderLocal = [
-      'On-Campus',
-      'Mwembe',
-      'Nyanchwa',
-      'Milimani',
-      'Jogoo',
-      'Roma',
-      'Nyaura',
-      'Canaan',
-      'Kisumu ndogo',
-      'Fanta'
-    ];
+    let estateOrderLocal = DEFAULT_ESTATES.map(e => e.id);
+    try {
+      const savedEstates = localStorage.getItem('ksh_estates');
+      if (savedEstates) {
+        const parsed = JSON.parse(savedEstates) as Estate[];
+        if (parsed && parsed.length > 0) {
+          estateOrderLocal = parsed.map(e => e.id);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse cached estates for hostels sort:', e);
+    }
+
     const sortHostelsByEstate = (a: Hostel, b: Hostel) => {
       const indexA = estateOrderLocal.indexOf(a.area);
       const indexB = estateOrderLocal.indexOf(b.area);
@@ -914,6 +816,39 @@ export default function App() {
     localStorage.setItem('kisii_recorded_stats', JSON.stringify(recordedStats));
   }, [recordedStats]);
 
+  // Real-time Firestore sync for Estates
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'estates'), async (snapshot) => {
+      if (snapshot.empty) {
+        console.log('[Estates] Estates collection is empty. Seeding defaults...');
+        for (const e of DEFAULT_ESTATES) {
+          try {
+            await setDoc(doc(db, 'estates', e.id), e);
+          } catch (err) {
+            console.error('Error seeding estate to Firestore:', err);
+          }
+        }
+      } else {
+        const loaded: Estate[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as Estate;
+          if (data && data.id && data.label) {
+            loaded.push(data);
+          }
+        });
+        setEstates(loaded);
+        localStorage.setItem('ksh_estates', JSON.stringify(loaded));
+      }
+    }, (error) => {
+      console.warn('[Estates] Sync failed:', error);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('ksh_estates', JSON.stringify(estates));
+  }, [estates]);
+
   // Theme Toggle State
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('kisii_theme');
@@ -944,7 +879,7 @@ export default function App() {
   const [caretakerBroadcastMsg, setCaretakerBroadcastMsg] = useState('');
   const [caretakerSmsLogs, setCaretakerSmsLogs] = useState<{ id: string; timestamp: string; phone: string; recipient: string; status: string; message: string }[]>([]);
 
-  const [adminSubTab, setAdminSubTab] = useState<'listings' | 'clients' | 'repairs'>('listings');
+  const [adminSubTab, setAdminSubTab] = useState<'listings' | 'clients' | 'repairs' | 'estates'>('listings');
   const [currentPage, setCurrentPage] = useState<'landing' | 'home' | 'details'>('landing');
   const [newsPosts, setNewsPosts] = useState<NewsPost[]>([]);
   const [newPostContent, setNewPostContent] = useState('');
@@ -3768,16 +3703,9 @@ export default function App() {
                             className="bg-transparent text-slate-700 dark:text-slate-200 text-xs font-bold focus:outline-none cursor-pointer pr-1"
                           >
                             <option value="All" className="dark:bg-slate-900">All Estates (Kisii)</option>
-                            <option value="On-Campus" className="dark:bg-slate-900">On-Campus Halls</option>
-                            <option value="Nyanchwa" className="dark:bg-slate-900">Nyanchwa Hills</option>
-                            <option value="Mwembe" className="dark:bg-slate-900">Mwembe (Main Gate)</option>
-                            <option value="Milimani" className="dark:bg-slate-900">Milimani (Executive)</option>
-                            <option value="Jogoo" className="dark:bg-slate-900">Jogoo Estate</option>
-                            <option value="Roma" className="dark:bg-slate-900">Roma Estate</option>
-                            <option value="Nyaura" className="dark:bg-slate-900">Nyaura Outpost</option>
-                            <option value="Canaan" className="dark:bg-slate-900">Canaan Estate</option>
-                            <option value="Kisumu ndogo" className="dark:bg-slate-900">Kisumu Ndogo</option>
-                            <option value="Fanta" className="dark:bg-slate-900">Fanta Estate</option>
+                            {estates.map((e) => (
+                              <option key={e.id} value={e.id} className="dark:bg-slate-900">{e.label}</option>
+                            ))}
                           </select>
                         </div>
 
@@ -5364,6 +5292,12 @@ export default function App() {
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${adminSubTab === 'repairs' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-350'}`}
                     >
                       Repairs & Dispatch
+                    </button>
+                    <button
+                      onClick={() => setAdminSubTab('estates')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${adminSubTab === 'estates' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm font-extrabold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-350'}`}
+                    >
+                      Manage Estates
                     </button>
                   </div>
 
@@ -7077,9 +7011,232 @@ export default function App() {
                   )}
                 </div>
               )}
+
+              {adminSubTab === 'estates' && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                  {/* Stats & Header Info */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 p-4">
+                      <span className="text-[10px] font-mono font-bold uppercase text-slate-400 dark:text-slate-500 block">Total Estates</span>
+                      <span className="text-2xl font-black text-slate-800 dark:text-slate-200 mt-1 block">{estates.length}</span>
+                    </div>
+                    <div className="bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 p-4">
+                      <span className="text-[10px] font-mono font-bold uppercase text-slate-400 dark:text-slate-500 block">Hostels Cataloged</span>
+                      <span className="text-2xl font-black text-slate-800 dark:text-slate-200 mt-1 block">{hostels.length}</span>
+                    </div>
+                    <div className="bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 p-4">
+                      <span className="text-[10px] font-mono font-bold uppercase text-slate-400 dark:text-slate-500 block">Active Residents</span>
+                      <span className="text-2xl font-black text-slate-800 dark:text-slate-200 mt-1 block">
+                        {bookings.filter(b => b.status === 'Fully Confirmed' || b.status === 'Deposit Paid').length}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Add Estate Form */}
+                    <div className="bg-slate-50/50 dark:bg-slate-950/20 rounded-3xl border border-slate-200/60 dark:border-slate-800/60 p-6 space-y-4 h-fit">
+                      <div>
+                        <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                          <span className="text-base">➕</span> Add New Estate
+                        </h3>
+                        <p className="text-[11px] text-slate-400 mt-0.5">Define a new Kisii student residential area.</p>
+                      </div>
+
+                      <form onSubmit={(e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.currentTarget);
+                        const label = (formData.get('label') as string || '').trim();
+                        const id = (formData.get('id') as string || '').trim() || label.replace(/\s+/g, '-');
+                        const description = (formData.get('description') as string || '').trim();
+                        const emoji = (formData.get('emoji') as string || '🏠').trim();
+                        const distance = (formData.get('distance') as string || '500 meters').trim();
+                        const walkTime = (formData.get('walkTime') as string || '10 mins walk').trim();
+                        const securityScore = (formData.get('securityScore') as string || '4.0/5').trim();
+                        const alert = (formData.get('alert') as string || '').trim();
+                        const gradient = (formData.get('gradient') as string || 'linear-gradient(135deg, #2563eb, #4338ca)').trim();
+                        const badge = (formData.get('badge') as string || '').trim();
+                        
+                        if (!label) {
+                          showFeedback('Estate Name is required.', 'warning');
+                          return;
+                        }
+                        if (estates.some(est => est.id.toLowerCase() === id.toLowerCase())) {
+                          showFeedback('An estate with this ID/Code already exists.', 'warning');
+                          return;
+                        }
+
+                        const newEstate: Estate = {
+                          id,
+                          label,
+                          description,
+                          icon: 'Quiet', 
+                          gradient,
+                          accentColor: 'bg-indigo-500',
+                          badge,
+                          emoji,
+                          distance,
+                          walkTime,
+                          securityScore,
+                          alert
+                        };
+
+                        setDoc(doc(db, 'estates', id), newEstate)
+                          .then(() => {
+                            showFeedback(`🎉 Estate "${label}" added successfully!`, 'success');
+                            e.currentTarget.reset();
+                          })
+                          .catch((err) => {
+                            console.error('Failed to save estate:', err);
+                            showFeedback('Failed to save estate to Firestore.', 'warning');
+                          });
+                      }} className="space-y-3.5">
+                        <label className="block space-y-1">
+                          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Estate Name *</span>
+                          <input required name="label" type="text" placeholder="e.g. Mwembe, Nyanchwa" className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 font-bold text-slate-800 dark:text-slate-100 focus:outline-none" />
+                        </label>
+
+                        <label className="block space-y-1">
+                          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Estate Code/ID (Slug)</span>
+                          <input name="id" type="text" placeholder="e.g. Mwembe, Nyanchwa (Auto-generated if empty)" className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 font-mono text-slate-800 dark:text-slate-100 focus:outline-none" />
+                        </label>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <label className="block space-y-1">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Emoji Emoji</span>
+                            <input name="emoji" type="text" defaultValue="🏠" className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 font-bold text-slate-800 dark:text-slate-100 focus:outline-none text-center" />
+                          </label>
+                          <label className="block space-y-1">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Highlight Badge</span>
+                            <input name="badge" type="text" placeholder="e.g. Most Popular" className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 font-bold text-slate-800 dark:text-slate-100 focus:outline-none" />
+                          </label>
+                        </div>
+
+                        <label className="block space-y-1">
+                          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Short Description</span>
+                          <textarea required rows={2} name="description" placeholder="A brief description of this estate..." className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 font-semibold text-slate-800 dark:text-slate-100 focus:outline-none" />
+                        </label>
+
+                        <div className="grid grid-cols-3 gap-2">
+                          <label className="block space-y-1 col-span-2">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Distance range</span>
+                            <input name="distance" defaultValue="300 - 500 meters" placeholder="e.g. 150 - 300 meters" type="text" className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 font-semibold text-slate-800 dark:text-slate-100 focus:outline-none" />
+                          </label>
+                          <label className="block space-y-1">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Walk time</span>
+                            <input name="walkTime" defaultValue="5 - 10 mins" placeholder="e.g. 5 - 10 mins" type="text" className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 font-semibold text-slate-800 dark:text-slate-100 focus:outline-none" />
+                          </label>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <label className="block space-y-1">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Security Score</span>
+                            <input name="securityScore" defaultValue="4.2/5" placeholder="e.g. 4.5/5" type="text" className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 font-semibold text-slate-800 dark:text-slate-100 focus:outline-none" />
+                          </label>
+                          <label className="block space-y-1">
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Theme Color Gradient</span>
+                            <select name="gradient" className="w-full min-h-10 text-[11px] rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-2 py-2 font-bold text-slate-800 dark:text-slate-100 focus:outline-none">
+                              <option value="linear-gradient(135deg, #7c3aed, #9333ea, #4338ca)">Purple Magic</option>
+                              <option value="linear-gradient(135deg, #2563eb, #0891b2, #0369a1)">Ocean Breeze</option>
+                              <option value="linear-gradient(135deg, #0d9488, #059669, #15803d)">Emerald Hills</option>
+                              <option value="linear-gradient(135deg, #4338ca, #1d4ed8, #0369a1)">Milimani Indigo</option>
+                              <option value="linear-gradient(135deg, #0284c7, #2563eb, #0891b2)">Skyward Blue</option>
+                              <option value="linear-gradient(135deg, #0d2137, #1e3a5f, #0f172a)">Midnight Premium</option>
+                              <option value="linear-gradient(135deg, #d97706, #ea580c, #b91c1c)">Vibrant Amber</option>
+                              <option value="linear-gradient(135deg, #f59e0b, #d97706, #b45309)">Fanta Gold</option>
+                              <option value="linear-gradient(135deg, #db2777, #f43f5e, #9d174d)">Pink Rose</option>
+                            </select>
+                          </label>
+                        </div>
+
+                        <label className="block space-y-1">
+                          <span className="text-[10px] font-mono font-bold uppercase text-slate-500 dark:text-slate-400">Detailed Alert Notice</span>
+                          <textarea rows={2} name="alert" placeholder="Important security patrol details, borehole info, or curfew alerts..." className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 font-semibold text-slate-800 dark:text-slate-100 focus:outline-none" />
+                        </label>
+
+                        <button type="submit" className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition cursor-pointer shadow-sm">
+                          Save Estate to Cloud
+                        </button>
+                      </form>
+                    </div>
+
+                    {/* Estates List View */}
+                    <div className="lg:col-span-2 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-100">All Available Estates</h3>
+                          <p className="text-[11px] text-slate-400 mt-0.5">Manage existing estates near campus compound.</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {estates.map((estate) => {
+                          const linkedCount = hostels.filter(h => h.area === estate.id).length;
+
+                          return (
+                            <div key={estate.id} className="bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 p-5 space-y-4 relative overflow-hidden group">
+                              {/* Background Gradient Accent strip */}
+                              <div style={{ background: estate.gradient, height: '4px', position: 'absolute', top: 0, left: 0, right: 0 }} />
+
+                              <div className="flex items-start justify-between gap-2 pt-2">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xl">{estate.emoji || '🏘️'}</span>
+                                    <h4 className="text-sm font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">{estate.label}</h4>
+                                  </div>
+                                  <span className="inline-block text-[9px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded font-mono">
+                                    ID/Key: {estate.id}
+                                  </span>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (linkedCount > 0) {
+                                      showFeedback(`⚠️ Cannot delete "${estate.label}" because it is currently linked to ${linkedCount} hostel(s). Please reassign those hostels first!`, 'warning');
+                                      return;
+                                    }
+                                    if (window.confirm(`Are you sure you want to remove the estate "${estate.label}"?`)) {
+                                      try {
+                                        await deleteDoc(doc(db, 'estates', estate.id));
+                                        showFeedback(`Estate "${estate.label}" removed successfully.`, 'success');
+                                      } catch (err) {
+                                        console.error('Failed to remove estate:', err);
+                                        showFeedback('Failed to remove estate from Firestore.', 'warning');
+                                      }
+                                    }
+                                  }}
+                                  className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition cursor-pointer"
+                                  title="Delete Estate"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+
+                              <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">{estate.description}</p>
+
+                              <div className="grid grid-cols-2 gap-2 text-[10px] border-t border-slate-100 dark:border-slate-850 pt-3 font-semibold text-slate-400">
+                                <div>📍 {estate.distance}</div>
+                                <div>🚶 {estate.walkTime}</div>
+                                <div>🛡️ Security: <span className="text-slate-700 dark:text-slate-350 font-bold">{estate.securityScore}</span></div>
+                                <div>🏢 Hostels: <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{linkedCount}</span></div>
+                              </div>
+
+                              {estate.badge && (
+                                <span style={{ background: estate.gradient }} className="absolute bottom-2 right-2 text-[9px] font-black text-white px-2 py-0.5 rounded-full shadow-sm">
+                                  {estate.badge}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            )
-          )}
+          )
+        )}
 
           {/* TAB 5: Smart support chatbot console with Sophia */}
           {activeTab === 'sophia' && (
