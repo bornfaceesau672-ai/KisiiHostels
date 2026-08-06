@@ -7080,6 +7080,8 @@ export default function App() {
                           alert
                         };
 
+                        const updatedEstates = [...estates, newEstate];
+
                         setDoc(doc(db, 'estates', id), newEstate)
                           .then(() => {
                             showFeedback(`🎉 Estate "${label}" added successfully!`, 'success');
@@ -7087,7 +7089,10 @@ export default function App() {
                           })
                           .catch((err) => {
                             console.error('Failed to save estate:', err);
-                            showFeedback('Failed to save estate to Firestore.', 'warning');
+                            setEstates(updatedEstates);
+                            localStorage.setItem('ksh_estates', JSON.stringify(updatedEstates));
+                            showFeedback('⚠️ Saved locally, but failed to sync to Firestore cloud.', 'warning');
+                            e.currentTarget.reset();
                           });
                       }} className="space-y-3.5">
                         <label className="block space-y-1">
@@ -7196,12 +7201,15 @@ export default function App() {
                                       return;
                                     }
                                     if (window.confirm(`Are you sure you want to remove the estate "${estate.label}"?`)) {
+                                      const updatedEstates = estates.filter(e => e.id !== estate.id);
                                       try {
                                         await deleteDoc(doc(db, 'estates', estate.id));
                                         showFeedback(`Estate "${estate.label}" removed successfully.`, 'success');
                                       } catch (err) {
                                         console.error('Failed to remove estate:', err);
-                                        showFeedback('Failed to remove estate from Firestore.', 'warning');
+                                        setEstates(updatedEstates);
+                                        localStorage.setItem('ksh_estates', JSON.stringify(updatedEstates));
+                                        showFeedback('⚠️ Removed locally, but failed to sync deletion with Firestore cloud.', 'warning');
                                       }
                                     }
                                   }}
